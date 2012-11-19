@@ -1,0 +1,235 @@
+#!/usr/bin/python3
+
+import email.mime.text
+import http.client
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.parse
+import zlib
+
+cdict = {}
+
+def send_email(data):
+    subject = data.get('subject', '(no subject)')
+    message = data.get('message')
+    to_addrs = data.get('to')
+    from_addr = data.get('from')
+    if not message:
+        raise Exception('No message specified')
+    if not to_addrs:
+        raise Exception('No recipients specified')
+    if not from_addr:
+        raise Exception('No sender specified')
+    email_data = email.mime.text.MIMEText(message)
+    email_data['To'] = to_addrs
+    email_data['From'] = from_addr
+    if subject:
+        email_data['Subject'] = subject
+
+    p = subprocess.Popen(['/usr/sbin/sendmail', '-f', email_data['From'], '-t'],
+                         stdin=subprocess.PIPE)
+    p.communicate(email_data.as_string().encode('utf-8'))
+    return email_data
+
+def run_request(host, URI, body, headers, request_type='GET', https=False, max_redirect=3):
+    global cdict
+    if https:
+        conn = http.client.HTTPSConnection(host, timeout=10.0)
+    else:
+        conn = http.client.HTTPConnection(host, timeout=10.0)
+    if body == {}:
+        body = None
+
+    if headers is None:
+        headers = {}
+    #if 'User-Agent' not in headers:
+    headers.update({
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:14.0) Gecko/20100101 Firefox/14.0.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-us,en;q=0.5',
+        })
+    if 'Cookie' not in headers and len(cdict) > 0:
+        cookies = ''
+        for c in cdict:
+            if cookies != '':
+                cookies = cookies + '; '
+            cookies = cookies + urllib.parse.urlencode({c: cdict[c]})
+        headers['Cookie'] = cookies
+        #print("SENDING COOKIES [%s]" % cookies)
+
+    prefix = 'https' if https else 'http'
+    #print('>>> Requesting %s://%s%s'  % (prefix, host, URI))
+    #if body and 'offerId' in body:
+    #    print('    %s' % body[0:80])
+    conn.request(request_type, URI, body, headers)
+    r = conn.getresponse()
+    #print(r.status, r.reason)
+    status = r.status
+
+    location_header = None
+    gzip_header = False
+
+    # Save all cookies
+    cdict_update = {}
+    for header, value in r.getheaders():
+        if header != 'Set-cookie' and header != 'Set-Cookie':
+            if header == 'Location':
+                location_header = value
+            if header == 'Content-Encoding':
+                if value == 'gzip':
+                    gzip_header = True
+            continue
+
+        value = value.strip()
+        m = re.match(r'([a-zA-Z0-9_]+)=(.*);', value)
+        if not m:
+            continue
+        if 'Expires' in value:
+            #print('Ignoring cookie with expiration value')
+            continue
+        name, value = m.groups()
+        try:
+            value, _ = value.split(';', 1)
+        except ValueError as e:
+            pass
+        value = urllib.parse.unquote(value)
+        cdict_update.update({name: value})
+    cdict.update(cdict_update)
+    rdata = r.read()
+    if gzip_header:
+        rdata = zlib.decompress(rdata, (16 + zlib.MAX_WBITS))
+    trim_len = 200
+    if False:
+        if len(rdata) > trim_len:
+            print("rdata[0:%d] = [%s]" % (trim_len, str(rdata[0:trim_len])))
+        else:
+            print("rdata = [%s]" % str(rdata))
+
+    if location_header is not None:
+        if max_redirect <= 0:
+            print ('>>> NOT FOLLOWING LOCATION HEADER TO %s' % location_header)
+            print ('>>> MAX REDIRECTS EXCEEDED')
+            return
+
+        max_redirect = max_redirect - 1
+        if re.match(r'^/', location_header):
+            # Location header is relative
+            return run_request(host, location_header, None, {}, 'GET', https, max_redirect)
+        m = re.match(r'(https?)://([a-zA-Z0-9\.:]+)(\/.*)', location_header)
+        if m:
+            (prefix, host, URI) = m.groups()
+            https = ('prefix' == 'https')
+            return run_request(host, URI, None, {}, 'GET', https, max_redirect)
+        else:
+            print('Unable to determine URL to redirect to')
+            return
+    return status, rdata
+
+def clip_coupons(USER, PASS, EMAIL):
+    global cdict
+
+    coupon_errors = []
+    coupons_clipped = {}
+
+    # Cookies
+    cdict = {}
+    cdict.update({
+            'SWY_API_KEY': 'emjou',
+            'SWY_VERSION': '1.0',
+            'SWY_BANNER': 'safeway',
+            })
+
+    try:
+        # Get initial cookies
+        status, _ = run_request('www.safeway.com', '/', None, {}, 'GET', False)
+        if status != 200:
+            raise Exception('Unable to retrieve www.safeway.com: HTTP {0}'.format(status))
+
+        # Login
+        params = urllib.parse.urlencode(
+                 {'encoded': 'false',
+                  'arg': 'newsession',
+                  'goto': '',
+                  'SunQueryParamsString': '',
+                  'IDToken1': USER,
+                  'IDToken2': PASS,
+                 })
+        headers = {'Content-type': 'application/x-www-form-urlencoded',
+                   'Accept': 'text/plain'}
+        status, _ = run_request('auth.safeway.com', '/opensso/UI/Login', params, headers, 'POST', True)
+        if status != 200:
+            raise Exception('Unable to log in: HTTP {0}'.format(status))
+        cdict.update({'SWY_OMNITURE_LOGIN_EVENT': 'Home_Retrieved'})
+
+        #rdata = run_request('www.safeway.com', '/ShopStores/Justforu-CouponCenter.page?', None, None, 'GET', False)
+
+        for x in ['CC', 'PD']:
+            # Retrieve list of offers for this week
+            status, rdata = run_request('www.safeway.com', ('/J4UProgram1/services/program/%s/offer/allocations' % x), None, None, 'GET', False)
+            if status != 200:
+                raise Exception('Unable to retrieve list of coupons: HTTP {0}'.format(status))
+
+            offers = json.loads(rdata.decode('utf-8'))
+            if not 'offers' in offers:
+                raise Exception('Unable to find \'offers\' in allocations JSON')
+                sys.exit(1)
+            offers = offers['offers']
+            for i in range(len(offers)):
+                post_json = json.dumps({'clips': [{'offerId': offers[i]['offerId'],
+                                                   'offerPgm': offers[i]['offerPgm']}]})
+                if offers[i]['clipStatus'] == 'C':
+                    # Offer is already clipped
+                    continue
+                # Activate coupon
+                headers = {'Referer': 'http://www.safeway.com/ShopStores/Justforu-CouponCenter.page?'}
+                status, _ = run_request('www.safeway.com', '/Clipping1/services/clip/offers', post_json, headers, 'POST', False)
+                if status != 204:
+                    coupon_errors.append('Error clipping coupon {0} (type {1}): HTTP {2}'.format(
+                        offers[i]['offerId'], offers[i]['offerPgm'], status))
+                    continue
+                #print('>>> Added offer {0} (type {1})'.format(offers[i]['offerId'], offers[i]['offerPgm']))
+                type_total = coupons_clipped.get(offers[i]['offerPgm'], 0)
+                coupons_clipped.update({offers[i]['offerPgm']: type_total + 1})
+    except Exception as e:
+        coupon_errors.append(str(e))
+
+    total_clipped = 0
+    for c_type in coupons_clipped:
+        total_clipped = total_clipped + coupons_clipped[c_type]
+    if EMAIL and (total_clipped > 0 or len(coupon_errors) > 0):
+        subject = 'Safeway coupons: {0}{1}{2}'.format(
+            ('{0} clipped'.format(total_clipped) if total_clipped else ''),
+            (', ' if (total_clipped and len(coupon_errors)) else ''),
+            ('{0} errors'.format(len(coupon_errors)) if len(coupon_errors) else ''))
+        message = ''
+        if total_clipped:
+            message = 'Clipped {0} coupons:\n'.format(total_clipped)
+            for c_type in coupons_clipped:
+                message = message + '    {0} {1}\n'.format(c_type, coupons_clipped[c_type])
+        if len(coupon_errors):
+            message = message + '\n{0} errors:\n'.format(len(coupon_errors))
+            message = message + '\n'.join(coupon_errors)
+
+        email_data = {'subject': subject,
+                      'message': message,
+                      'from': 'from_address@example.com',
+                      'to': EMAIL}
+        send_email(email_data)
+
+userpass_data = 'your_email@example.com:password1:notify_email_address@example.com\n'
+userpass_data = userpass_data.strip()
+for u_data in userpass_data.splitlines():
+    try:
+        USER, PASS, EMAIL = u_data.split(':', 2)
+    except ValueError:
+        try:
+            USER, PASS = u_data.split(':', 1)
+            EMAIL = USER
+        except ValueError:
+            print('>>> Invalid data line {0}'.format(u_data))
+            continue
+    clip_coupons(USER, PASS, EMAIL)

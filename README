@@ -1,0 +1,7 @@
+safeway-coupons is a script that will log in to an account on safeway.com, and
+attempt to select all of the "Just for U" electronic coupons on the site so
+they don't have to each be clicked manually. For best results, run this program
+once a day or so with a cron daemon.
+
+For the script to work, you need Python 3 and sendmail. Make sure to configure
+your Safeway account login information at the bottom of the script.
