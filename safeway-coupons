@@ -167,7 +167,7 @@ def clip_coupons(USER, PASS, EMAIL):
 
         #rdata = run_request('www.safeway.com', '/ShopStores/Justforu-CouponCenter.page?', None, None, 'GET', False)
 
-        for x in ['CC', 'PD']:
+        for x in ['CC', 'PD', 'YCS']:
             # Retrieve list of offers for this week
             status, rdata = run_request('www.safeway.com', ('/J4UProgram1/services/program/%s/offer/allocations' % x), None, None, 'GET', False)
             if status != 200:
