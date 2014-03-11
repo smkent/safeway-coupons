@@ -3,5 +3,17 @@ attempt to select all of the "Just for U" electronic coupons on the site so
 they don't have to each be clicked manually. For best results, run this program
 once a day or so with a cron daemon.
 
-For the script to work, you need Python 3 and sendmail. Make sure to configure
-your Safeway account login information at the bottom of the script.
+Prerequisites: Python 3 and sendmail.
+
+You need to specify the path to a config file (using -c or --accounts-config).
+Your config file should contain an email sender address and Safeway account login
+information. For example:
+
+[_global]
+email_sender = sender@example.com
+
+[safeway.account@example.com]
+password = 12345
+notify_email = your.email@example.com
+
+(notify_email is optional, if you want to be notified at a different email.)
