@@ -159,7 +159,8 @@ class safeway():
                    'Accept': 'text/plain'}
         rsp = self._run_request('https://auth.safeway.com/opensso/UI/Login',
                                 login_data, headers)
-        if 'error' in rsp.content.decode('UTF-8'):
+        rsp_page = rsp.content.decode('UTF-8')
+        if 'LogonError' in rsp_page and '<form name="Login"' in rsp_page:
             raise Exception('Authentication failure')
 
     def _run_request(self, url, data=None, headers=None):
