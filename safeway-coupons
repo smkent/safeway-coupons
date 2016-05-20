@@ -4,6 +4,7 @@ import argparse
 import configparser
 import datetime
 import email.mime.text
+import itertools
 import json
 import os
 import random
@@ -16,13 +17,17 @@ import traceback
 import urllib.parse
 
 # Parse options
-arg_parser = argparse.ArgumentParser(
-                 description='Automatically add online coupons to your Safeway card')
+description='Automatically add online coupons to your Safeway card'
+arg_parser = argparse.ArgumentParser(description=description)
 arg_parser.add_argument('-c', '--accounts-config', dest='accounts_config',
-                        required=True,
-                        help='Path to configuration file containing Safeway accounts')
+                        metavar='file', required=True,
+                        help=('Path to configuration file containing Safeway '
+                              'accounts information'))
 arg_parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         help='Print debugging information on stdout')
+arg_parser.add_argument('-n', '--no-email', dest='email', action='store_false',
+                        help=('Print summary information on stdandard output '
+                              'instead of sending email'))
 options = arg_parser.parse_args()
 
 email_sender = ''
@@ -32,11 +37,12 @@ if not os.path.isfile(options.accounts_config):
     raise Exception('Accounts configuration file %s does not exist.' %
                     options.accounts_config)
 
-config = configparser.SafeConfigParser()
-config.read(options.accounts_config)
+config = configparser.ConfigParser()
+config.readfp(itertools.chain(['[_no_section]'],
+              open(options.accounts_config, 'r')))
 
 for section in config.sections():
-    if section == '_global':
+    if section in ['_no_section', '_global']:
         if config.has_option(section, 'email_sender'):
             email_sender = config.get(section, 'email_sender')
     else:
@@ -47,7 +53,10 @@ for section in config.sections():
         auth.append(account)
 
 if not email_sender:
-    raise Exception('No email_sender defined.')
+    if options.email:
+        print('Warning: No email_sender defined. Summary information will be '
+              'printed on standard output instead.', file=sys.stderr)
+        options.email = False
 if len(auth) == 0:
     raise Exception('No valid accounts defined.')
 
@@ -109,6 +118,10 @@ class safeway():
 
         self.mail_message.insert(0, 'Safeway account: %s' % self.auth.get('username'))
         mail_message_str = os.linesep.join(self.mail_message)
+
+        if not options.email:
+            print(mail_message_str)
+            return
 
         self._debug('Sending email to %s' % email_to)
         self._debug('>>>>>>')
