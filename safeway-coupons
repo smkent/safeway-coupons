@@ -14,10 +14,9 @@ import subprocess
 import sys
 import time
 import traceback
-import urllib.parse
 
 # Parse options
-description='Automatically add online coupons to your Safeway card'
+description = 'Automatically add online coupons to your Safeway card'
 arg_parser = argparse.ArgumentParser(description=description)
 arg_parser.add_argument('-c', '--accounts-config', dest='accounts_config',
                         metavar='file', required=True,
@@ -34,8 +33,8 @@ email_sender = ''
 auth = []
 
 if not os.path.isfile(options.accounts_config):
-    raise Exception('Accounts configuration file %s does not exist.' %
-                    options.accounts_config)
+    raise Exception('Accounts configuration file {} does not '
+                    'exist.'.format(options.accounts_config))
 
 config = configparser.ConfigParser()
 config.readfp(itertools.chain(['[_no_section]'],
@@ -82,6 +81,8 @@ js_req_headers = {'Content-Type': 'application/json',
                   'X-SWY_API_KEY': 'emjou',
                   'X-SWY_BANNER': 'safeway',
                   'X-SWY_VERSION': '1.0'}
+
+
 class safeway():
     def __init__(self, auth):
         self.auth = auth
@@ -94,7 +95,7 @@ class safeway():
             self._clip_coupons()
         except Exception as e:
             self.mail_subject += ' (error)'
-            self._mail_append('Exception: %s' % str(e))
+            self._mail_append('Exception: {}'.format(str(e)))
             for line in traceback.format_exc().split(os.linesep):
                 self._mail_append(line)
 
@@ -105,7 +106,7 @@ class safeway():
         self.mail_message.append(line)
 
     def _mail_append_exception(self, e, description):
-        self._mail_append('%s: %s' % (description, str(e)))
+        self._mail_append('{}: {}'.format(description, str(e)))
         for line in traceback.format_exc().split(os.linesep):
             self._mail_append(line)
 
@@ -116,14 +117,15 @@ class safeway():
         if self.mail_message[0].startswith('Coupon: '):
             self.mail_message.insert(0, 'Clipped coupons for items you buy:')
 
-        self.mail_message.insert(0, 'Safeway account: %s' % self.auth.get('username'))
+        account_str = 'Safeway account: {}'.format(self.auth.get('username'))
+        self.mail_message.insert(0, account_str)
         mail_message_str = os.linesep.join(self.mail_message)
 
         if not options.email:
             print(mail_message_str)
             return
 
-        self._debug('Sending email to %s' % email_to)
+        self._debug('Sending email to {}'.format(email_to))
         self._debug('>>>>>>')
         self._debug(mail_message_str)
         self._debug('<<<<<<')
@@ -157,10 +159,11 @@ class safeway():
         rsp = self._run_request('http://www.safeway.com')
         rsp.stream = False
 
-        rsp = self._run_request('https://www.safeway.com/ShopStores/OSSO-Login.page')
+        rsp = self._run_request('https://www.safeway.com/ShopStores/'
+                                'OSSO-Login.page')
         rsp.stream = False
 
-        self._debug('Logging in as %s' % self.auth.get('username'))
+        self._debug('Logging in as {}'.format(self.auth.get('username')))
         login_data = json.dumps(
             {'source': 'WEB',
              'rememberMe': False,
@@ -168,7 +171,8 @@ class safeway():
              'password': self.auth.get('password')})
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json, text/javascript, */*; q=0.01'}
-        rsp = self._run_request('https://www.safeway.com/iaaw/service/authenticate',
+        rsp = self._run_request(('https://www.safeway.com/iaaw/service/'
+                                 'authenticate'),
                                 login_data, headers)
         rsp_data = json.loads(rsp.content.decode('UTF-8'))
         if not rsp_data.get('token') or rsp_data.get('errors'):
@@ -183,29 +187,31 @@ class safeway():
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
 
-        url = ('http://www.safeway.com/J4UProgram1/services/offer/%s/definition/cacheTs/%s' %
-               (oid, ts))
+        url = ('http://www.safeway.com/J4UProgram1/services/offer/'
+               '{}/definition/cacheTs/{}').format(oid, ts)
         rsp = self._run_request(url, headers=headers)
         coupon_data = json.loads(rsp.content.decode('UTF-8'))
         coupon_detail = coupon_data.get('offerDetail', {})
-        title = ('%s %s %s' % (coupon_detail.get('titleDsc1', ''),
-                            coupon_detail.get('titleDsc2', ''),
-                            coupon_detail.get('prodDsc1', ''))).strip()
+        title = '{} {} {}'.format((coupon_detail.get('titleDsc1', ''),
+                                   coupon_detail.get('titleDsc2', ''),
+                                   coupon_detail.get('prodDsc1', ''))).strip()
         if section == 'PD':
-            detail = ('%s %s' % (coupon_detail.get('priceTitle1', ''),
-                                 coupon_detail.get('priceValue1', ''))).strip()
+            detail = '{} {}'.format(coupon_detail.get('priceTitle1', ''),
+                                    coupon_detail.get('priceValue1', ''))
+            detail = detail.strip()
         else:
-            detail = ('%s' % coupon_detail.get('savingsValue', '')).strip()
+            detail = '{}'.format(coupon_detail.get('savingsValue', '')).strip()
         try:
-            expire_ts_unix = int(re.match('\\\/Date\(([0-9]{10})[0-9]{3}\)\\\/',
+            end_date_regex = '\\\/Date\(([0-9]{10})[0-9]{3}\)\\\/'
+            expire_ts_unix = int(re.match(end_date_regex,
                                           coupon_data['offerEndDt']).group(1))
             expires = (datetime.datetime.fromtimestamp(expire_ts_unix)
                                .strftime('%Y.%m.%d'))
         except Exception as e:
             self._mail_append_exception(e, 'Exception getting coupon details')
             expires = 'Unknown'
-        self._mail_append('Coupon: %s (%s, expires: %s)' %
-                          (title, detail, expires))
+        self._mail_append('Coupon: {} ({}, expires: {})'.format(title, detail,
+                                                                expires))
         rsp.stream = False
         # Don't blast the server with requests
         time.sleep(random.uniform(0.05, 0.15) * sleep_multiplier)
@@ -214,7 +220,8 @@ class safeway():
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
         if section == 'YCS':
-            url = 'http://www.safeway.com/emlss/services/integratedshoppinglist/list/add'
+            url = ('http://www.safeway.com/emlss/services/'
+                   'integratedshoppinglist/list/add')
         else:
             url = 'http://www.safeway.com/Clipping1/services/clip/offers'
         rsp = self._run_request(url, post_json, headers)
@@ -228,7 +235,8 @@ class safeway():
 
         sections = ['PD', 'CC']
         try:
-            rsp = self._run_request('http://www.safeway.com/emlse/services/customer/preference?'
+            rsp = self._run_request('http://www.safeway.com/emlse/services/'
+                                    'customer/preference?'
                                     'definitionId=preferredstoreid')
             storeid_data = json.loads(rsp.content.decode('UTF-8'))
             if len(storeid_data['definitions'][0]['values']) > 0:
@@ -242,40 +250,46 @@ class safeway():
 
         try:
             for section in sections:
-                self._debug('Retrieving %s coupons' % section)
-                url = ('http://www.safeway.com/J4UProgram1/services/program/%s'
-                       '/offer/allocations' % (section))
+                self._debug('Retrieving {} coupons'.format(section))
+                url = ('http://www.safeway.com/J4UProgram1/services/program/{}'
+                       '/offer/allocations'.format(section))
                 if section == 'YCS':
-                    url += ('?storeID=%s&hierarchies=y' % (store_id))
+                    url += ('?storeID={}&hierarchies=y'.format(store_id))
                 rsp = self._run_request(url)
                 data = rsp.content.decode('UTF-8')
                 clip_counts.setdefault(section, 0)
                 offers = json.loads(data)
-                if not 'offers' in offers:
+                if 'offers' not in offers:
                     raise Exception('Offers not found')
                 offers = offers['offers']
                 for i in range(len(offers)):
-                    if offers[i]['clipStatus'] == ('S' if section == 'YCS' else 'C'):
+                    check_section = 'S' if section == 'YCS' else 'C'
+                    if offers[i]['clipStatus'] == check_section:
                         continue
                     if section == 'YCS':
-                        post_json = ('{"items":[{"referenceId":%s,"itemType":"%s",'
-                                     '"storeId":"%s"}]}' %
-                                     (offers[i]['offerId'], offers[i]['offerPgm'],
-                                      store_id))
+                        post_data = {'items': [
+                                     {'referenceId': offers[i]['offerId'],
+                                      'itemType':    offers[i]['offerPgm'],
+                                      'storeId':     store_id}]}
+                        post_json = json.dumps(post_data)
                     else:
-                        post_json = ('{"clips":[{"offerId":%s,"offerPgm":"%s"}]}' %
-                                     (offers[i]['offerId'], offers[i]['offerPgm']))
+                        post_data = {'clips': [
+                                     {'offerId':  offers[i]['offerId'],
+                                      'offerPgm': offers[i]['offerPgm']}]}
+                        post_json = json.dumps(post_data)
                     oid = offers[i]['offerId']
                     clip_success = self._clip_coupon(oid, section, post_json)
                     if clip_success:
-                        self._debug('Clipped coupon %s %s' % (section, oid))
+                        self._debug('Clipped coupon '
+                                    '{} {}'.format(section, oid))
                         clip_counts[section] += 1
                     else:
-                        self._debug('Error clipping coupon %s %s' % (section, oid))
+                        self._debug('Error clipping coupon '
+                                    '{} {}'.format(section, oid))
                         error_count += 1
                         if error_count >= 5:
-                            raise Exception('Reached error count threshold (%d)' %
-                                            error_count)
+                            raise Exception('Reached error count threshold'
+                                            '({:d})'.format(error_count))
                     if section != 'YCS':
                         if (offers[i]['purchaseInd'] == 'B'):
                             self._get_coupon_details(offers[i]['offerId'],
@@ -288,7 +302,7 @@ class safeway():
                         else:
                             w = random.uniform(4.0, 8.0)
                         w *= sleep_multiplier
-                        self._debug('Waiting %s seconds' % str(w))
+                        self._debug('Waiting {} seconds'.format(str(w)))
                         time.sleep(w)
                     else:
                         time.sleep(random.uniform(0.3, 0.8) * sleep_multiplier)
@@ -298,13 +312,15 @@ class safeway():
             self._mail_append_exception(e, 'Exception clipping coupons')
 
         if clip_count > 0 or error_count > 0:
-            self.mail_subject += ': %d clipped' % clip_count
-            self._mail_append('Clipped %d coupons total:' % clip_count)
+            self.mail_subject += ': {:d} clipped'.format(clip_count)
+            self._mail_append('Clipped {:d} coupons total:'.format(clip_count))
             for section_tuple in clip_counts.items():
-                self._mail_append('    %s => %d coupons' % section_tuple)
+                self._mail_append('    {} => {:d} '
+                                  'coupons'.format(*section_tuple))
             if error_count > 0:
-                self.mail_subject += ', %d errors' % error_count
-                self._mail_append('Coupon clip errors: %d' % error_count)
+                self.mail_subject += ', {:d} errors'.format(error_count)
+                self._mail_append('Coupon clip errors: '
+                                  '{:d}'.format(error_count))
 
 for index, user_data in enumerate(auth):
     safeway(user_data)
