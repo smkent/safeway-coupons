@@ -192,9 +192,9 @@ class safeway():
         rsp = self._run_request(url, headers=headers)
         coupon_data = json.loads(rsp.content.decode('UTF-8'))
         coupon_detail = coupon_data.get('offerDetail', {})
-        title = '{} {} {}'.format((coupon_detail.get('titleDsc1', ''),
+        title = '{} {} {}'.format(coupon_detail.get('titleDsc1', ''),
                                    coupon_detail.get('titleDsc2', ''),
-                                   coupon_detail.get('prodDsc1', ''))).strip()
+                                   coupon_detail.get('prodDsc1', '')).strip()
         if section == 'PD':
             detail = '{} {}'.format(coupon_detail.get('priceTitle1', ''),
                                     coupon_detail.get('priceValue1', ''))
