@@ -62,9 +62,8 @@ if len(auth) == 0:
 sleep_multiplier = 1.0
 
 referer_data = {
-    'CC': 'http://www.safeway.com/ShopStores/Justforu-CouponCenter.page?',
-    'PD': 'http://www.safeway.com/ShopStores/Justforu-PersonalizedDeals.page?',
-    'YCS': 'http://www.safeway.com/ShopStores/Justforu-YourClubSpecials.page?',
+    'CD': 'http://www.safeway.com/ShopStores/Justforu-Coupons.page',
+    'YCS': 'http://www.safeway.com/ShopStores/Justforu-YourClubSpecials.page',
 }
 
 js_req_headers = {'Content-Type': 'application/json',
@@ -183,7 +182,7 @@ class safeway():
             return self.r_s.post(url, headers=headers, data=data)
         return self.r_s.get(url, headers=headers)
 
-    def _get_coupon_details(self, oid, ts, section):
+    def _get_coupon_details(self, oid, ts, section, coupon_type):
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
 
@@ -193,8 +192,8 @@ class safeway():
         coupon_data = json.loads(rsp.content.decode('UTF-8'))
         coupon_detail = coupon_data.get('offerDetail', {})
         title = '{} {} {}'.format(coupon_detail.get('titleDsc1', ''),
-                                   coupon_detail.get('titleDsc2', ''),
-                                   coupon_detail.get('prodDsc1', '')).strip()
+                                  coupon_detail.get('titleDsc2', ''),
+                                  coupon_detail.get('prodDsc1', '')).strip()
         if section == 'PD':
             detail = '{} {}'.format(coupon_detail.get('priceTitle1', ''),
                                     coupon_detail.get('priceValue1', ''))
@@ -216,24 +215,24 @@ class safeway():
         # Don't blast the server with requests
         time.sleep(random.uniform(0.05, 0.15) * sleep_multiplier)
 
-    def _clip_coupon(self, oid, section, post_json):
+    def _clip_coupon(self, oid, section, coupon_type, post_json):
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
         if section == 'YCS':
             url = ('http://www.safeway.com/emlss/services/'
                    'integratedshoppinglist/list/add')
         else:
-            url = 'http://www.safeway.com/Clipping1/services/clip/offers'
+            url = 'http://www.safeway.com/Clipping1/services/clip/items'
         rsp = self._run_request(url, post_json, headers)
         rsp.stream = False
-        return (rsp.status_code == (200 if section == 'YCS' else 204))
+        return (rsp.status_code == 200)
 
     def _clip_coupons(self):
         clip_counts = {}
         clip_count = 0
         error_count = 0
 
-        sections = ['PD', 'CC']
+        sections = ['CD']
         try:
             rsp = self._run_request('http://www.safeway.com/emlse/services/'
                                     'customer/preference?'
@@ -251,50 +250,65 @@ class safeway():
         try:
             for section in sections:
                 self._debug('Retrieving {} coupons'.format(section))
-                url = ('http://www.safeway.com/J4UProgram1/services/program/{}'
-                       '/offer/allocations'.format(section))
+                url = ('http://www.safeway.com/J4UProgram1/services/program/'
+                       '{}/offer/allocations?details=y&hierarchies=y&notes=y'
+                       ).format(section)
                 if section == 'YCS':
-                    url += ('?storeID={}&hierarchies=y'.format(store_id))
+                    url += ('&storeID={}&hierarchies=y'.format(store_id))
                 rsp = self._run_request(url)
                 data = rsp.content.decode('UTF-8')
-                clip_counts.setdefault(section, 0)
                 offers = json.loads(data)
                 if 'offers' not in offers:
                     raise Exception('Offers not found')
-                offers = offers['offers']
-                for i in range(len(offers)):
-                    check_section = 'S' if section == 'YCS' else 'C'
-                    if offers[i]['clipStatus'] == check_section:
+                for i, offer in enumerate(offers['offers']):
+                    coupon_type = offer['offerPgm']
+                    clip_counts.setdefault(coupon_type, 0)
+                    # Check if coupon or offer has been clipped already
+                    check_section = 'U' if section == 'YCS' else 'S'
+                    if offer['listStatus'] == check_section:
                         continue
                     if section == 'YCS':
-                        post_data = {'items': [
-                                     {'referenceId': offers[i]['offerId'],
-                                      'itemType':    offers[i]['offerPgm'],
-                                      'storeId':     store_id}]}
-                        post_json = json.dumps(post_data)
+                        post_data = {
+                            'items':
+                            [
+                                {
+                                    'referenceId': offer['offerId'],
+                                    'itemType':    offer['offerPgm'],
+                                    'storeId':     store_id
+                                }
+                            ]
+                        }
                     else:
-                        post_data = {'clips': [
-                                     {'offerId':  offers[i]['offerId'],
-                                      'offerPgm': offers[i]['offerPgm']}]}
-                        post_json = json.dumps(post_data)
-                    oid = offers[i]['offerId']
-                    clip_success = self._clip_coupon(oid, section, post_json)
+                        post_data = {
+                            'items': [
+                                {
+                                    'clipType': 'L',
+                                    'itemId': offer['offerId'],
+                                    'itemType': offer['offerPgm'],
+                                }
+                            ]
+                        }
+                    post_json = json.dumps(post_data)
+                    oid = offer['offerId']
+                    clip_success = self._clip_coupon(oid, section, coupon_type,
+                                                     post_json)
                     if clip_success:
                         self._debug('Clipped coupon '
-                                    '{} {}'.format(section, oid))
-                        clip_counts[section] += 1
+                                    '{} {}'.format(coupon_type, oid))
+                        clip_counts[coupon_type] += 1
                     else:
                         self._debug('Error clipping coupon '
-                                    '{} {}'.format(section, oid))
+                                    '{} {}'.format(coupon_type, oid))
                         error_count += 1
                         if error_count >= 5:
                             raise Exception('Reached error count threshold'
                                             '({:d})'.format(error_count))
                     if section != 'YCS':
-                        if (offers[i]['purchaseInd'] == 'B'):
-                            self._get_coupon_details(offers[i]['offerId'],
-                                                     offers[i]['offerTs'],
-                                                     section)
+                        if (offer['purchaseInd'] == 'B'):
+                            self._get_coupon_details(offer['offerId'],
+                                                     offer['offerTs'],
+                                                     section,
+                                                     coupon_type)
                     # Simulate longer pauses for "scrolling" and "paging"
                     if i > 0 and i % 12 == 0:
                         if i % 48 == 0:
