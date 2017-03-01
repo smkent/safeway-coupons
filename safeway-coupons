@@ -25,7 +25,7 @@ arg_parser.add_argument('-c', '--accounts-config', dest='accounts_config',
 arg_parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         help='Print debugging information on stdout')
 arg_parser.add_argument('-n', '--no-email', dest='email', action='store_false',
-                        help=('Print summary information on stdandard output '
+                        help=('Print summary information on standard output '
                               'instead of sending email'))
 options = arg_parser.parse_args()
 
