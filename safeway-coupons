@@ -27,6 +27,8 @@ arg_parser.add_argument('-d', '--debug', dest='debug', action='store_true',
 arg_parser.add_argument('-n', '--no-email', dest='email', action='store_false',
                         help=('Print summary information on standard output '
                               'instead of sending email'))
+arg_parser.add_argument('-Y', '--no-ycs', dest='ycs', action='store_false',
+                        help='Don\'t clip "Your Club Specials" (YCS) items')
 options = arg_parser.parse_args()
 
 email_sender = ''
@@ -233,19 +235,22 @@ class safeway():
         error_count = 0
 
         sections = ['CD']
-        try:
-            rsp = self._run_request('http://www.safeway.com/emlse/services/'
-                                    'customer/preference?'
-                                    'definitionId=preferredstoreid')
-            storeid_data = json.loads(rsp.content.decode('UTF-8'))
-            if len(storeid_data['definitions'][0]['values']) > 0:
-                store_id = storeid_data['definitions'][0]['values'][0]
-                sections.append('YCS')
-            else:
-                self._debug('No store ID returned for this account, '
-                            'skipping YCS offers.')
-        except Exception as e:
-            self._mail_append_exception(e, 'Exception getting preferred store')
+        store_id = None
+        if options.ycs:
+            try:
+                rsp = self._run_request('http://www.safeway.com/emlse/'
+                                        'services/customer/preference?'
+                                        'definitionId=preferredstoreid')
+                storeid_data = json.loads(rsp.content.decode('UTF-8'))
+                if len(storeid_data['definitions'][0]['values']) > 0:
+                    store_id = storeid_data['definitions'][0]['values'][0]
+                    sections.append('YCS')
+                else:
+                    self._debug('No store ID returned for this account, '
+                                'skipping YCS offers.')
+            except Exception as e:
+                self._mail_append_exception(e, ('Exception getting preferred '
+                                                'store'))
 
         try:
             for section in sections:
