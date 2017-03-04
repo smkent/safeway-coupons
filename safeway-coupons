@@ -269,8 +269,8 @@ class safeway():
                     coupon_type = offer['offerPgm']
                     clip_counts.setdefault(coupon_type, 0)
                     # Check if coupon or offer has been clipped already
-                    check_section = 'U' if section == 'YCS' else 'S'
-                    if offer['listStatus'] == check_section:
+                    check_section = 'S' if section == 'YCS' else 'C'
+                    if offer['clipStatus'] == check_section:
                         continue
                     if section == 'YCS':
                         post_data = {
