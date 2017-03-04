@@ -284,15 +284,15 @@ class safeway():
                             ]
                         }
                     else:
-                        post_data = {
-                            'items': [
+                        post_data = {'items': []}
+                        for clip_type in ['C', 'L']:
+                            post_data['items'].append(
                                 {
-                                    'clipType': 'L',
+                                    'clipType': clip_type,
                                     'itemId': offer['offerId'],
                                     'itemType': offer['offerPgm'],
                                 }
-                            ]
-                        }
+                            )
                     post_json = json.dumps(post_data)
                     oid = offer['offerId']
                     clip_success = self._clip_coupon(oid, section, coupon_type,
