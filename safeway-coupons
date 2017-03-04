@@ -278,7 +278,7 @@ class safeway():
                             [
                                 {
                                     'referenceId': offer['offerId'],
-                                    'itemType':    offer['offerPgm'],
+                                    'itemType':    coupon_type,
                                     'storeId':     store_id
                                 }
                             ]
@@ -290,7 +290,7 @@ class safeway():
                                 {
                                     'clipType': clip_type,
                                     'itemId': offer['offerId'],
-                                    'itemType': offer['offerPgm'],
+                                    'itemType': coupon_type,
                                 }
                             )
                     post_json = json.dumps(post_data)
