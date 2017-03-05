@@ -196,7 +196,7 @@ class safeway():
         title = '{} {} {}'.format(coupon_detail.get('titleDsc1', ''),
                                   coupon_detail.get('titleDsc2', ''),
                                   coupon_detail.get('prodDsc1', '')).strip()
-        if section == 'PD':
+        if coupon_type == 'PD':
             detail = '{} {}'.format(coupon_detail.get('priceTitle1', ''),
                                     coupon_detail.get('priceValue1', ''))
             detail = detail.strip()
