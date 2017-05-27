@@ -75,9 +75,8 @@ js_req_headers = {'Content-Type': 'application/json',
                   'SWY_API_KEY': 'emjou',
                   'SWY_BANNER': 'safeway',
                   'SWY_VERSION': '1.0',
-                  'User-Agent': ('Mozilla/5.0 (X11; Linux i686) '
-                                 'AppleWebKit/537.17 (KHTML, like Gecko) '
-                                 'Chrome/24.0.1312.56 Safari/537.17'),
+                  'User-Agent': ('Mozilla/5.0 (Windows NT 6.1; WOW64; '
+                                 'rv:53.0) Gecko/20100101 Firefox/53.0'),
                   'X-Requested-With': 'XMLHttpRequest',
                   'X-SWY_API_KEY': 'emjou',
                   'X-SWY_BANNER': 'safeway',
