@@ -70,7 +70,7 @@ referer_data = {
 
 js_req_headers = {'Content-Type': 'application/json',
                   'DNT': '1',
-                  'Host': 'www.safeway.com',
+                  'Host': 'nimbus.safeway.com',
                   'Origin': 'http://www.safeway.com',
                   'SWY_API_KEY': 'emjou',
                   'SWY_BANNER': 'safeway',
@@ -188,7 +188,7 @@ class safeway():
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
 
-        url = ('http://www.safeway.com/J4UProgram1/services/offer/'
+        url = ('https://nimbus.safeway.com/J4UProgram1/services/offer/'
                '{}/definition/cacheTs/{}').format(oid, ts)
         rsp = self._run_request(url, headers=headers)
         coupon_data = json.loads(rsp.content.decode('UTF-8'))
@@ -223,11 +223,7 @@ class safeway():
     def _clip_coupon(self, oid, section, coupon_type, post_json):
         headers = js_req_headers
         headers.update({'Referer': referer_data[section]})
-        if section == 'YCS':
-            url = ('http://www.safeway.com/emlss/services/'
-                   'integratedshoppinglist/list/add')
-        else:
-            url = 'http://www.safeway.com/Clipping1/services/clip/items'
+        url = 'https://nimbus.safeway.com/Clipping1/services/clip/items'
         rsp = self._run_request(url, post_json, headers)
         rsp.stream = False
         return (rsp.status_code == 200)
@@ -258,9 +254,9 @@ class safeway():
         try:
             for section in sections:
                 self._debug('Retrieving {} coupons'.format(section))
-                url = ('http://www.safeway.com/J4UProgram1/services/program/'
-                       '{}/offer/allocations?details=y&hierarchies=y&notes=y'
-                       ).format(section)
+                url = ('https://nimbus.safeway.com/J4UProgram1/services/'
+                       'program/{}/offer/allocations?details=y'
+                       '&hierarchies=y&notes=y').format(section)
                 if section == 'YCS':
                     url += ('&storeID={}&hierarchies=y'.format(store_id))
                 rsp = self._run_request(url)
@@ -280,9 +276,10 @@ class safeway():
                             'items':
                             [
                                 {
-                                    'referenceId': offer['offerId'],
-                                    'itemType':    coupon_type,
-                                    'storeId':     store_id
+                                    'clipType': 'L',
+                                    'itemId': offer['offerId'],
+                                    'itemType': coupon_type,
+                                    'storeId': store_id
                                 }
                             ]
                         }
