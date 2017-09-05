@@ -89,6 +89,7 @@ class safeway():
         self.auth = auth
         self.mail_message = []
         self.mail_subject = 'Safeway coupons'
+        self.session_headers = {}
 
         try:
             self._init_session()
@@ -161,23 +162,30 @@ class safeway():
         rsp.stream = False
 
         self._debug('Logging in as {}'.format(self.auth.get('username')))
-        login_data = json.dumps(
-            {'source': 'WEB',
-             'rememberMe': False,
-             'userId': self.auth.get('username'),
-             'password': self.auth.get('password')})
+        login_data = {
+            'source': 'WEB',
+            'rememberMe': False,
+            'userId': self.auth.get('username'),
+            'password': self.auth.get('password')
+        }
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json, text/javascript, */*; q=0.01'}
         rsp = self._run_request(('https://www.safeway.com/iaaw/service/'
                                  'authenticate'),
-                                login_data, headers)
+                                json_data=login_data, headers=headers)
         rsp_data = json.loads(rsp.content.decode('UTF-8'))
         if not rsp_data.get('token') or rsp_data.get('errors'):
             raise Exception('Authentication failure')
+        self.session_headers.update({
+            'X-swyConsumerDirectoryPro': rsp_data['token'],
+            'X-swyConsumerlbcookie': rsp_data['lbcookie']
+        })
+        self.r_s.headers.update(self.session_headers)
 
-    def _run_request(self, url, data=None, headers=None):
-        if data:
-            return self.r_s.post(url, headers=headers, data=data)
+    def _run_request(self, url, data=None, json_data=None, headers=None):
+        if data or json_data:
+            return self.r_s.post(url, headers=headers, data=data,
+                                 json=json_data)
         return self.r_s.get(url, headers=headers)
 
     def _get_coupon_details(self, oid, ts, section, coupon_type):
@@ -216,12 +224,21 @@ class safeway():
         # Don't blast the server with requests
         time.sleep(random.uniform(0.05, 0.15) * sleep_multiplier)
 
-    def _clip_coupon(self, oid, section, coupon_type, post_json):
+    def _clip_coupon(self, oid, section, coupon_type, post_data):
         headers = js_req_headers
-        headers.update({'Referer': referer_data[section]})
+        headers.update(self.session_headers)
+        headers.update({
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json;charset=UTF-8',
+            'Referer': referer_data[section]
+        })
         url = 'https://nimbus.safeway.com/Clipping1/services/clip/items'
-        rsp = self._run_request(url, post_json, headers)
+        rsp = self._run_request(url, json_data=post_data, headers=headers)
         rsp.stream = False
+        c = rsp.json()
+        if 'errorCd' in c:
+            raise Exception('Coupon clipping error code: {} ("{}")'
+                            .format(c['errorCd'], c['errorMsg']))
         return (rsp.status_code == 200)
 
     def _clip_coupons(self):
@@ -289,10 +306,9 @@ class safeway():
                                     'itemType': coupon_type,
                                 }
                             )
-                    post_json = json.dumps(post_data)
                     oid = offer['offerId']
                     clip_success = self._clip_coupon(oid, section, coupon_type,
-                                                     post_json)
+                                                     post_data)
                     if clip_success:
                         self._debug('Clipped coupon '
                                     '{} {}'.format(coupon_type, oid))
