@@ -100,9 +100,10 @@ class safeway():
             self._mail_append('Exception: {}'.format(str(e)))
             for line in traceback.format_exc().split(os.linesep):
                 self._mail_append(line)
-
-        if len(self.mail_message) > 0:
-            self._send_mail()
+            raise
+        finally:
+            if self.mail_message:
+                self._send_mail()
 
     def _mail_append(self, line):
         self.mail_message.append(line)
@@ -353,7 +354,19 @@ class safeway():
                 self._mail_append('Coupon clip errors: '
                                   '{:d}'.format(error_count))
 
-for index, user_data in enumerate(auth):
-    safeway(user_data)
-    if index < len(auth) - 1:
-        time.sleep(random.uniform(5.0, 10.0) * sleep_multiplier)
+def main():
+    exit_code = 0
+    for index, user_data in enumerate(auth):
+        try:
+            safeway(user_data)
+        except Exception as e:
+            # The safeway class already handles exceptions, but re-raises them
+            # so safeway-coupons can exit with an error code
+            exit_code = 1
+        if index < len(auth) - 1:
+            time.sleep(random.uniform(5.0, 10.0) * sleep_multiplier)
+    sys.exit(exit_code)
+
+
+if __name__ == '__main__':
+    main()
