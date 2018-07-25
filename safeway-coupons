@@ -39,7 +39,7 @@ if not os.path.isfile(options.accounts_config):
                     'exist.'.format(options.accounts_config))
 
 config = configparser.ConfigParser()
-config.readfp(itertools.chain(['[_no_section]'],
+config.read_file(itertools.chain(['[_no_section]'],
               open(options.accounts_config, 'r')))
 
 for section in config.sections():
