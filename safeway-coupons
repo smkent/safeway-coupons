@@ -40,7 +40,7 @@ if not os.path.isfile(options.accounts_config):
 
 config = configparser.ConfigParser()
 config.read_file(itertools.chain(['[_no_section]'],
-              open(options.accounts_config, 'r')))
+                                 open(options.accounts_config, 'r')))
 
 for section in config.sections():
     if section in ['_no_section', '_global']:
