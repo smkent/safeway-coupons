@@ -27,8 +27,6 @@ arg_parser.add_argument('-d', '--debug', dest='debug', action='store_true',
 arg_parser.add_argument('-n', '--no-email', dest='email', action='store_false',
                         help=('Print summary information on standard output '
                               'instead of sending email'))
-arg_parser.add_argument('-Y', '--no-ycs', dest='ycs', action='store_false',
-                        help='Don\'t clip "Your Club Specials" (YCS) items')
 options = arg_parser.parse_args()
 
 email_sender = ''
@@ -63,10 +61,7 @@ if len(auth) == 0:
 
 sleep_multiplier = 1.0
 
-referer_data = {
-    'CD': 'http://www.safeway.com/ShopStores/Justforu-Coupons.page',
-    'YCS': 'http://www.safeway.com/ShopStores/Justforu-YourClubSpecials.page',
-}
+referer_data = 'http://www.safeway.com/ShopStores/Justforu-Coupons.page'
 
 user_agent = ('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) '
               'Gecko/20100101 Firefox/64.0')
@@ -193,9 +188,9 @@ class safeway():
                                  json=json_data)
         return self.r_s.get(url, headers=headers)
 
-    def _get_coupon_details(self, oid, ts, section, coupon_type):
+    def _get_coupon_details(self, oid, ts, coupon_type):
         headers = js_req_headers
-        headers.update({'Referer': referer_data[section]})
+        headers.update({'Referer': referer_data})
 
         url = ('https://nimbus.safeway.com/J4UProgram1/services/offer/'
                '{}/definition/cacheTs/{}').format(oid, ts)
@@ -229,13 +224,13 @@ class safeway():
         # Don't blast the server with requests
         time.sleep(random.uniform(0.05, 0.15) * sleep_multiplier)
 
-    def _clip_coupon(self, oid, section, coupon_type, post_data):
+    def _clip_coupon(self, oid, coupon_type, post_data):
         headers = js_req_headers
         headers.update(self.session_headers)
         headers.update({
             'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/json;charset=UTF-8',
-            'Referer': referer_data[section]
+            'Referer': referer_data,
         })
         url = 'https://nimbus.safeway.com/Clipping1/services/clip/items'
         rsp = self._run_request(url, json_data=post_data, headers=headers)
@@ -251,99 +246,61 @@ class safeway():
         clip_count = 0
         error_count = 0
 
-        sections = ['CD']
-        store_id = None
-        if options.ycs:
-            try:
-                rsp = self._run_request('http://www.safeway.com/emlse/'
-                                        'services/customer/preference?'
-                                        'definitionId=preferredstoreid')
-                storeid_data = json.loads(rsp.content.decode('UTF-8'))
-                if len(storeid_data['definitions'][0]['values']) > 0:
-                    store_id = storeid_data['definitions'][0]['values'][0]
-                    sections.append('YCS')
-                else:
-                    self._debug('No store ID returned for this account, '
-                                'skipping YCS offers.')
-            except Exception as e:
-                self._mail_append_exception(e, ('Exception getting preferred '
-                                                'store'))
-
         try:
-            for section in sections:
-                self._debug('Retrieving {} coupons'.format(section))
-                url = ('https://nimbus.safeway.com/J4UProgram1/services/'
-                       'program/{}/offer/allocations?details=y'
-                       '&hierarchies=y&notes=y').format(section)
-                if section == 'YCS':
-                    url += ('&storeID={}&hierarchies=y'.format(store_id))
-                rsp = self._run_request(url)
-                data = rsp.content.decode('UTF-8')
-                offers = json.loads(data)
-                if 'offers' not in offers:
-                    raise Exception('Offers not found')
-                for i, offer in enumerate(offers['offers']):
-                    coupon_type = offer['offerPgm']
-                    clip_counts.setdefault(coupon_type, 0)
-                    # Check if coupon or offer has been clipped already
-                    check_section = 'S' if section == 'YCS' else 'C'
-                    if offer['clipStatus'] == check_section:
-                        continue
-                    if section == 'YCS':
-                        post_data = {
-                            'items':
-                            [
-                                {
-                                    'clipType': 'L',
-                                    'itemId': offer['offerId'],
-                                    'itemType': coupon_type,
-                                    'storeId': store_id
-                                }
-                            ]
+            self._debug('Retrieving coupons')
+            url = ('https://nimbus.safeway.com/J4UProgram1/services/'
+                   'program/CD/offer/allocations?details=y'
+                   '&hierarchies=y&notes=y')
+            rsp = self._run_request(url)
+            data = rsp.content.decode('UTF-8')
+            offers = json.loads(data)
+            if 'offers' not in offers:
+                raise Exception('Offers not found')
+            for i, offer in enumerate(offers['offers']):
+                coupon_type = offer['offerPgm']
+                clip_counts.setdefault(coupon_type, 0)
+                # Check if coupon or offer has been clipped already
+                if offer['clipStatus'] == 'C':
+                    continue
+                post_data = {'items': []}
+                for clip_type in ['C', 'L']:
+                    post_data['items'].append(
+                        {
+                            'clipType': clip_type,
+                            'itemId': offer['offerId'],
+                            'itemType': coupon_type,
                         }
+                    )
+                oid = offer['offerId']
+                clip_success = self._clip_coupon(oid, coupon_type, post_data)
+                if clip_success:
+                    self._debug('Clipped coupon '
+                                '{} {}'.format(coupon_type, oid))
+                    clip_counts[coupon_type] += 1
+                else:
+                    self._debug('Error clipping coupon '
+                                '{} {}'.format(coupon_type, oid))
+                    error_count += 1
+                    if error_count >= 5:
+                        raise Exception('Reached error count threshold'
+                                        '({:d})'.format(error_count))
+                if (offer['purchaseInd'] == 'B'):
+                    self._get_coupon_details(offer['offerId'],
+                                             offer['offerTs'],
+                                             coupon_type)
+                # Simulate longer pauses for "scrolling" and "paging"
+                if i > 0 and i % 12 == 0:
+                    if i % 48 == 0:
+                        w = random.uniform(15.0, 25.0)
                     else:
-                        post_data = {'items': []}
-                        for clip_type in ['C', 'L']:
-                            post_data['items'].append(
-                                {
-                                    'clipType': clip_type,
-                                    'itemId': offer['offerId'],
-                                    'itemType': coupon_type,
-                                }
-                            )
-                    oid = offer['offerId']
-                    clip_success = self._clip_coupon(oid, section, coupon_type,
-                                                     post_data)
-                    if clip_success:
-                        self._debug('Clipped coupon '
-                                    '{} {}'.format(coupon_type, oid))
-                        clip_counts[coupon_type] += 1
-                    else:
-                        self._debug('Error clipping coupon '
-                                    '{} {}'.format(coupon_type, oid))
-                        error_count += 1
-                        if error_count >= 5:
-                            raise Exception('Reached error count threshold'
-                                            '({:d})'.format(error_count))
-                    if section != 'YCS':
-                        if (offer['purchaseInd'] == 'B'):
-                            self._get_coupon_details(offer['offerId'],
-                                                     offer['offerTs'],
-                                                     section,
-                                                     coupon_type)
-                    # Simulate longer pauses for "scrolling" and "paging"
-                    if i > 0 and i % 12 == 0:
-                        if i % 48 == 0:
-                            w = random.uniform(15.0, 25.0)
-                        else:
-                            w = random.uniform(4.0, 8.0)
-                        w *= sleep_multiplier
-                        self._debug('Waiting {} seconds'.format(str(w)))
-                        time.sleep(w)
-                    else:
-                        time.sleep(random.uniform(0.3, 0.8) * sleep_multiplier)
-                        pass
-                    clip_count += 1
+                        w = random.uniform(4.0, 8.0)
+                    w *= sleep_multiplier
+                    self._debug('Waiting {} seconds'.format(str(w)))
+                    time.sleep(w)
+                else:
+                    time.sleep(random.uniform(0.3, 0.8) * sleep_multiplier)
+                    pass
+                clip_count += 1
         except Exception as e:
             self._mail_append_exception(e, 'Exception clipping coupons')
 
