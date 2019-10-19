@@ -211,7 +211,7 @@ class safeway():
         else:
             detail = '{}'.format(coupon_detail.get('savingsValue', '')).strip()
         try:
-            end_date_regex = '\\\/Date\(([0-9]{10})[0-9]{3}\)\\\/'
+            end_date_regex = '\\/Date\\(([0-9]{10})[0-9]{3}\\)\\/'
             expire_ts_unix = int(re.match(end_date_regex,
                                           coupon_data['offerEndDt']).group(1))
             expires = (datetime.datetime.fromtimestamp(expire_ts_unix)
@@ -354,12 +354,13 @@ class safeway():
                 self._mail_append('Coupon clip errors: '
                                   '{:d}'.format(error_count))
 
+
 def main():
     exit_code = 0
     for index, user_data in enumerate(auth):
         try:
             safeway(user_data)
-        except Exception as e:
+        except Exception:
             # The safeway class already handles exceptions, but re-raises them
             # so safeway-coupons can exit with an error code
             exit_code = 1
