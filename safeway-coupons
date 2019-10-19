@@ -68,8 +68,8 @@ referer_data = {
     'YCS': 'http://www.safeway.com/ShopStores/Justforu-YourClubSpecials.page',
 }
 
-user_agent = ('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) '
-              'Gecko/20100101 Firefox/53.0')
+user_agent = ('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) '
+              'Gecko/20100101 Firefox/64.0')
 js_req_headers = {'Content-Type': 'application/json',
                   'DNT': '1',
                   'Host': 'nimbus.safeway.com',
