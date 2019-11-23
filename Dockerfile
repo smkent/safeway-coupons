@@ -5,3 +5,4 @@ ADD requirements.txt /tmp/requirements.txt
 RUN chmod +x /app/safeway-coupons && \
 	pip install -r /tmp/requirements.txt && \
 	rm /tmp/requirements.txt
+CMD ["/app/safeway-coupons", "-c", "/app/config.ini"]

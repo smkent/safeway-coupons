@@ -1,6 +1,9 @@
 pipeline {
     agent any
     triggers { cron('H 6 * * *') }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '30'))
+    }
     stages {
         stage('Build') {
             steps {
