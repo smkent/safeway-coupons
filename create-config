@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+
+import configparser
+import os
+
+# creates config.ini from environment variables
+#
+# export EMAIL_SENDER=sender@example.com
+# export SAFEWAY_ACCOUNT=myaccount@example.com
+# export SAFEWAY_PASSWORD=secret
+# export NOTIFY_EMAIL=notify@example.com
+
+config = configparser.ConfigParser()
+
+if os.environ.get("EMAIL_SENDER") is not None:
+    config['_global'] = {}
+    config['_global']['email_sender'] = os.environ["EMAIL_SENDER"]
+
+if os.environ.get("SAFEWAY_ACCOUNT") is not None:
+  safeway_account = os.environ["SAFEWAY_ACCOUNT"]
+  config[safeway_account] = {}
+  config[safeway_account]['password'] = os.environ["SAFEWAY_PASSWORD"]
+
+  if os.environ.get("NOTIFY_EMAIL") is not None:
+    config[safeway_account]['notify_email'] = os.environ["NOTIFY_EMAIL"]
+
+
+with open('config.ini', 'w') as configfile:
+  config.write(configfile)
