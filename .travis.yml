@@ -1,0 +1,17 @@
+language: python
+install:
+  - pip install -r requirements.txt
+script:
+  - ./create-config
+  - ./safeway-coupons -c config.ini
+
+jobs:
+  include:
+    - stage: "run safeway-coupons"
+      env:
+        - SAFEWAY_ACCOUNT=${USER1}
+        - SAFEWAY_PASSWORD=${PASS1}
+    -
+      env:
+        - SAFEWAY_ACCOUNT=${USER2}
+        - SAFEWAY_PASSWORD=${PASS2}
