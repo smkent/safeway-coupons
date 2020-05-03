@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import argparse
-import configparser
 import datetime
 import email.mime.text
 import itertools
@@ -16,45 +14,20 @@ import traceback
 
 # Parse options
 description = 'Automatically add online coupons to your Safeway card'
-arg_parser = argparse.ArgumentParser(description=description)
-arg_parser.add_argument('-c', '--accounts-config', dest='accounts_config',
-                        metavar='file', required=True,
-                        help=('Path to configuration file containing Safeway '
-                              'accounts information'))
-arg_parser.add_argument('-d', '--debug', dest='debug', action='count',
-                        default=0,
-                        help='Print debugging information on stdout. Specify '
-                             'twice to increase verbosity.')
-arg_parser.add_argument('-n', '--no-email', dest='email', action='store_false',
-                        help=('Print summary information on standard output '
-                              'instead of sending email'))
-arg_parser.add_argument('-S', '--no-sleep', dest='sleep_skip', action='count',
-                        default=0,
-                        help=('Don\'t sleep between long requests. Specify '
-                              'twice to never sleep.'))
-options = arg_parser.parse_args()
+options = {
+    'debug': True,
+    'email': False,
+    'sleep_skip': 0
+}
 
 email_sender = ''
 auth = []
 
-if not os.path.isfile(options.accounts_config):
-    raise Exception('Accounts configuration file {} does not '
-                    'exist.'.format(options.accounts_config))
-
-config = configparser.ConfigParser()
-config.read_file(itertools.chain(['[_no_section]'],
-                                 open(options.accounts_config, 'r')))
-
-for section in config.sections():
-    if section in ['_no_section', '_global']:
-        if config.has_option(section, 'email_sender'):
-            email_sender = config.get(section, 'email_sender')
-    else:
-        account = {'username': section,
-                   'password': config.get(section, 'password')}
-        if config.has_option(section, 'notify'):
-            account.update({'notify': config.get(section, 'notify')})
-        auth.append(account)
+account = {
+    'username': os.environ["username"],
+    'password': os.environ["password"]
+}
+auth.append(account)
 
 if not email_sender:
     if options.email:
@@ -329,7 +302,7 @@ class safeway():
                                   '{:d}'.format(error_count))
 
 
-def main():
+def run():
     exit_code = 0
     for index, user_data in enumerate(auth):
         try:
@@ -341,7 +314,3 @@ def main():
         if index < len(auth) - 1:
             time.sleep(random.uniform(5.0, 10.0) * sleep_multiplier)
     sys.exit(exit_code)
-
-
-if __name__ == '__main__':
-    main()
