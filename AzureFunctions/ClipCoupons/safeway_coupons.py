@@ -12,15 +12,13 @@ import sys
 import time
 import traceback
 
-# Parse options
 description = 'Automatically add online coupons to your Safeway card'
 options = {
     'debug': True,
     'email': False,
+    'email_sender': '',
     'sleep_skip': 0
 }
-
-email_sender = ''
 auth = []
 
 account = {
@@ -29,11 +27,11 @@ account = {
 }
 auth.append(account)
 
-if not email_sender:
-    if options.email:
+if not options['email_sender']:
+    if options['email']:
         print('Warning: No email_sender defined. Summary information will be '
               'printed on standard output instead.', file=sys.stderr)
-        options.email = False
+        options['email'] = False
 if len(auth) == 0:
     raise Exception('No valid accounts defined.')
 
@@ -88,7 +86,7 @@ class safeway():
 
     def _send_mail(self):
         email_to = self.auth.get('notify') or self.auth.get('username')
-        email_from = email_sender
+        email_from = options.get('email_sender')
 
         if self.mail_message[0].startswith('Coupon: '):
             self.mail_message.insert(0, 'Clipped coupons for items you buy:')
@@ -97,7 +95,7 @@ class safeway():
         self.mail_message.insert(0, account_str)
         mail_message_str = os.linesep.join(self.mail_message)
 
-        if not options.email:
+        if not options['email']:
             print(mail_message_str)
             return
 
@@ -112,7 +110,7 @@ class safeway():
         if self.mail_subject:
             email_data['Subject'] = self.mail_subject
 
-        if options.debug:
+        if options['debug']:
             self._debug('Skip sending email due to -d/--debug')
             return
 
@@ -121,7 +119,7 @@ class safeway():
         p.communicate(bytes(email_data.as_string(), 'UTF-8'))
 
     def _debug(self, message, level=1):
-        if options.debug >= level:
+        if options['debug'] >= level:
             print(message)
 
     def _init_session(self):
@@ -273,7 +271,7 @@ class safeway():
                         self._save_coupon_details(offer, coupon_type)
                     # Simulate longer pauses for "scrolling" and "paging"
                     if i > 0 and i % 12 == 0:
-                        if options.sleep_skip < 1:
+                        if options['sleep_skip'] < 1:
                             if i % 48 == 0:
                                 w = random.uniform(15.0, 25.0)
                             else:
@@ -282,7 +280,7 @@ class safeway():
                             self._debug('Waiting {} seconds'.format(str(w)))
                             time.sleep(w)
                     else:
-                        if options.sleep_skip < 2:
+                        if options['sleep_skip'] < 2:
                             time.sleep(random.uniform(0.3, 0.8) *
                                        sleep_multiplier)
                         pass
