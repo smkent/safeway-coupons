@@ -5,8 +5,7 @@
       "name": "ClipCouponsTimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "0 2 8 * * *",
-      "runOnStartup": true
+      "schedule": "0 2 8 * * *"
     }
   ]
 }
