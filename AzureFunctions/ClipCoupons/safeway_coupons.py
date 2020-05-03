@@ -24,8 +24,8 @@ email_sender = ''
 auth = []
 
 account = {
-    'username': os.environ["username"],
-    'password': os.environ["password"]
+    'username': os.environ["safeway_username"],
+    'password': os.environ["safeway_password"]
 }
 auth.append(account)
 
