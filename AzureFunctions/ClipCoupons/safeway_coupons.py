@@ -299,9 +299,7 @@ class safeway():
                 self._mail_append('Coupon clip errors: '
                                   '{:d}'.format(error_count))
 
-
 def run():
-    exit_code = 0
     for index, user_data in enumerate(auth):
         try:
             safeway(user_data)
@@ -311,4 +309,3 @@ def run():
             exit_code = 1
         if index < len(auth) - 1:
             time.sleep(random.uniform(5.0, 10.0) * sleep_multiplier)
-    sys.exit(exit_code)
