@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import traceback
+import urllib
 
 # Parse options
 description = 'Automatically add online coupons to your Safeway card'
@@ -72,9 +73,7 @@ user_agent = ('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) '
               'Gecko/20100101 Firefox/64.0')
 js_req_headers = {
     'Content-Type': 'application/json',
-    'DNT': '1',
     'Host': 'www.safeway.com',
-    'Origin': 'http://www.safeway.com',
     'User-Agent': user_agent,
     'X-Requested-With': 'XMLHttpRequest',
     'X-SWY_API_KEY': 'emjou',
@@ -168,26 +167,39 @@ class safeway():
 
         self._debug('Logging in as {}'.format(self.auth.get('username')))
         login_data = {
-            'source': 'WEB',
-            'rememberMe': False,
-            'userId': self.auth.get('username'),
+            'username': self.auth.get('username'),
             'password': self.auth.get('password')
         }
-        headers = {'Content-type': 'application/json',
-                   'Accept': 'application/json, text/javascript, */*; q=0.01'}
-        rsp = self._run_request(('https://www.safeway.com/iaaw/service/'
-                                 'authenticate'),
+        headers = {'Content-type': 'application/json'}
+        rsp = self._run_request('https://albertsons.okta.com/api/v1/authn',
                                 json_data=login_data, headers=headers)
         rsp_data = json.loads(rsp.content.decode('UTF-8'))
-        if not rsp_data.get('token') or rsp_data.get('errors'):
+        if not rsp_data.get('status') == 'SUCCESS':
             raise Exception('Authentication failure')
+        session_token = rsp_data.get('sessionToken')
+        
+        url = ('https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize'
+            '?client_id=0oap6ku01XJqIRdl42p6'
+            '&redirect_uri=https%3A%2F%2Fwww.safeway.com%2Fbin%2Fsafeway%2Funified%2Fsso%2Fauthorize'
+            '&response_type=code'
+            '&response_mode=query'
+            '&state=devilish-stranger-orono-brielle'
+            '&nonce=duckyIS24eFC8A2NZWOJBqqRrZDWOqDdLPTzMYNcej5U5l9dEONhtRQhnFgSOVEp'
+            '&prompt=none'
+            '&sessionToken={}'
+            '&scope=openid%20profile%20email%20offline_access%20used_credentials'
+            .format(session_token))
+        rsp = self._run_request(url)
+        session = json.loads(urllib.parse.unquote(self.r_s.cookies['SWY_SHARED_SESSION']))
+        session_info = json.loads(urllib.parse.unquote(self.r_s.cookies['SWY_SHARED_SESSION_INFO']))
+        
         try:
-            self.store_id = int(rsp_data['userAccount']['storeID'])
+            self.store_id = int(session_info['info']['J4U']['storeId'])
         except KeyError:
             pass
+        access_token = session['accessToken']
         self.session_headers.update({
-            'X-swyConsumerDirectoryPro': rsp_data['token'],
-            'X-swyConsumerlbcookie': rsp_data['lbcookie']
+            'swy_sso_token': access_token
         })
         self.r_s.headers.update(self.session_headers)
 
@@ -260,8 +272,6 @@ class safeway():
                 raise Exception('Error retrieving offers: {}'.format(offers))
             for offer_type in offers.keys():
                 for i, offer in enumerate(offers[offer_type]):
-                    # if int(offer['offerId']) not in (730903573, 1323722231):
-                    #     continue
                     self._debug('Offer data for offer ID {}: {}'
                                 .format(offer['offerId'], offer),
                                 level=2)
