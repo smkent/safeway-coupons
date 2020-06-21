@@ -259,11 +259,10 @@ class safeway():
         try:
             self._debug('Retrieving coupons')
             url = ('https://www.safeway.com'
-                   '/abs/pub/web/j4u/api/offers/gallery'
-                   '?storeId={}&offerPgm=PD-CC&rand={}'
+                   '/abs/pub/web/j4u/api/ecomgallery'
+                   '?offerPgm=PD-CC&storeId={}&transformOfferbyUpc=n'
                    .format(
-                       self.store_id,
-                       random.randint(100000, 999999)
+                       self.store_id
                    ))
             rsp = self._run_request(url, headers=js_req_headers)
             data = rsp.content.decode('UTF-8')
