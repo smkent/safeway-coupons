@@ -9,7 +9,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'safeway-coupons-config', variable: 'SAFEWAY_COUPONS_CONFIG')]) {
                     sh '''
-                    docker build -t safeway-coupons .
+                    docker build --no-cache -t safeway-coupons .
 
                     docker run --rm -t -v "${SAFEWAY_COUPONS_CONFIG}":"/app/config.ini" safeway-coupons /app/safeway-coupons -c /app/config.ini
                     '''
