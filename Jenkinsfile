@@ -11,7 +11,7 @@ pipeline {
                     sh '''
                     docker build --no-cache -t safeway-coupons .
 
-                    docker run --rm -t -v "${SAFEWAY_COUPONS_CONFIG}":"/app/config.ini" safeway-coupons /app/safeway-coupons -c /app/config.ini
+                    docker run --rm -t -v "${SAFEWAY_COUPONS_CONFIG}":"/app/config.ini" safeway-coupons python3 /app/safeway-coupons -c /app/config.ini
                     '''
                 }
             }
