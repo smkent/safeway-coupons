@@ -177,22 +177,22 @@ class safeway():
         if not rsp_data.get('status') == 'SUCCESS':
             raise Exception('Authentication failure')
         session_token = rsp_data.get('sessionToken')
-        
+
         url = ('https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize'
-            '?client_id=0oap6ku01XJqIRdl42p6'
-            '&redirect_uri=https%3A%2F%2Fwww.safeway.com%2Fbin%2Fsafeway%2Funified%2Fsso%2Fauthorize'
-            '&response_type=code'
-            '&response_mode=query'
-            '&state=devilish-stranger-orono-brielle'
-            '&nonce=duckyIS24eFC8A2NZWOJBqqRrZDWOqDdLPTzMYNcej5U5l9dEONhtRQhnFgSOVEp'
-            '&prompt=none'
-            '&sessionToken={}'
-            '&scope=openid%20profile%20email%20offline_access%20used_credentials'
-            .format(session_token))
+               '?client_id=0oap6ku01XJqIRdl42p6'
+               '&redirect_uri=https%3A%2F%2Fwww.safeway.com%2Fbin%2Fsafeway%2Funified%2Fsso%2Fauthorize'
+               '&response_type=code'
+               '&response_mode=query'
+               '&state=devilish-stranger-orono-brielle'
+               '&nonce=duckyIS24eFC8A2NZWOJBqqRrZDWOqDdLPTzMYNcej5U5l9dEONhtRQhnFgSOVEp'
+               '&prompt=none'
+               '&sessionToken={}'
+               '&scope=openid%20profile%20email%20offline_access%20used_credentials'
+               .format(session_token))
         rsp = self._run_request(url)
         session = json.loads(urllib.parse.unquote(self.r_s.cookies['SWY_SHARED_SESSION']))
         session_info = json.loads(urllib.parse.unquote(self.r_s.cookies['SWY_SHARED_SESSION_INFO']))
-        
+
         try:
             self.store_id = int(session_info['info']['J4U']['storeId'])
         except KeyError:
