@@ -29,4 +29,4 @@ jobs:
 #        - SAFEWAY_PASSWORD=${PASS5}
 
 after_success:
-  - curl -s -X POST -H 'Content-type: application/json' --data '{"text":"${USER1}"' ${SLACK_URL}
+  - curl -s -X POST -H 'Content-type: application/json' --data '{"text":"${SAFEWAY_ACCOUNT}"' ${SLACK_URL}
