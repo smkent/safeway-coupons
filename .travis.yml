@@ -1,6 +1,9 @@
 language: python
+addons:
+  apt:
+    packages:
+    - curl
 install:
-  - sudo apt-get update && sudo apt-get install curl
   - pip install -r requirements.txt
 script:
   - ./create-config
@@ -30,4 +33,5 @@ jobs:
 #        - SAFEWAY_PASSWORD=${PASS5}
 
 after_success:
+  - which curl
   - curl -s -X POST -H 'Content-type: application/json' --data '{"text":"${SAFEWAY_ACCOUNT}"' ${SLACK_URL}
