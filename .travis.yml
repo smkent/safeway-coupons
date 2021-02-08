@@ -34,4 +34,4 @@ jobs:
 
 after_success:
   - which curl
-  - curl -s -XPOST --data '{"text":"${SAFEWAY_ACCOUNT}"}' ${SLACK_URL}
+  - curl -s -XPOST --data {\"text\":\"${SAFEWAY_ACCOUNT}\"} ${SLACK_URL}
