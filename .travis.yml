@@ -27,3 +27,6 @@ jobs:
 #      env:
 #        - SAFEWAY_ACCOUNT=${USER5}
 #        - SAFEWAY_PASSWORD=${PASS5}
+
+after_success:
+  - curl -s -X POST -H 'Content-type: application/json' --data '{"text":"${USER1}"' ${SLACK_URL}
