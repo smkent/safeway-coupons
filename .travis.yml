@@ -11,19 +11,19 @@ jobs:
       env:
         - SAFEWAY_ACCOUNT=${USER1}
         - SAFEWAY_PASSWORD=${PASS1}
-    -
-      env:
-        - SAFEWAY_ACCOUNT=${USER2}
-        - SAFEWAY_PASSWORD=${PASS2}
-    -
-      env:
-        - SAFEWAY_ACCOUNT=${USER3}
-        - SAFEWAY_PASSWORD=${PASS3}
-    -
-      env:
-        - SAFEWAY_ACCOUNT=${USER4}
-        - SAFEWAY_PASSWORD=${PASS4}
-    -
-      env:
-        - SAFEWAY_ACCOUNT=${USER5}
-        - SAFEWAY_PASSWORD=${PASS5}
+#    -
+#      env:
+#        - SAFEWAY_ACCOUNT=${USER2}
+#        - SAFEWAY_PASSWORD=${PASS2}
+#    -
+#      env:
+#        - SAFEWAY_ACCOUNT=${USER3}
+#        - SAFEWAY_PASSWORD=${PASS3}
+#    -
+#      env:
+#        - SAFEWAY_ACCOUNT=${USER4}
+#        - SAFEWAY_PASSWORD=${PASS4}
+#    -
+#      env:
+#        - SAFEWAY_ACCOUNT=${USER5}
+#        - SAFEWAY_PASSWORD=${PASS5}
