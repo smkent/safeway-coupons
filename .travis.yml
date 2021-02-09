@@ -15,10 +15,10 @@ jobs:
       env:
         - SAFEWAY_ACCOUNT=${USER1}
         - SAFEWAY_PASSWORD=${PASS1}
-#    -
-#      env:
-#        - SAFEWAY_ACCOUNT=${USER2}
-#        - SAFEWAY_PASSWORD=${PASS2}
+    -
+      env:
+        - SAFEWAY_ACCOUNT=${USER2}
+        - SAFEWAY_PASSWORD=${PASS2}
 #    -
 #      env:
 #        - SAFEWAY_ACCOUNT=${USER3}
