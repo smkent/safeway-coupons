@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+docker build -t safeway-coupons -f Dockerfile .
+docker run -e SAFEWAY_ACCOUNT=$SAFEWAY_ACCOUNT -e SAFEWAY_PASSWORD=$SAFEWAY_PASSWORD safeway-coupons
