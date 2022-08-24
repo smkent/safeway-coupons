@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from .safeway import v2
+from .app import v2
 
 sleep_multiplier = 1.0
 
