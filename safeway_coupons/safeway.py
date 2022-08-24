@@ -1,12 +1,22 @@
 import os
 
-from .api_client import SafewayAPIClient
+from .api_client import SafewayClient
+from .models import OfferStatus
 
 
 def v2() -> None:
     user = os.environ["USER"]
     password = os.environ["PASS"]
-    print("done calling login")
-    print("done calling get_coupons")
-    api = SafewayAPIClient(user, password)
-    api.get_coupons()
+    api = SafewayClient(user, password)
+    offers = api.get_offers()
+    i = 0
+    for offer in offers:
+        if offer.status == OfferStatus.Clipped:
+            print(f"Already clipped {offer}")
+            continue
+        print(offer)
+        api.clip(offer)
+        break
+        i += 1
+        if i >= 5:
+            break

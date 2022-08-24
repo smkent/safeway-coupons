@@ -24,15 +24,15 @@ class BaseSession:
     )
 
     @property
-    def rs(self) -> requests.Session:
-        if not hasattr(self, "_rs"):
+    def requests(self) -> requests.Session:
+        if not hasattr(self, "_requests"):
             session = requests.Session()
             session.mount(
                 "https://", requests.adapters.HTTPAdapter(pool_maxsize=1)
             )
             session.headers.update({"DNT": "1", "User-Agent": self.USER_AGENT})
-            self._rs = session
-        return self._rs
+            self._requests = session
+        return self._requests
 
 
 class LoginSession(BaseSession):
@@ -43,7 +43,7 @@ class LoginSession(BaseSession):
 
     def _login(self, username: str, password: str) -> None:
         # Log in
-        response = self.rs.post(
+        response = self.requests.post(
             LOGIN_URL, json={"username": username, "password": password}
         )
         response.raise_for_status()
@@ -66,13 +66,15 @@ class LoginSession(BaseSession):
             "scope": "openid profile email offline_access used_credentials",
         }
         url = f"{AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
-        response = self.rs.get(url)
+        response = self.requests.get(url)
         response.raise_for_status()
         session = json.loads(
-            urllib.parse.unquote(self.rs.cookies["SWY_SHARED_SESSION"])
+            urllib.parse.unquote(self.requests.cookies["SWY_SHARED_SESSION"])
         )
         self.access_token = session["accessToken"]
         session_info = json.loads(
-            urllib.parse.unquote(self.rs.cookies["SWY_SHARED_SESSION_INFO"])
+            urllib.parse.unquote(
+                self.requests.cookies["SWY_SHARED_SESSION_INFO"]
+            )
         )
         self.store_id = session_info["info"]["J4U"]["storeId"]
