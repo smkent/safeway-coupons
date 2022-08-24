@@ -2,14 +2,15 @@ import json
 import random
 from typing import List
 
+from .account import Account
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferList
 from .session import BaseSession, LoginSession
 
 
 class SafewayClient(BaseSession):
-    def __init__(self, username: str, password: str) -> None:
-        self.session = LoginSession(username, password)
+    def __init__(self, account: Account) -> None:
+        self.session = LoginSession(account)
         self.requests.headers.update(
             {
                 "Authorization": f"Bearer {self.session.access_token}",

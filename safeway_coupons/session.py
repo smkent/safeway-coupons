@@ -4,6 +4,7 @@ from typing import Optional
 
 import requests
 
+from .account import Account
 from .utils import make_nonce, make_token
 
 LOGIN_URL = "https://albertsons.okta.com/api/v1/authn"
@@ -36,15 +37,16 @@ class BaseSession:
 
 
 class LoginSession(BaseSession):
-    def __init__(self, username: str, password: str) -> None:
+    def __init__(self, account: Account) -> None:
         self.access_token: Optional[str] = None
         self.store_id: Optional[str] = None
-        self._login(username, password)
+        self._login(account)
 
-    def _login(self, username: str, password: str) -> None:
+    def _login(self, account: Account) -> None:
         # Log in
         response = self.requests.post(
-            LOGIN_URL, json={"username": username, "password": password}
+            LOGIN_URL,
+            json={"username": account.username, "password": account.password},
         )
         response.raise_for_status()
         login_data = response.json()
