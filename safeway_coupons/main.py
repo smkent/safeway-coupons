@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from .safeway import v2
+
 sleep_multiplier = 1.0
 
 referer_data = "http://www.safeway.com/ShopStores/Justforu-Coupons.page"
@@ -123,7 +125,7 @@ class safeway:
         rsp = self._run_request("https://www.safeway.com")
 
         rsp = self._run_request(
-            "https://www.safeway.com/ShopStores/" "OSSO-Login.page"
+            "https://www.safeway.com/ShopStores/OSSO-Login.page"
         )
 
         self._debug("Logging in as {}".format(self.auth.get("username")))
@@ -434,6 +436,10 @@ def main() -> None:
         if index < len(auth) - 1:
             time.sleep(random.uniform(5.0, 10.0) * sleep_multiplier)
     sys.exit(exit_code)
+
+
+def main_v2() -> None:
+    v2()
 
 
 if __name__ == "__main__":
