@@ -1,11 +1,11 @@
-# safeway-coupons: Automatic clipper for Safeway "Just for U" coupons
+# Automatic clipper for Safeway "Just for U" coupons
 
 [![Build](https://img.shields.io/github/checks-status/smkent/safeway-coupons/main?label=build)][gh-actions]
 [![codecov](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)][codecov]
 [![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)][repo]
 
-safeway-coupons is a script that will log in to an account on safeway.com, and
-attempt to select all of the "Just for U" electronic coupons on the site so
+**safeway-coupons** is a script that will log in to an account on safeway.com,
+and attempt to select all of the "Just for U" electronic coupons on the site so
 they don't have to each be clicked manually.
 
 For best results, run this program once a day or so with a cron daemon.
