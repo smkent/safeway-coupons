@@ -1,0 +1,20 @@
+{
+  "template": "https://github.com/smkent/cookie-python",
+  "commit": "5daa106462f0db1974a6b71f9eda3541482914c1",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "safeway-coupons",
+      "project_slug": "safeway_coupons",
+      "project_description": "Automatic coupon clipper for Safeway's online \"Just for U\" coupons",
+      "project_license": "GPL-3.0-or-later",
+      "enable_coverage": "yes",
+      "enable_pypi_publish": "no",
+      "author_name": "Stephen Kent",
+      "author_email": "smkent@smkent.net",
+      "github_user": "smkent",
+      "_template": "https://github.com/smkent/cookie-python"
+    }
+  },
+  "directory": null
+}

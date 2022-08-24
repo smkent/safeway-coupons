@@ -1,14 +1,23 @@
-# About
+# Automatic Safeway coupon clipper
 
-safeway-coupons is a script that will log in to an account on safeway.com, and
-attempt to select all of the "Just for U" electronic coupons on the site so
+[![Build](https://img.shields.io/github/checks-status/smkent/safeway-coupons/main?label=build)][gh-actions]
+[![codecov](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)][codecov]
+[![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)][repo]
+
+**safeway-coupons** is a script that will log in to an account on safeway.com,
+and attempt to select all of the "Just for U" electronic coupons on the site so
 they don't have to each be clicked manually.
 
 For best results, run this program once a day or so with a cron daemon.
 
+## Prerequisites
+
+* [Poetry][poetry]: `pip install poetry`
+* sendmail (optional)
+
 ## Usage
 
-**Prerequisites:** Python 3 and sendmail (optional).
+### Configuration
 
 Create a configuration file with an email sender address and your Safeway account
 login information. For example:
@@ -27,19 +36,33 @@ address specified by `notify`, if present.
 
 Specify the path to this config file using `-c` or `--accounts-config`.
 
-## License
+### Invocation
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+First, install the project dependencies with [Poetry][poetry]:
+```sh
+poetry install
+```
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+Execute `safeway-coupons` with Poetry:
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+```sh
+poetry run safeway-coupons -c path/to/accounts_config_file
+```
 
-See [`LICENSE`](/LICENSE) for the full license text.
+## Development
+
+* Setup: `poetry install`
+* Run all tests: `poetry run poe test`
+* Fix linting errors: `poetry run poe lint`
+
+---
+
+Created from [smkent/cookie-python][cookie-python] using
+[cookiecutter][cookiecutter]
+
+[codecov]: https://codecov.io/gh/smkent/safeway-coupons
+[cookie-python]: https://github.com/smkent/cookie-python
+[cookiecutter]: https://github.com/cookiecutter/cookiecutter
+[gh-actions]: https://github.com/smkent/safeway-coupons/actions?query=branch%3Amain
+[poetry]: https://python-poetry.org/docs/#installation
+[repo]: https://github.com/smkent/safeway-coupons

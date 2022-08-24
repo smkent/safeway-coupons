@@ -1,1 +1,10 @@
-*.swp
+*.egg-info/
+*.pyc
+.coverage
+.pytest_cache/
+.tox/
+.venv/
+bin/
+dist/
+tests/pytest.xml
+coverage.xml
