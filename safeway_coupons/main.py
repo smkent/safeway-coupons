@@ -13,6 +13,7 @@ import sys
 import time
 import traceback
 import urllib
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -118,11 +119,11 @@ js_req_headers = {
 
 
 class safeway:
-    def __init__(self, auth):
+    def __init__(self, auth: Dict[str, str]) -> None:
         self.auth = auth
-        self.mail_message = []
+        self.mail_message: List[str] = []
         self.mail_subject = "Safeway coupons"
-        self.session_headers = {}
+        self.session_headers: Dict[str, str] = {}
         self.store_id = 1
 
         try:
@@ -139,15 +140,15 @@ class safeway:
             if self.mail_message:
                 self._send_mail()
 
-    def _mail_append(self, line):
+    def _mail_append(self, line: str) -> None:
         self.mail_message.append(line)
 
-    def _mail_append_exception(self, e, description):
+    def _mail_append_exception(self, e: Exception, description: str) -> None:
         self._mail_append("{}: {}".format(description, str(e)))
         for line in traceback.format_exc().split(os.linesep):
             self._mail_append(line)
 
-    def _send_mail(self):
+    def _send_mail(self) -> None:
         email_to = self.auth.get("notify") or self.auth.get("username")
         email_from = email_sender
 
@@ -183,24 +184,22 @@ class safeway:
         )
         p.communicate(bytes(email_data.as_string(), "UTF-8"))
 
-    def _debug(self, message, level=1):
+    def _debug(self, message: str, level: int = 1) -> None:
         if options.debug >= level:
             print(message)
 
-    def _init_session(self):
+    def _init_session(self) -> None:
         self.r_s = requests.Session()
         self.r_a = requests.adapters.HTTPAdapter(pool_maxsize=1)
         self.r_s.mount("https://", self.r_a)
         self.r_s.headers.update({"DNT": "1", "User-Agent": user_agent})
 
-    def _login(self):
+    def _login(self) -> None:
         rsp = self._run_request("https://www.safeway.com")
-        rsp.stream = False
 
         rsp = self._run_request(
             "https://www.safeway.com/ShopStores/" "OSSO-Login.page"
         )
-        rsp.stream = False
 
         self._debug("Logging in as {}".format(self.auth.get("username")))
         login_data = {
@@ -256,14 +255,22 @@ class safeway:
         self.session_headers.update({"swy_sso_token": access_token})
         self.r_s.headers.update(self.session_headers)
 
-    def _run_request(self, url, data=None, json_data=None, headers=None):
+    def _run_request(
+        self,
+        url: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Optional[str]]] = None,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> requests.Response:
         if data or json_data:
             return self.r_s.post(
                 url, headers=headers, data=data, json=json_data
             )
         return self.r_s.get(url, headers=headers)
 
-    def _save_coupon_details(self, offer, coupon_type):
+    def _save_coupon_details(
+        self, offer: Dict[str, str], coupon_type: str
+    ) -> None:
         title = " ".join(
             [
                 offer.get("offerPrice", ""),
@@ -280,7 +287,7 @@ class safeway:
             expires = "Unknown"
         self._mail_append("Coupon: {} (expires: {})".format(title, expires))
 
-    def _clip_coupon(self, oid, coupon_type, post_data):
+    def _clip_coupon(self, post_data: Dict[str, Any]) -> bool:
         headers = js_req_headers
         headers.update(self.session_headers)
         headers.update(
@@ -295,7 +302,6 @@ class safeway:
             "/abs/pub/web/j4u/api/offers/clip?storeId={}".format(self.store_id)
         )
         rsp = self._run_request(url, json_data=post_data, headers=headers)
-        rsp.stream = False
         try:
             c = rsp.json()
         except Exception as e:
@@ -311,8 +317,8 @@ class safeway:
         self._debug("Clip response: {}".format(c), level=2)
         return rsp.status_code == 200
 
-    def _clip_coupons(self):
-        clip_counts = {}
+    def _clip_coupons(self) -> None:
+        clip_counts: Dict[str, int] = {}
         clip_count = 0
         error_count = 0
 
@@ -343,7 +349,7 @@ class safeway:
                     # Check if coupon or offer has been clipped already
                     if offer["status"] == "C":
                         continue
-                    post_data = {"items": []}
+                    post_data: Dict[str, Any] = {"items": []}
                     for clip_type in ["C", "L"]:
                         post_data["items"].append(
                             {
@@ -353,9 +359,7 @@ class safeway:
                             }
                         )
                     oid = offer["offerId"]
-                    clip_success = self._clip_coupon(
-                        oid, coupon_type, post_data
-                    )
+                    clip_success = self._clip_coupon(post_data)
                     if clip_success:
                         self._debug(
                             "Clipped coupon " "{} {}".format(coupon_type, oid)
@@ -408,7 +412,7 @@ class safeway:
                 )
 
 
-def main():
+def main() -> None:
     exit_code = 0
     for index, user_data in enumerate(auth):
         try:
