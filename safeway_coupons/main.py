@@ -17,88 +17,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-# Parse options
-description = "Automatically add online coupons to your Safeway card"
-arg_parser = argparse.ArgumentParser(description=description)
-arg_parser.add_argument(
-    "-c",
-    "--accounts-config",
-    dest="accounts_config",
-    metavar="file",
-    required=True,
-    help=(
-        "Path to configuration file containing Safeway " "accounts information"
-    ),
-)
-arg_parser.add_argument(
-    "-d",
-    "--debug",
-    dest="debug",
-    action="count",
-    default=0,
-    help="Print debugging information on stdout. Specify "
-    "twice to increase verbosity.",
-)
-arg_parser.add_argument(
-    "-n",
-    "--no-email",
-    dest="email",
-    action="store_false",
-    help=(
-        "Print summary information on standard output "
-        "instead of sending email"
-    ),
-)
-arg_parser.add_argument(
-    "-S",
-    "--no-sleep",
-    dest="sleep_skip",
-    action="count",
-    default=0,
-    help=(
-        "Don't sleep between long requests. Specify " "twice to never sleep."
-    ),
-)
-options = arg_parser.parse_args()
-
-email_sender = ""
-auth = []
-
-if not os.path.isfile(options.accounts_config):
-    raise Exception(
-        "Accounts configuration file {} does not "
-        "exist.".format(options.accounts_config)
-    )
-
-config = configparser.ConfigParser()
-config.read_file(
-    itertools.chain(["[_no_section]"], open(options.accounts_config, "r"))
-)
-
-for section in config.sections():
-    if section in ["_no_section", "_global"]:
-        if config.has_option(section, "email_sender"):
-            email_sender = config.get(section, "email_sender")
-    else:
-        account = {
-            "username": section,
-            "password": config.get(section, "password"),
-        }
-        if config.has_option(section, "notify"):
-            account.update({"notify": config.get(section, "notify")})
-        auth.append(account)
-
-if not email_sender:
-    if options.email:
-        print(
-            "Warning: No email_sender defined. Summary information will be "
-            "printed on standard output instead.",
-            file=sys.stderr,
-        )
-        options.email = False
-if len(auth) == 0:
-    raise Exception("No valid accounts defined.")
-
 sleep_multiplier = 1.0
 
 referer_data = "http://www.safeway.com/ShopStores/Justforu-Coupons.page"
@@ -119,12 +37,19 @@ js_req_headers = {
 
 
 class safeway:
-    def __init__(self, auth: Dict[str, str]) -> None:
+    def __init__(
+        self,
+        auth: Dict[str, str],
+        email_sender: Optional[str],
+        options: argparse.Namespace,
+    ) -> None:
         self.auth = auth
         self.mail_message: List[str] = []
         self.mail_subject = "Safeway coupons"
         self.session_headers: Dict[str, str] = {}
         self.store_id = 1
+        self.email_sender = email_sender
+        self.options = options
 
         try:
             self._init_session()
@@ -150,7 +75,7 @@ class safeway:
 
     def _send_mail(self) -> None:
         email_to = self.auth.get("notify") or self.auth.get("username")
-        email_from = email_sender
+        email_from = self.email_sender
 
         if self.mail_message[0].startswith("Coupon: "):
             self.mail_message.insert(0, "Clipped coupons for items you buy:")
@@ -159,7 +84,7 @@ class safeway:
         self.mail_message.insert(0, account_str)
         mail_message_str = os.linesep.join(self.mail_message)
 
-        if not options.email:
+        if not self.options.email or not email_from:
             print(mail_message_str)
             return
 
@@ -174,7 +99,7 @@ class safeway:
         if self.mail_subject:
             email_data["Subject"] = self.mail_subject
 
-        if options.debug:
+        if self.options.debug:
             self._debug("Skip sending email due to -d/--debug")
             return
 
@@ -185,7 +110,7 @@ class safeway:
         p.communicate(bytes(email_data.as_string(), "UTF-8"))
 
     def _debug(self, message: str, level: int = 1) -> None:
-        if options.debug >= level:
+        if self.options.debug >= level:
             print(message)
 
     def _init_session(self) -> None:
@@ -380,7 +305,7 @@ class safeway:
                         self._save_coupon_details(offer, coupon_type)
                     # Simulate longer pauses for "scrolling" and "paging"
                     if i > 0 and i % 12 == 0:
-                        if options.sleep_skip < 1:
+                        if self.options.sleep_skip < 1:
                             if i % 48 == 0:
                                 w = random.uniform(15.0, 25.0)
                             else:
@@ -389,7 +314,7 @@ class safeway:
                             self._debug("Waiting {} seconds".format(str(w)))
                             time.sleep(w)
                     else:
-                        if options.sleep_skip < 2:
+                        if self.options.sleep_skip < 2:
                             time.sleep(
                                 random.uniform(0.3, 0.8) * sleep_multiplier
                             )
@@ -413,10 +338,95 @@ class safeway:
 
 
 def main() -> None:
+    # Parse options
+    description = "Automatically add online coupons to your Safeway card"
+    arg_parser = argparse.ArgumentParser(description=description)
+    arg_parser.add_argument(
+        "-c",
+        "--accounts-config",
+        dest="accounts_config",
+        metavar="file",
+        required=True,
+        help=(
+            "Path to configuration file containing Safeway "
+            "accounts information"
+        ),
+    )
+    arg_parser.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="count",
+        default=0,
+        help="Print debugging information on stdout. Specify "
+        "twice to increase verbosity.",
+    )
+    arg_parser.add_argument(
+        "-n",
+        "--no-email",
+        dest="email",
+        action="store_false",
+        help=(
+            "Print summary information on standard output "
+            "instead of sending email"
+        ),
+    )
+    arg_parser.add_argument(
+        "-S",
+        "--no-sleep",
+        dest="sleep_skip",
+        action="count",
+        default=0,
+        help=(
+            "Don't sleep between long requests. Specify "
+            "twice to never sleep."
+        ),
+    )
+    options = arg_parser.parse_args()
+
+    email_sender = ""
+    auth = []
+
+    if not os.path.isfile(options.accounts_config):
+        raise Exception(
+            "Accounts configuration file {} does not "
+            "exist.".format(options.accounts_config)
+        )
+
+    config = configparser.ConfigParser()
+    config.read_file(
+        itertools.chain(["[_no_section]"], open(options.accounts_config, "r"))
+    )
+
+    for section in config.sections():
+        if section in ["_no_section", "_global"]:
+            if config.has_option(section, "email_sender"):
+                email_sender = config.get(section, "email_sender")
+        else:
+            account = {
+                "username": section,
+                "password": config.get(section, "password"),
+            }
+            if config.has_option(section, "notify"):
+                account.update({"notify": config.get(section, "notify")})
+            auth.append(account)
+
+    if not email_sender:
+        if options.email:
+            print(
+                "Warning: No email_sender defined. "
+                "Summary information will be "
+                "printed on standard output instead.",
+                file=sys.stderr,
+            )
+            options.email = False
+    if len(auth) == 0:
+        raise Exception("No valid accounts defined.")
+
     exit_code = 0
     for index, user_data in enumerate(auth):
         try:
-            safeway(user_data)
+            safeway(user_data, email_sender, options)
         except Exception:
             # The safeway class already handles exceptions, but re-raises them
             # so safeway-coupons can exit with an error code
