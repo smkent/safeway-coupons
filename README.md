@@ -17,6 +17,8 @@ For best results, run this program once a day or so with a cron daemon.
 
 ## Usage
 
+### Configuration
+
 Create a configuration file with an email sender address and your Safeway account
 login information. For example:
 
@@ -33,6 +35,13 @@ specified Safeway account, either to the account email address or to the
 address specified by `notify`, if present.
 
 Specify the path to this config file using `-c` or `--accounts-config`.
+
+### Invocation
+
+First, install the project dependencies with [Poetry][poetry]:
+```sh
+poetry install
+```
 
 Execute `safeway-coupons` with Poetry:
 
