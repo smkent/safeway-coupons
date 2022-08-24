@@ -34,6 +34,7 @@ pytest-sugar = "*"
 tox = "*"
 
 [tool.poetry.scripts]
+safeway-coupons = "safeway_coupons.main:main"
 
 [tool.poetry-dynamic-versioning]
 enable = true
