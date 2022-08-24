@@ -32,6 +32,7 @@ pytest-cov = "*"
 pytest-github-actions-annotate-failures = "*"
 pytest-sugar = "*"
 tox = "*"
+types-requests = "^2.28.9"
 
 [tool.poetry.scripts]
 safeway-coupons = "safeway_coupons.main:main"
