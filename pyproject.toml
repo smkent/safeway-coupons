@@ -1,0 +1,110 @@
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "safeway-coupons"
+version = "0.0.0"
+description = "Automatic coupon clipper for Safeway's online \"Just for U\" coupons"
+license = "GPL-3.0-or-later"
+authors = ["Stephen Kent <smkent@smkent.net>"]
+readme = "README.md"
+repository = "https://github.com/smkent/safeway-coupons"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+cruft = "*"
+flake8 = "*"
+isort = "*"
+mypy = "*"
+poethepoet = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-github-actions-annotate-failures = "*"
+pytest-sugar = "*"
+tox = "*"
+
+[tool.poetry.scripts]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "semver"
+
+[tool.poe.tasks]
+lt = ["lint", "test"]
+
+lint = ["isort_lint", "black_lint"]
+black_lint = { cmd = "black -l 79 -- tests/ safeway_coupons/" }
+isort_lint = { cmd = "isort -- tests/ safeway_coupons/" }
+
+test = ["flake8", "isort", "black", "mypy", "pytest"]
+black = { cmd = "black -l 79 --check --diff --color -- tests/ safeway_coupons/" }
+isort = { cmd = "isort --check-only --diff -- tests/ safeway_coupons/" }
+flake8 = { cmd = "flake8" }
+mypy = { cmd = "mypy" }
+pytest = { cmd = "pytest" }
+
+[tool.coverage.run]
+source = ["safeway_coupons"]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+
+[tool.cruft]
+skip = [".git"]
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 79
+
+[tool.mypy]
+files = [ "tests", "safeway_coupons" ]
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+show_error_codes = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+addopts = """\
+    --cov \
+    --cov-append \
+    --cov-report term \
+    --cov-report xml:coverage.xml \
+    --junitxml=tests/pytest.xml \
+"""
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310
+isolated_build = True
+requires =
+    tox-poetry-installer[poetry] == 0.6.0
+
+[testenv]
+deps =
+    poetry
+commands =
+    poetry install
+    poetry run poe test
+
+[gh-actions]
+python =
+    3.10: py310
+"""
+
+# vim: ft=cfg

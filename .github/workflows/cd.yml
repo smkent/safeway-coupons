@@ -1,0 +1,56 @@
+---
+name: Release
+
+env:
+  ENABLE_PYPI_PUBLISH: false
+  ENABLE_TEST_PYPI_PUBLISH: false
+  RELEASE_PYTHON_VERSION: "3.10"
+  RELEASE_POETRY_VERSION: "1.1.14"
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  Test:
+    uses: ./.github/workflows/ci.yml
+
+  Publish:
+    name: Publish package for ${{ github.ref_name }}
+
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python project with Poetry
+        uses: ./.github/workflows/actions/python-poetry
+        with:
+          python_version: ${{ env.RELEASE_PYTHON_VERSION }}
+          poetry_version: ${{ env.RELEASE_POETRY_VERSION }}
+
+      - name: 📦 Build package
+        if: ${{ env.ENABLE_PYPI_PUBLISH == 'true' }}
+        run: poetry build
+
+      - name: 🔼 Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ env.ENABLE_TEST_PYPI_PUBLISH == 'true' }}
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+          skip_existing: true
+
+      - name: ☢️ Publish to PyPI
+        if: ${{ env.ENABLE_PYPI_PUBLISH == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+concurrency:
+  group: workflow-cd-${{ github.ref }}-1
+  cancel-in-progress: true

@@ -1,0 +1,28 @@
+name: Set up Python project with Poetry
+
+inputs:
+  python_version:
+    description: "Python version to install"
+    required: true
+  poetry_version:
+    description: "Poetry version to install"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: ✨ Install Poetry
+      shell: bash
+      run: pip install poetry==${{ inputs.poetry_version }}
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python_version }}
+        cache: poetry
+
+    - name: 🛠️ Install dependencies
+      shell: bash
+      run: |
+        pip install poetry-dynamic-versioning
+        poetry install

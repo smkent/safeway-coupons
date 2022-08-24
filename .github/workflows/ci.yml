@@ -1,0 +1,54 @@
+---
+name: Test
+
+env:
+  ENABLE_COVERAGE: true
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  Test:
+    name: Test with Python ${{ matrix.python-version }}, Poetry ${{ matrix.poetry-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version:
+          - "3.10"
+        poetry-version:
+          - "1.1.14"
+
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python project with Poetry
+        uses: ./.github/workflows/actions/python-poetry
+        with:
+          python_version: ${{ matrix.python-version }}
+          poetry_version: ${{ matrix.poetry-version }}
+
+      - name: 🔥 Test
+        run: poetry run poe test
+
+      - name: 🚒 Create test summary
+        uses: test-summary/action@v1
+        if: success() || failure()
+        with:
+          paths: tests/pytest.xml
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        if: ${{ env.ENABLE_COVERAGE == 'true' }}
+        with:
+          fail_ci_if_error: true
+
+concurrency:
+  group: workflow-ci-${{ github.ref }}-1
+  cancel-in-progress: true
