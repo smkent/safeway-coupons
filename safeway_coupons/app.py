@@ -1,4 +1,4 @@
-from .api_client import SafewayClient
+from .client import SafewayClient
 from .config import Config
 from .models import OfferStatus
 
