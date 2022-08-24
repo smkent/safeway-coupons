@@ -1,4 +1,4 @@
-# Automatic clipper for Safeway "Just for U" coupons
+# Automatic Safeway coupon clipper
 
 [![Build](https://img.shields.io/github/checks-status/smkent/safeway-coupons/main?label=build)][gh-actions]
 [![codecov](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)][codecov]
