@@ -13,7 +13,10 @@ runs:
   steps:
     - name: ✨ Install Poetry
       shell: bash
-      run: pip install poetry==${{ inputs.poetry_version }}
+      run: |
+        pip install \
+            poetry==${{ inputs.poetry_version }} \
+            poetry-dynamic-versioning
 
     - name: 🐍 Set up Python
       uses: actions/setup-python@v4
@@ -21,8 +24,7 @@ runs:
         python-version: ${{ inputs.python_version }}
         cache: poetry
 
-    - name: 🛠️ Install dependencies
+    - name: 🛠️ Install project dependencies
       shell: bash
       run: |
-        pip install poetry-dynamic-versioning
         poetry install
