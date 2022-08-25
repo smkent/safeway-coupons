@@ -120,7 +120,7 @@ def clip_for_account(args: argparse.Namespace, account: Account) -> None:
     )
 
 
-def v2() -> None:
+def main() -> None:
     args = parse_args()
     if args.debug_level >= 2:
         HTTPConnection.debuglevel = 1
