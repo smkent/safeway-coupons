@@ -3,6 +3,7 @@ from typing import List
 
 from .client import SafewayClient
 from .config import Config
+from .email import email_clip_results
 from .models import Offer, OfferStatus
 from .utils import yield_delay
 
@@ -34,12 +35,9 @@ def parse_args() -> argparse.Namespace:
     arg_parser.add_argument(
         "-n",
         "--no-email",
-        dest="email",
+        dest="send_email",
         action="store_false",
-        help=(
-            "Print summary information on standard output "
-            "instead of sending email"
-        ),
+        help="Don't send results email",
     )
     arg_parser.add_argument(
         "-p",
@@ -79,4 +77,10 @@ def v2() -> None:
             if not args.dry_run:
                 swy.clip(offer)
             clipped_offers.append(offer)
-    print(f"Clipped {len(clipped_offers)} coupons")
+        print(f"Clipped {len(clipped_offers)} coupons")
+        email_clip_results(
+            account,
+            clipped_offers,
+            debug=args.debug,
+            send_email=args.send_email,
+        )
