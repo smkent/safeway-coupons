@@ -1,14 +1,13 @@
 import json
 import os
-import sys
 
 import responses
 from pytest_mock import MockerFixture
 
-from safeway_coupons.app import main
+from safeway_coupons import Account, SafewayCoupons
 
 
-def test_main(
+def test_safeway_coupons(
     mocker: MockerFixture, http_responses: responses.RequestsMock
 ) -> None:
     mocker.patch.object(
@@ -19,7 +18,6 @@ def test_main(
             "SAFEWAY_COUPONS_PASSWORD": "pk_fire",
         },
     )
-    mocker.patch.object(sys, "argv", ["safeway-coupons"])
     http_responses.add(
         method=responses.POST,
         url="https://albertsons.okta.com/api/v1/authn",
@@ -48,4 +46,15 @@ def test_main(
         ),
         body=json.dumps({"companionGalleryOfferList": []}),
     )
-    main()
+    app = SafewayCoupons(
+        send_email=False,
+        sleep_level=2,
+    )
+    app.clip_for_account(
+        Account(
+            username="ness@onett.example",
+            password="pk_fire",
+            mail_from="ness@onett.example",
+            mail_to="ness@onett.example",
+        )
+    )
