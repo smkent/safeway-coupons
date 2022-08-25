@@ -1,5 +1,6 @@
 import argparse
 import sys
+from http.client import HTTPConnection
 from typing import List
 
 from .accounts import Account
@@ -29,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     arg_parser.add_argument(
         "-d",
         "--debug",
-        dest="debug",
+        dest="debug_level",
         action="count",
         default=0,
         help=(
@@ -67,20 +68,27 @@ def parse_args() -> argparse.Namespace:
 
 
 def clip_for_account(args: argparse.Namespace, account: Account) -> None:
-    print(account)
+    print(f"Clipping coupons for Safeway account {account.username}")
     swy = SafewayClient(account)
     clipped_offers: List[Offer] = []
     clip_errors: List[ClipError] = []
     offers = swy.get_offers()
     unclipped_offers = [o for o in offers if o.status == OfferStatus.Unclipped]
-    for offer in yield_delay(unclipped_offers, args.sleep_level):
+    rjust_size = len(str(len(unclipped_offers)))
+    for i, offer in enumerate(
+        yield_delay(unclipped_offers, args.sleep_level, args.debug_level)
+    ):
+        progress_count = (
+            f"({str(i + 1).rjust(rjust_size, ' ')}"
+            f"/{len(unclipped_offers)}) "
+        )
         try:
             if not args.dry_run:
                 swy.clip(offer)
-            print(f"Clipped {offer}")
+            print(f"{progress_count} Clipped {offer}")
             clipped_offers.append(offer)
         except ClipError as e:
-            print(e)
+            print(f"{progress_count} {e}")
             clip_errors.append(e)
             if len(clip_errors) >= CLIP_ERROR_MAX:
                 raise TooManyClipErrors(
@@ -93,13 +101,15 @@ def clip_for_account(args: argparse.Namespace, account: Account) -> None:
         clipped_offers,
         error=None,
         clip_errors=clip_errors,
-        debug=args.debug,
+        debug_level=args.debug_level,
         send_email=args.send_email,
     )
 
 
 def v2() -> None:
     args = parse_args()
+    if args.debug_level >= 2:
+        HTTPConnection.debuglevel = 1
     try:
         accounts = Config.load_accounts(config_file=args.accounts_config)
         for account in accounts:
@@ -109,12 +119,12 @@ def v2() -> None:
                 email_error(
                     account,
                     error=e,
-                    debug=args.debug,
+                    debug_level=args.debug_level,
                     send_email=args.send_email,
                 )
                 raise
     except Exception as e:
-        if args.debug:
+        if args.debug_level:
             raise
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

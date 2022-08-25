@@ -13,11 +13,11 @@ def _send_email(
     account: Account,
     subject: str,
     mail_message: List[str],
-    debug: bool,
+    debug_level: int,
     send_email: bool,
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
-    if debug:
+    if debug_level >= 1:
         print("Sending email to {}".format(account.mail_to))
         print(">>>>>>")
         print(mail_message_str)
@@ -41,7 +41,7 @@ def email_clip_results(
     offers: List[Offer],
     error: Optional[Error],
     clip_errors: Optional[List[ClipError]],
-    debug: bool,
+    debug_level: int,
     send_email: bool,
 ) -> None:
     offers_by_type = collections.defaultdict(list)
@@ -56,13 +56,13 @@ def email_clip_results(
         mail_message.append(
             f"    {offer_type.name}: {len(offers_this_type)} coupons"
         )
-    _send_email(account, mail_subject, mail_message, debug, send_email)
+    _send_email(account, mail_subject, mail_message, debug_level, send_email)
 
 
 def email_error(
     account: Account,
     error: Error,
-    debug: bool,
+    debug_level: int,
     send_email: bool,
 ) -> None:
     mail_subject = f"Safeway coupons: {error.__class__.__name__} error"
@@ -75,4 +75,4 @@ def email_error(
             mail_message += ["Clipped coupons:", ""]
             for offer in error.clipped_offers:
                 mail_message += str(offer)
-    _send_email(account, mail_subject, mail_message, debug, send_email)
+    _send_email(account, mail_subject, mail_message, debug_level, send_email)

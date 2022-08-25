@@ -124,7 +124,7 @@ def make_nonce() -> str:
 
 
 def yield_delay(
-    iterable: Iterable[T], sleep_level: int
+    iterable: Iterable[T], sleep_level: int, debug_level: int
 ) -> Generator[T, None, None]:
     for count, item in enumerate(iterable):
         delay_time = 0.0
@@ -135,9 +135,10 @@ def yield_delay(
                 else:
                     delay_time = random.uniform(4.0, 8.0)
                 delay_time = round(delay_time, 2)
-                print(f"Waiting {delay_time} seconds")
         elif sleep_level < 2:
             delay_time = random.uniform(0.3, 0.8)
         if delay_time:
+            if debug_level >= 1 and delay_time >= 1:
+                print(f"Waiting {delay_time} seconds")
             time.sleep(delay_time)
         yield item
