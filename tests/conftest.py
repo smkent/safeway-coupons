@@ -1,7 +1,10 @@
 import json
-from typing import Iterable, List, Mapping, Tuple
+import time
+from typing import Iterable, List, Mapping, Tuple, cast
+from unittest import mock
 
 import pytest
+import pytest_mock
 import requests
 import responses
 
@@ -52,8 +55,12 @@ def clips(
         assert request.body
         data = json.loads(request.body)
         offer_id = data["items"][0]["itemId"]
-        if offer_id in clips_test_config.fail_offer_ids:
-            # This clip should fail
+        if offer_id in clips_test_config.fail_http_offer_ids:
+            # This clip should return an HTTP error
+            clips_test_config.failed_offer_ids.append(offer_id)
+            return (400, {}, "")
+        if offer_id in clips_test_config.fail_response_offer_ids:
+            # This clip should return a non-successful response
             clip_status = 0
             clips_test_config.failed_offer_ids.append(offer_id)
         else:
@@ -94,3 +101,9 @@ def available_offers(
         ),
     )
     yield offers_list
+
+
+@pytest.fixture
+def mock_sleep(mocker: pytest_mock.MockerFixture) -> Iterable[mock.MagicMock]:
+    mocker.patch.object(time, "sleep")
+    yield cast(mock.MagicMock, time.sleep)
