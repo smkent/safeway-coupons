@@ -68,7 +68,7 @@ colorama = ["colorama (>=0.4.3)"]
 name = "certifi"
 version = "2022.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -84,7 +84,7 @@ python-versions = ">=3.6"
 name = "charset-normalizer"
 version = "2.1.1"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6.0"
 
@@ -234,7 +234,7 @@ gitdb = ">=4.0.1,<5"
 name = "idna"
 version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 
@@ -568,7 +568,7 @@ python-versions = ">=3.6"
 name = "requests"
 version = "2.28.1"
 description = "Python HTTP for Humans."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7, <4"
 
@@ -727,7 +727,7 @@ typing-extensions = ">=3.7.4"
 name = "urllib3"
 version = "1.26.12"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4"
 
@@ -756,7 +756,7 @@ docs = ["towncrier (>=21.9)", "sphinx-rtd-theme (>=1)", "sphinx-argparse (>=0.3.
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f8e04fd21a4280263c64076b3567bbfc31a89baeec5232ad0a0825539b70adc6"
+content-hash = "15b571dcf516bfc60804a97b53f600708972624305eb32991f48a07231f86a5f"
 
 [metadata.files]
 arrow = [
