@@ -34,7 +34,9 @@ jobs:
           poetry_version: ${{ env.RELEASE_POETRY_VERSION }}
 
       - name: 📦 Build package
-        if: ${{ env.ENABLE_PYPI_PUBLISH == 'true' }}
+        if: |
+          env.ENABLE_PYPI_PUBLISH == 'true'
+          || env.ENABLE_TEST_PYPI_PUBLISH == 'true'
         run: poetry build
 
       - name: 🔼 Publish to Test PyPI
