@@ -5,8 +5,8 @@
 [![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)][repo]
 
 **safeway-coupons** is a script that will log in to an account on safeway.com,
-and attempt to select all of the "Just for U" electronic coupons on the site so
-they don't have to each be clicked manually.
+and attempt to select all of the "Safeway for U" electronic coupons on the site
+so they don't have to each be clicked manually.
 
 For best results, run this program once a day or so with a cron daemon.
 
