@@ -1,5 +1,7 @@
 # Automatic Safeway coupon clipper
 
+[![PyPI](https://img.shields.io/pypi/v/safeway-coupons)][pypi]
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/safeway-coupons)][pypi]
 [![Build](https://img.shields.io/github/checks-status/smkent/safeway-coupons/main?label=build)][gh-actions]
 [![codecov](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)][codecov]
 [![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)][repo]
@@ -83,4 +85,5 @@ Created from [smkent/cookie-python][cookie-python] using
 [cookiecutter]: https://github.com/cookiecutter/cookiecutter
 [gh-actions]: https://github.com/smkent/safeway-coupons/actions?query=branch%3Amain
 [poetry]: https://python-poetry.org/docs/#installation
+[pypi]: https://pypi.org/project/safeway-coupons/
 [repo]: https://github.com/smkent/safeway-coupons
