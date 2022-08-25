@@ -1,10 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
 import dataclasses_json
+
+
+def datetime_encode(dt: datetime) -> str:
+    return str(int(datetime.timestamp(dt)) * 1000)
+
+
+def datetime_decode(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    return datetime.fromtimestamp(int(value) / 1000, timezone.utc)
 
 
 class Model(dataclasses_json.DataClassJsonMixin):
@@ -51,6 +62,16 @@ class Offer(Model):
     status: OfferStatus
     name: str
     description: str
+    start_date: datetime = field(
+        metadata=dataclasses_json.config(
+            encoder=datetime_encode, decoder=datetime_decode
+        )
+    )
+    end_date: datetime = field(
+        metadata=dataclasses_json.config(
+            encoder=datetime_encode, decoder=datetime_decode
+        )
+    )
     offer_price: str
     offer_pgm: OfferType
     category_type: str
