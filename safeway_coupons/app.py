@@ -82,6 +82,9 @@ def clip_for_account(args: argparse.Namespace, account: Account) -> None:
     clip_errors: List[ClipError] = []
     offers = swy.get_offers()
     unclipped_offers = [o for o in offers if o.status == OfferStatus.Unclipped]
+    if not unclipped_offers:
+        print("Nothing to do")
+        return
     rjust_size = len(str(len(unclipped_offers)))
     for i, offer in enumerate(
         yield_delay(unclipped_offers, args.sleep_level, args.debug_level)
