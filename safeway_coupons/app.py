@@ -39,6 +39,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     arg_parser.add_argument(
+        "-m",
+        "--max-clip",
+        dest="max_clip",
+        type=int,
+        metavar="number",
+        help="Maximum number of coupons to clip (default: all)",
+    )
+    arg_parser.add_argument(
         "-n",
         "--no-email",
         dest="send_email",
@@ -87,6 +95,9 @@ def clip_for_account(args: argparse.Namespace, account: Account) -> None:
                 swy.clip(offer)
             print(f"{progress_count} Clipped {offer}")
             clipped_offers.append(offer)
+            if args.max_clip and len(clipped_offers) >= args.max_clip:
+                print(f"Clip maximum count of {args.max_clip} reached")
+                break
         except ClipError as e:
             print(f"{progress_count} {e}")
             clip_errors.append(e)
