@@ -3,6 +3,7 @@ import random
 from typing import List
 
 from .account import Account
+from .errors import ClipError
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferList
 from .session import BaseSession, LoginSession
@@ -31,14 +32,17 @@ class SafewayClient(BaseSession):
         return OfferList.from_dict(response.json()).offers
 
     def clip(self, offer: Offer) -> None:
-        req = ClipRequest.from_offer(offer)
-        response = self.requests.post(
-            "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
-            f"?storeId={self.session.store_id}",
-            data=json.dumps(req.to_dict(encode_json=True)),
-            headers={"Content-Type": "application/json"},
-        )
-        response.raise_for_status()
-        clip_response = ClipResponse.from_dict(response.json())
-        if not clip_response.success:
-            raise Exception(f"Error clipping coupon {offer}")
+        try:
+            request = ClipRequest.from_offer(offer)
+            response = self.requests.post(
+                "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
+                f"?storeId={self.session.store_id}",
+                data=json.dumps(request.to_dict(encode_json=True)),
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+            clip_response = ClipResponse.from_dict(response.json())
+            if not clip_response.success:
+                raise Exception(f"Error clipping coupon {offer}")
+        except Exception as e:
+            raise ClipError(offer) from e

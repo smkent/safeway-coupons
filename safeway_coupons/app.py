@@ -4,8 +4,11 @@ from typing import List
 from .client import SafewayClient
 from .config import Config
 from .email import email_clip_results
+from .errors import ClipError, TooManyClipErrors
 from .models import Offer, OfferStatus
 from .utils import yield_delay
+
+CLIP_ERROR_MAX = 5
 
 
 def parse_args() -> argparse.Namespace:
@@ -65,6 +68,7 @@ def v2() -> None:
     args = parse_args()
     accounts = Config.load_accounts(config_file=args.accounts_config)
     clipped_offers: List[Offer] = []
+    clip_errors: List[ClipError] = []
     for account in accounts:
         print(account)
         swy = SafewayClient(account)
@@ -73,10 +77,16 @@ def v2() -> None:
             o for o in offers if o.status == OfferStatus.Unclipped
         ]
         for offer in yield_delay(unclipped_offers, args.sleep_level):
-            print(offer)
-            if not args.dry_run:
-                swy.clip(offer)
-            clipped_offers.append(offer)
+            try:
+                print(offer)
+                if not args.dry_run:
+                    swy.clip(offer)
+                clipped_offers.append(offer)
+            except ClipError as e:
+                clip_errors.append(e)
+                if len(clip_errors) >= CLIP_ERROR_MAX:
+                    raise TooManyClipErrors(errors=clip_errors)
+
         print(f"Clipped {len(clipped_offers)} coupons")
         email_clip_results(
             account,

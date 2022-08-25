@@ -5,6 +5,7 @@ from typing import Optional
 import requests
 
 from .account import Account
+from .errors import AuthenticationFailure
 from .utils import make_nonce, make_token
 
 LOGIN_URL = "https://albertsons.okta.com/api/v1/authn"
@@ -40,7 +41,10 @@ class LoginSession(BaseSession):
     def __init__(self, account: Account) -> None:
         self.access_token: Optional[str] = None
         self.store_id: Optional[str] = None
-        self._login(account)
+        try:
+            self._login(account)
+        except Exception as e:
+            raise AuthenticationFailure(account) from e
 
     def _login(self, account: Account) -> None:
         # Log in
@@ -79,4 +83,7 @@ class LoginSession(BaseSession):
                 self.requests.cookies["SWY_SHARED_SESSION_INFO"]
             )
         )
-        self.store_id = session_info["info"]["J4U"]["storeId"]
+        try:
+            self.store_id = session_info["info"]["J4U"]["storeId"]
+        except Exception as e:
+            raise Exception("Unable to retrieve store ID") from e
