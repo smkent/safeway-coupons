@@ -59,9 +59,7 @@ class Offer(Model):
 
     def __str__(self) -> str:
         return (
-            "<"
             f"{self.__class__.__name__} "
-            f"{self.offer_pgm.value} {self.offer_id} "
+            f"{self.offer_pgm.value} {self.offer_id}: "
             f"[{self.offer_price}] {self.name}"
-            ">"
         )
