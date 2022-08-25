@@ -23,9 +23,13 @@ class Config:
         username = os.environ.get("SAFEWAY_COUPONS_USERNAME")
         password = os.environ.get("SAFEWAY_COUPONS_PASSWORD")
         mail_to = os.environ.get("SAFEWAY_COUPONS_MAIL_TO")
+        mail_from = os.environ.get("SAFEWAY_COUPONS_MAIL_TO")
         if username and password:
             return Account(
-                username=username, password=password, mail_to=mail_to
+                username=username,
+                password=password,
+                mail_to=mail_to or username,
+                mail_from=mail_from or username,
             )
         return None
 
@@ -36,18 +40,24 @@ class Config:
             itertools.chain(["[_no_section]"], open(config_file, "r"))
         )
         accounts: List[Account] = []
+        mail_from = None
         for section in config.sections():
             if section in ["_no_section", "_global"]:
+                if config.has_option(section, "email_sender"):
+                    mail_from = config.get(section, "email_sender")
                 continue
+            mail_to = (
+                config.get(section, "notify")
+                if config.has_option(section, "notify")
+                else None
+            )
+            username = str(section)
             accounts.append(
                 Account(
-                    username=str(section),
+                    username=username,
                     password=config.get(section, "password"),
-                    mail_to=(
-                        config.get(section, "notify")
-                        if config.has_option(section, "notify")
-                        else None
-                    ),
+                    mail_to=mail_to or username,
+                    mail_from=mail_from or username,
                 )
             )
         return accounts
