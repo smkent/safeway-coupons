@@ -1,6 +1,6 @@
 import json
 import random
-from typing import List
+from typing import List, Optional
 
 import requests
 
@@ -38,6 +38,7 @@ class SafewayClient(BaseSession):
 
     def clip(self, offer: Offer) -> None:
         request = ClipRequest.from_offer(offer)
+        response: Optional[requests.Response] = None
         try:
             response = self.requests.post(
                 "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"

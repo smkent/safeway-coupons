@@ -33,7 +33,7 @@ def _parse_args() -> argparse.Namespace:
     arg_parser.add_argument(
         "-m",
         "--max-clip",
-        dest="max_clip",
+        dest="max_clip_count",
         type=int,
         default=0,
         metavar="number",
@@ -78,7 +78,7 @@ def main() -> None:
         debug_level=args.debug_level,
         sleep_level=args.sleep_level,
         dry_run=args.dry_run,
-        max_clip=args.max_clip,
+        max_clip_count=args.max_clip_count,
     )
     try:
         for account in accounts:

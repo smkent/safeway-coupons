@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import requests
 
@@ -29,7 +29,8 @@ class HTTPError(Error):
 
 
 @dataclass
-class ClipError(HTTPError):
+class ClipError(Error):
+    response: Optional[requests.Response]
     offer: Offer
 
     def __str__(self) -> str:

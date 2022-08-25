@@ -7,23 +7,25 @@ from .errors import ClipError, Error, TooManyClipErrors
 from .models import Offer, OfferStatus
 from .utils import yield_delay
 
+CLIP_ERROR_MAX = 5
+
 
 class SafewayCoupons:
-    CLIP_ERROR_MAX = 5
-
     def __init__(
         self,
         send_email: bool = True,
         debug_level: int = 0,
         sleep_level: int = 0,
         dry_run: bool = False,
-        max_clip: int = 0,
+        max_clip_count: int = 0,
+        max_clip_errors: int = CLIP_ERROR_MAX,
     ) -> None:
         self.send_email = send_email
         self.debug_level = debug_level
         self.sleep_level = sleep_level
         self.dry_run = dry_run
-        self.max_clip = max_clip
+        self.max_clip_count = max_clip_count
+        self.max_clip_errors = max_clip_errors
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")
@@ -53,13 +55,22 @@ class SafewayCoupons:
                         swy.clip(offer)
                     print(f"{progress_count} Clipped {offer}")
                     clipped_offers.append(offer)
-                    if self.max_clip and len(clipped_offers) >= self.max_clip:
-                        print(f"Clip maximum count of {self.max_clip} reached")
+                    if (
+                        self.max_clip_count
+                        and len(clipped_offers) >= self.max_clip_count
+                    ):
+                        print(
+                            "Clip maximum count of "
+                            f"{self.max_clip_count} reached"
+                        )
                         break
                 except ClipError as e:
                     print(f"{progress_count} {e}")
                     clip_errors.append(e)
-                    if len(clip_errors) >= self.CLIP_ERROR_MAX:
+                    if (
+                        self.max_clip_errors
+                        and len(clip_errors) >= self.max_clip_errors
+                    ):
                         raise TooManyClipErrors(
                             e,
                             clipped_offers=clipped_offers,
