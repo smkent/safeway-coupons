@@ -2,8 +2,10 @@ import json
 import random
 from typing import List
 
+import requests
+
 from .accounts import Account
-from .errors import ClipError
+from .errors import ClipError, HTTPError
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferList
 from .session import BaseSession, LoginSession
@@ -22,18 +24,21 @@ class SafewayClient(BaseSession):
         )
 
     def get_offers(self) -> List[Offer]:
-        response = self.requests.get(
-            "https://www.safeway.com/abs/pub/xapi"
-            "/offers/companiongalleryoffer"
-            f"?storeId={self.session.store_id}"
-            f"&rand={random.randrange(100000,999999)}",
-        )
-        response.raise_for_status()
-        return OfferList.from_dict(response.json()).offers
+        try:
+            response = self.requests.get(
+                "https://www.safeway.com/abs/pub/xapi"
+                "/offers/companiongalleryoffer"
+                f"?storeId={self.session.store_id}"
+                f"&rand={random.randrange(100000,999999)}",
+            )
+            response.raise_for_status()
+            return OfferList.from_dict(response.json()).offers
+        except requests.exceptions.HTTPError as e:
+            raise HTTPError(e, response) from e
 
     def clip(self, offer: Offer) -> None:
+        request = ClipRequest.from_offer(offer)
         try:
-            request = ClipRequest.from_offer(offer)
             response = self.requests.post(
                 "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
                 f"?storeId={self.session.store_id}",
@@ -43,6 +48,8 @@ class SafewayClient(BaseSession):
             response.raise_for_status()
             clip_response = ClipResponse.from_dict(response.json())
             if not clip_response.success:
-                raise Exception(f"Error clipping coupon {offer}")
+                raise Exception(
+                    f"Unsuccessful clip response for coupon {offer}"
+                )
         except Exception as e:
-            raise ClipError(offer) from e
+            raise ClipError(e, response, offer) from e

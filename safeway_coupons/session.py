@@ -44,7 +44,7 @@ class LoginSession(BaseSession):
         try:
             self._login(account)
         except Exception as e:
-            raise AuthenticationFailure(account) from e
+            raise AuthenticationFailure(e, account) from e
 
     def _login(self, account: Account) -> None:
         # Log in
@@ -55,7 +55,7 @@ class LoginSession(BaseSession):
         response.raise_for_status()
         login_data = response.json()
         if login_data.get("status") != "SUCCESS":
-            raise Exception("Login failed")
+            raise Exception("Login was not successful")
         session_token = login_data["sessionToken"]
         # Retrieve session information
         state_token = make_token()
