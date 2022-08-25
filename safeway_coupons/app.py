@@ -71,6 +71,9 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
     accounts = Config.load_accounts(config_file=args.accounts_config)
+    if not accounts:
+        print("Error: No Safeway account(s) configured", file=sys.stderr)
+        sys.exit(1)
     if args.debug_level >= 2:
         HTTPConnection.debuglevel = 1
     sc = SafewayCoupons(
