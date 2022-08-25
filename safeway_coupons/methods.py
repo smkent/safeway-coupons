@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from .models import Model, Offer
+from .models import Model, Offer, OfferType
 
 
 @dataclass
 class ClipRequestItem(Model):
     clip_type: str
     item_id: str
-    item_type: str
+    item_type: OfferType
 
 
 @dataclass
@@ -35,7 +35,7 @@ class ClipRequest(Model):
 class ClipResponseItem(Model):
     clip_type: str
     item_id: str
-    item_type: str
+    item_type: OfferType
     status: int
     clip_id: str
     checked: bool

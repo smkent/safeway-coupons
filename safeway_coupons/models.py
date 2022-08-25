@@ -34,6 +34,17 @@ class OfferStatus(Enum):
         return cls(cls.Unknown)
 
 
+class OfferType(Enum):
+    StoreCoupon = "SC"
+    ManufacturerCoupon = "MF"
+    PersonalizedDeal = "PD"
+    Unknown = "?"
+
+    @classmethod
+    def _missing_(cls, value: object) -> OfferType:
+        return cls(cls.Unknown)
+
+
 @dataclass
 class Offer(Model):
     offer_id: str
@@ -41,13 +52,16 @@ class Offer(Model):
     name: str
     description: str
     offer_price: str
-    offer_pgm: str
+    offer_pgm: OfferType
     category_type: str
     image: str
     category: Optional[str] = None
 
     def __str__(self) -> str:
         return (
-            f"<{self.__class__.__name__} {self.offer_id} "
-            f"[{self.offer_price}] {self.name}>"
+            "<"
+            f"{self.__class__.__name__} "
+            f"{self.offer_pgm.value} {self.offer_id} "
+            f"[{self.offer_price}] {self.name}"
+            ">"
         )

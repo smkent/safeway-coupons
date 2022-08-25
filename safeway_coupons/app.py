@@ -1,8 +1,10 @@
 import argparse
+from typing import List
 
 from .client import SafewayClient
 from .config import Config
-from .models import OfferStatus
+from .models import Offer, OfferStatus
+from .utils import yield_delay
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,13 +42,22 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     arg_parser.add_argument(
+        "-p",
+        "--pretend",
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        help="Print coupons that would be clipped, but don't clip them",
+    )
+    arg_parser.add_argument(
         "-S",
         "--no-sleep",
-        dest="sleep_skip",
+        "--no-delay",
+        dest="sleep_level",
         action="count",
         default=0,
         help=(
-            "Don't sleep between long requests. Specify twice to never sleep."
+            "Don't wait between long requests. Specify twice to never wait."
         ),
     )
     return arg_parser.parse_args()
@@ -55,18 +66,17 @@ def parse_args() -> argparse.Namespace:
 def v2() -> None:
     args = parse_args()
     accounts = Config.load_accounts(config_file=args.accounts_config)
+    clipped_offers: List[Offer] = []
     for account in accounts:
         print(account)
-        api = SafewayClient(account)
-        offers = api.get_offers()
-        i = 0
-        for offer in offers:
-            if offer.status == OfferStatus.Clipped:
-                print(f"Already clipped {offer}")
-                continue
+        swy = SafewayClient(account)
+        offers = swy.get_offers()
+        unclipped_offers = [
+            o for o in offers if o.status == OfferStatus.Unclipped
+        ]
+        for offer in yield_delay(unclipped_offers, args.sleep_level):
             print(offer)
-            # api.clip(offer)
-            break
-            i += 1
-            if i >= 5:
-                break
+            if not args.dry_run:
+                swy.clip(offer)
+            clipped_offers.append(offer)
+    print(f"Clipped {len(clipped_offers)} coupons")

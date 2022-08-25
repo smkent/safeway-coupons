@@ -35,7 +35,7 @@ class SafewayClient(BaseSession):
         response = self.requests.post(
             "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
             f"?storeId={self.session.store_id}",
-            data=json.dumps(req.to_dict()),
+            data=json.dumps(req.to_dict(encode_json=True)),
             headers={"Content-Type": "application/json"},
         )
         response.raise_for_status()

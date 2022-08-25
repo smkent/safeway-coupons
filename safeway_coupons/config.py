@@ -38,19 +38,16 @@ class Config:
         accounts: List[Account] = []
         for section in config.sections():
             if section in ["_no_section", "_global"]:
-                if config.has_option(section, "email_sender"):
-                    email_sender = config.get(section, "email_sender")
-                    print(f"EMAIL SENDER: {email_sender}")
-            else:
-                accounts.append(
-                    Account(
-                        username=str(section),
-                        password=config.get(section, "password"),
-                        mail_to=(
-                            config.get(section, "notify")
-                            if config.has_option(section, "notify")
-                            else None
-                        ),
-                    )
+                continue
+            accounts.append(
+                Account(
+                    username=str(section),
+                    password=config.get(section, "password"),
+                    mail_to=(
+                        config.get(section, "notify")
+                        if config.has_option(section, "notify")
+                        else None
+                    ),
                 )
+            )
         return accounts
