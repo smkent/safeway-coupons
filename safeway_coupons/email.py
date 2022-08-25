@@ -18,7 +18,10 @@ def _send_email(
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
     if debug_level >= 1:
-        print("Sending email to {}".format(account.mail_to))
+        if send_email:
+            print(f"Sending email to {account.mail_to}")
+        else:
+            print(f"Would send email to {account.mail_to}")
         print(">>>>>>")
         print(mail_message_str)
         print("<<<<<<")

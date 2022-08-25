@@ -84,13 +84,13 @@ class SafewayCoupons:
                 error=None,
                 clip_errors=clip_errors,
                 debug_level=self.debug_level,
-                send_email=self.send_email,
+                send_email=self.send_email and not self.dry_run,
             )
         except Error as e:
             email_error(
                 account,
                 error=e,
                 debug_level=self.debug_level,
-                send_email=self.send_email,
+                send_email=self.send_email and not self.dry_run,
             )
             raise
