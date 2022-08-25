@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "safeway-coupons"
 version = "0.0.0"
-description = "Automatic coupon clipper for Safeway's online \"Just for U\" coupons"
+description = "Automatic coupon clipper for Safeway's online \"Safeway for U\" coupons"
 license = "GPL-3.0-or-later"
 authors = ["Stephen Kent <smkent@smkent.net>"]
 readme = "README.md"
@@ -19,6 +19,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
+dataclasses-json = "^0.5.7"
 
 [tool.poetry.dev-dependencies]
 black = "*"
@@ -33,9 +34,11 @@ pytest-github-actions-annotate-failures = "*"
 pytest-sugar = "*"
 tox = "*"
 types-requests = "^2.28.9"
+pytest-mock = "^3.8.2"
+responses = "^0.21.0"
 
 [tool.poetry.scripts]
-safeway-coupons = "safeway_coupons.main:main"
+safeway-coupons = "safeway_coupons.app:main"
 
 [tool.poetry-dynamic-versioning]
 enable = true
