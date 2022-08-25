@@ -3,7 +3,7 @@ import itertools
 import os
 from typing import List, Optional
 
-from .account import Account
+from .accounts import Account
 
 
 class Config:

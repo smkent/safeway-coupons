@@ -4,7 +4,7 @@ import subprocess
 from email.mime.text import MIMEText
 from typing import List
 
-from .account import Account
+from .accounts import Account
 from .models import Offer
 
 

@@ -2,7 +2,7 @@ import json
 import random
 from typing import List
 
-from .account import Account
+from .accounts import Account
 from .errors import ClipError
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferList

@@ -4,7 +4,7 @@ from typing import Optional
 
 import requests
 
-from .account import Account
+from .accounts import Account
 from .errors import AuthenticationFailure
 from .utils import make_nonce, make_token
 
