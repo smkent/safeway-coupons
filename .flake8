@@ -1,4 +1,0 @@
-[flake8]
-exclude = ./.*
-
-# vim: ft=cfg

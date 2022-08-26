@@ -26,6 +26,7 @@ requests = "^2.28.1"
 black = "*"
 cruft = "*"
 flake8 = "*"
+flake8-pyproject = "*"
 isort = "*"
 mypy = "*"
 poethepoet = "*"
@@ -46,19 +47,61 @@ enable = true
 vcs = "git"
 style = "semver"
 
+[tool.poe.env]
+PROJECT_CODE_DIRS="safeway_coupons/ tests/"
+
 [tool.poe.tasks]
-lt = ["lint", "test"]
+flake8 = { cmd = "flake8", help = "Check code style with flake8" }
+mypy = { cmd = "mypy", help = "Check types with mypy" }
+pytest = { cmd = "pytest", help = "Run unit tests with pytest" }
 
-lint = ["isort_lint", "black_lint"]
-black_lint = { cmd = "black -l 79 -- tests/ safeway_coupons/" }
-isort_lint = { cmd = "isort -- tests/ safeway_coupons/" }
+[tool.poe.tasks.cookie]
+shell = """
+    set -e
+    git checkout -b update-cookie
+    git reset --hard origin/main
+    before_ref=$(jq -r .commit .cruft.json)
+    cruft update -y
+    after_ref=$(jq -r .commit .cruft.json)
+    poetry lock --no-update
+    git add .cruft.json poetry.lock
+    (
+        echo "Apply updates from upstream project template"
+        echo
+        echo "Applied upstream commits:"
+        echo
+        echo "https://github.com/smkent/cookie-python/compare/${before_ref}...${after_ref}"
+    ) | git commit -F -
+"""
+help = "Apply upstream project template updates"
 
-test = ["flake8", "isort", "black", "mypy", "pytest"]
-black = { cmd = "black -l 79 --check --diff --color -- tests/ safeway_coupons/" }
-isort = { cmd = "isort --check-only --diff -- tests/ safeway_coupons/" }
-flake8 = { cmd = "flake8" }
-mypy = { cmd = "mypy" }
-pytest = { cmd = "pytest" }
+[tool.poe.tasks.black]
+cmd = "black -l 79 --check --diff --color -- ${PROJECT_CODE_DIRS}"
+help = "Check code formatting with black"
+
+[tool.poe.tasks.black_lint]
+cmd = "black -l 79 -- ${PROJECT_CODE_DIRS}"
+help = "Reformat code with black"
+
+[tool.poe.tasks.isort]
+cmd = "isort --check-only --diff -- ${PROJECT_CODE_DIRS}"
+help = "Check imports order with isort"
+
+[tool.poe.tasks.isort_lint]
+cmd = "isort -- ${PROJECT_CODE_DIRS}"
+help = "Reformat code with black"
+
+[tool.poe.tasks.lt]
+sequence = ["lint", "test"]
+help = "Run all linters and all tests"
+
+[tool.poe.tasks.lint]
+sequence = ["isort_lint", "black_lint"]
+help = "Run linters"
+
+[tool.poe.tasks.test]
+sequence = ["flake8", "isort", "black", "mypy", "pytest"]
+help = "Run all tests"
 
 [tool.coverage.run]
 source = ["safeway_coupons"]
@@ -70,6 +113,9 @@ show_missing = true
 [tool.cruft]
 skip = [".git"]
 
+[tool.flake8]
+exclude = "./.*"
+
 [tool.isort]
 atomic = true
 profile = "black"
@@ -77,6 +123,7 @@ line_length = 79
 
 [tool.mypy]
 files = [ "tests", "safeway_coupons" ]
+mypy_path = "types"
 disallow_untyped_defs = true
 no_implicit_optional = true
 check_untyped_defs = true
@@ -89,7 +136,7 @@ addopts = """\
     --cov \
     --cov-append \
     --cov-report term \
-    --cov-report xml:coverage.xml \
+    --cov-report xml:.coverage.xml \
     --junitxml=tests/pytest.xml \
 """
 

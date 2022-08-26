@@ -13,16 +13,20 @@ on:
 
 jobs:
   Test:
-    name: Test with Python ${{ matrix.python-version }}, Poetry ${{ matrix.poetry-version }}
-    runs-on: ubuntu-latest
+    name: Python ${{ matrix.python-version }}, Poetry ${{ matrix.poetry-version }}
 
     strategy:
       matrix:
+        os:
+          - Ubuntu
         python-version:
+          - "3.8"
+          - "3.9"
           - "3.10"
         poetry-version:
           - "1.1.14"
 
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - name: 💾 Check out repository
         uses: actions/checkout@v3
@@ -47,6 +51,7 @@ jobs:
         if: ${{ env.ENABLE_COVERAGE == 'true' }}
         with:
           fail_ci_if_error: true
+          files: ./.coverage.xml
 
 concurrency:
   group: workflow-ci-${{ github.ref }}-1
