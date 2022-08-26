@@ -1,10 +1,9 @@
 *.egg-info/
 *.pyc
 .coverage
+.coverage.xml
 .pytest_cache/
 .tox/
 .venv/
-bin/
 dist/
 tests/pytest.xml
-coverage.xml
