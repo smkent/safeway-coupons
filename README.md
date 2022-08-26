@@ -12,12 +12,23 @@ so they don't have to each be clicked manually.
 
 For best results, run this program once a day or so with a cron daemon.
 
-## Prerequisites
+## Installation
 
-* [Poetry][poetry]: `pip install poetry`
-* sendmail (optional)
+[safeway-coupons is available on PyPI][pypi]:
+
+```
+pip install safeway-coupons
+```
+
+For email support, `sendmail` is needed.
 
 ## Usage
+
+For full usage options, run
+
+```sh
+safeway-coupons --help
+```
 
 ### Configuration
 
@@ -54,19 +65,10 @@ notify = your.email@example.com     ; optional
 ```
 
 Provide the path to your config file using the `-c` or `--accounts-config`
-option.
-
-### Invocation
-
-First, install the project dependencies with [Poetry][poetry]:
-```sh
-poetry install
-```
-
-Execute `safeway-coupons` with Poetry:
+option:
 
 ```sh
-poetry run safeway-coupons
+safeway-coupons -c path/to/config/file
 ```
 
 ## Development
