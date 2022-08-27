@@ -15,7 +15,7 @@ runs:
       shell: bash
       run: |
         python3 -m pip install \
-            poetry==${{ inputs.poetry_version }} \
+            poetry==${{ inputs.poetry_version }}.* \
             poetry-dynamic-versioning
 
     - name: 🐍 Set up Python

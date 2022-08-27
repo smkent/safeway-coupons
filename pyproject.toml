@@ -29,6 +29,7 @@ cruft = "*"
 flake8 = "*"
 flake8-bugbear = "*"
 flake8-pyproject = "*"
+flake8-simplify = "*"
 isort = "*"
 mypy = "*"
 pep8-naming = "*"
@@ -146,8 +147,8 @@ addopts = """\
     --cov \
     --cov-append \
     --cov-report term \
-    --cov-report xml:.coverage.xml \
-    --junitxml=tests/pytest.xml \
+    --cov-report xml:.pytest_coverage.xml \
+    --junitxml=.pytest_results.xml \
 """
 
 [tool.tox]

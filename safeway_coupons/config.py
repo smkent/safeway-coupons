@@ -36,9 +36,8 @@ class Config:
     @classmethod
     def load_accounts_from_config(cls, config_file: str) -> List[Account]:
         config = configparser.ConfigParser()
-        config.read_file(
-            itertools.chain(["[_no_section]"], open(config_file, "r"))
-        )
+        with open(config_file) as f:
+            config.read_file(itertools.chain(["[_no_section]"], f))
         accounts: List[Account] = []
         mail_from = None
         for section in config.sections():
