@@ -35,7 +35,7 @@ def test_safeway_coupons_few_clip_errors(
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=5)
     app.clip_for_account(create_account())
     assert set(clips.clipped_offer_ids) == {"0", "2", "3", "4"}
-    assert not clips.failed_offer_ids == {"1"}
+    assert set(clips.failed_offer_ids) == {"1"}
 
 
 @pytest.mark.usefixtures("login_success")
@@ -55,7 +55,7 @@ def test_safeway_coupons_too_many_clip_errors(
     with pytest.raises(TooManyClipErrors):
         app.clip_for_account(create_account())
     assert set(clips.clipped_offer_ids) == {"0"}
-    assert not clips.failed_offer_ids == {"1", "2"}
+    assert set(clips.failed_offer_ids) == {"1", "2"}
 
 
 @pytest.mark.usefixtures("login_success")

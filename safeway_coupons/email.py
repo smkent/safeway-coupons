@@ -73,9 +73,8 @@ def email_error(
         f"Safeway account: {account.username}",
         f"Error: {error}",
     ]
-    if isinstance(error, TooManyClipErrors):
-        if error.clipped_offers:
-            mail_message += ["Clipped coupons:", ""]
-            for offer in error.clipped_offers:
-                mail_message += str(offer)
+    if isinstance(error, TooManyClipErrors) and error.clipped_offers:
+        mail_message += ["Clipped coupons:", ""]
+        for offer in error.clipped_offers:
+            mail_message += str(offer)
     _send_email(account, mail_subject, mail_message, debug_level, send_email)
