@@ -24,7 +24,7 @@ jobs:
           - "3.9"
           - "3.10"
         poetry-version:
-          - "1.1.14"
+          - "1.1"
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -44,14 +44,14 @@ jobs:
         uses: test-summary/action@v1
         if: success() || failure()
         with:
-          paths: tests/pytest.xml
+          paths: ./.pytest_results.xml
 
       - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         if: ${{ env.ENABLE_COVERAGE == 'true' }}
         with:
           fail_ci_if_error: true
-          files: ./.coverage.xml
+          files: ./.pytest_coverage.xml
 
 concurrency:
   group: workflow-ci-${{ github.ref }}-1
