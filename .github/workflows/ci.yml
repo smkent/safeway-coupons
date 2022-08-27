@@ -54,5 +54,5 @@ jobs:
           files: ./.pytest_coverage.xml
 
 concurrency:
-  group: workflow-ci-${{ github.ref }}-1
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
