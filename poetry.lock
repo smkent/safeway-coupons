@@ -170,7 +170,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "cruft"
-version = "2.11.0"
+version = "2.11.1"
 description = "Allows you to maintain all the necessary cruft for packaging and building projects separate from the code you intentionally write. Built on-top of CookieCutter."
 category = "dev"
 optional = false
@@ -204,7 +204,7 @@ dev = ["types-dataclasses", "simplejson", "flake8", "portray", "hypothesis", "my
 
 [[package]]
 name = "distlib"
-version = "0.3.5"
+version = "0.3.6"
 description = "Distribution utilities"
 category = "dev"
 optional = false
@@ -983,16 +983,16 @@ coverage = [
     {file = "coverage-6.4.4.tar.gz", hash = "sha256:e16c45b726acb780e1e6f88b286d3c10b3914ab03438f32117c4aa52d7f30d58"},
 ]
 cruft = [
-    {file = "cruft-2.11.0-py3-none-any.whl", hash = "sha256:0a5f5c8dd4f7ea529fc7e55fe786a8a6dc2134b3db105bd2c4954fc400fe3300"},
-    {file = "cruft-2.11.0.tar.gz", hash = "sha256:dd1edac65f039faca23f63bec46e774d2d3e8af86fd67e6b62cbfecef3d6ff18"},
+    {file = "cruft-2.11.1-py3-none-any.whl", hash = "sha256:36026426d1d602656fe894e027dcd502ccf48da4b30927e071928e35465c2676"},
+    {file = "cruft-2.11.1.tar.gz", hash = "sha256:deae3ee097f091462d7c872df22d6ad0ac89ce870bd1665e716e0d08fd21357b"},
 ]
 dataclasses-json = [
     {file = "dataclasses-json-0.5.7.tar.gz", hash = "sha256:c2c11bc8214fbf709ffc369d11446ff6945254a7f09128154a7620613d8fda90"},
     {file = "dataclasses_json-0.5.7-py3-none-any.whl", hash = "sha256:bc285b5f892094c3a53d558858a88553dd6a61a11ab1a8128a0e554385dcc5dd"},
 ]
 distlib = [
-    {file = "distlib-0.3.5-py2.py3-none-any.whl", hash = "sha256:b710088c59f06338ca514800ad795a132da19fda270e3ce4affc74abf955a26c"},
-    {file = "distlib-0.3.5.tar.gz", hash = "sha256:a7f75737c70be3b25e2bee06288cec4e4c221de18455b2dd037fe2a795cab2fe"},
+    {file = "distlib-0.3.6-py2.py3-none-any.whl", hash = "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"},
+    {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
 ]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
