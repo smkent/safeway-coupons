@@ -23,7 +23,7 @@ dataclasses-json = "^0.5.7"
 requests = "^2.28.1"
 
 [tool.poetry.dev-dependencies]
-bandit = "*"
+bandit = {extras = ["toml"], version = "*"}
 black = "*"
 cruft = "*"
 flake8 = "*"
