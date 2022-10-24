@@ -1,0 +1,10 @@
+diff a/pyproject.toml b/pyproject.toml	(rejected hunks)
+@@ -21,7 +21,7 @@ classifiers = [
+ python = "^3.8"
+ 
+ [tool.poetry.dev-dependencies]
+-bandit = "*"
++bandit = {extras = ["toml"], version = "*"}
+ black = "*"
+ cruft = "*"
+ flake8 = "*"
