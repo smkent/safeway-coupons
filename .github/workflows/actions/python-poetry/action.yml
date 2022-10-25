@@ -15,8 +15,8 @@ runs:
       shell: bash
       run: |
         python3 -m pip install \
-            poetry==${{ inputs.poetry_version }}.* \
-            poetry-dynamic-versioning
+            "poetry==${{ inputs.poetry_version }}.*" \
+            "poetry-dynamic-versioning<=0.17.1"
 
     - name: 🐍 Set up Python
       uses: actions/setup-python@v4
@@ -28,3 +28,5 @@ runs:
       shell: bash
       run: |
         poetry install
+        [ "$(poetry version -s)" != "0.0.0" ] \
+            || { echo "Versioning broken"; exit 1; }
