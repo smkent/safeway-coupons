@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
@@ -20,6 +20,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 dataclasses-json = "^0.5.7"
+pre-commit = "*"
 requests = "^2.28.1"
 
 [tool.poetry.dev-dependencies]
@@ -38,7 +39,6 @@ pytest = "*"
 pytest-cov = "*"
 pytest-github-actions-annotate-failures = "*"
 pytest-sugar = "*"
-tox = "*"
 types-requests = "^2.28.9"
 pytest-mock = "^3.8.2"
 responses = "^0.21.0"
@@ -51,68 +51,23 @@ enable = true
 vcs = "git"
 style = "semver"
 
-[tool.poe.env]
-PROJECT_CODE_DIRS="safeway_coupons/ tests/"
-
-[tool.poe.tasks]
-flake8 = { cmd = "flake8", help = "Check code style with flake8" }
-mypy = { cmd = "mypy", help = "Check types with mypy" }
-pytest = { cmd = "pytest", help = "Run unit tests with pytest" }
-
-[tool.poe.tasks.cookie]
-shell = """
-    set -e
-    git checkout -b update-cookie
-    git reset --hard origin/main
-    before_ref=$(python -c 'import json; print(json.load(open(".cruft.json"))["commit"])')
-    cruft update -y
-    after_ref=$(python -c 'import json; print(json.load(open(".cruft.json"))["commit"])')
-    poetry lock --no-update
-    git add .cruft.json poetry.lock
-    (
-        echo "Apply updates from upstream project template"
-        echo
-        echo "Applied upstream commits:"
-        echo
-        echo "https://github.com/smkent/cookie-python/compare/${before_ref}...${after_ref}"
-    ) | git commit -F -
-"""
-help = "Apply upstream project template updates"
-
-[tool.poe.tasks.bandit]
-cmd = "bandit -c pyproject.toml -q -r $(echo \"${PROJECT_CODE_DIRS}\" | sed 's:tests/::')"
-help = "Perform security analysis with bandit"
-
-[tool.poe.tasks.black]
-cmd = "black -l 79 --check --diff --color -- ${PROJECT_CODE_DIRS}"
-help = "Check code formatting with black"
-
-[tool.poe.tasks.black_lint]
-cmd = "black -l 79 -- ${PROJECT_CODE_DIRS}"
-help = "Reformat code with black"
-
-[tool.poe.tasks.isort]
-cmd = "isort --check-only --diff -- ${PROJECT_CODE_DIRS}"
-help = "Check imports order with isort"
-
-[tool.poe.tasks.isort_lint]
-cmd = "isort -- ${PROJECT_CODE_DIRS}"
-help = "Reformat code with black"
-
-[tool.poe.tasks.lt]
-sequence = ["lint", "test"]
-help = "Run all linters and all tests"
-
 [tool.poe.tasks.lint]
-sequence = ["isort_lint", "black_lint"]
-help = "Run linters"
+cmd = "pre-commit run --all-files --show-diff-on-failure"
+help = "Check all files"
+
+[tool.poe.tasks.pytest]
+cmd = "pytest"
+help = "Run unit tests with pytest"
 
 [tool.poe.tasks.test]
-sequence = ["flake8", "isort", "black", "mypy", "bandit", "pytest"]
+sequence = ["lint", "pytest"]
 help = "Run all tests"
 
 [tool.bandit]
 skips = ["B101"]  # assert_used
+
+[tool.black]
+line-length = 79
 
 [tool.coverage.run]
 source = ["safeway_coupons"]
@@ -149,26 +104,6 @@ addopts = """\
     --cov-report term \
     --cov-report xml:.pytest_coverage.xml \
     --junitxml=.pytest_results.xml \
-"""
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py310
-isolated_build = True
-requires =
-    tox-poetry-installer[poetry] == 0.6.0
-
-[testenv]
-deps =
-    poetry
-commands =
-    poetry install
-    poetry run poe test
-
-[gh-actions]
-python =
-    3.10: py310
 """
 
 # vim: ft=cfg
