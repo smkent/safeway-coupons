@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -ex
+
+if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
+        && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then
+    export SAFEWAY_ACCOUNT_MAIL_TO="${SAFEWAY_ACCOUNT_USERNAME}"
+fi
+
+if [ -n "${SAFEWAY_ACCOUNT_MAIL_FROM}" ]; then
+    export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_FROM}"
+fi
+if [ -n "${SAFEWAY_ACCOUNT_MAIL_TO}" ]; then
+    export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_TO}"
+fi
+
+mkdir /etc/cron.d
+(
+    echo "${CRON_SCHEDULE?} safeway-coupons >/proc/1/fd/1 2>/proc/1/fd/2"
+) > /var/spool/cron/crontabs/root
+
+env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
+
+crontab -l
+
+exec crond -f -d 8
