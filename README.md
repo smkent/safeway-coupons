@@ -10,23 +10,59 @@
 and attempt to select all of the "Safeway for U" electronic coupons on the site
 so they don't have to each be clicked manually.
 
-For best results, run this program once a day or so with a cron daemon.
+## Installation and usage with Docker
 
-## Installation
+A Docker container is provided which runs safeway-coupons with cron. The cron
+schedule and your Safeway account details should be configured using environment
+variables.
+
+Example `docker-compose.yaml`:
+
+```yaml
+version: "3.7"
+
+services:
+  safeway-coupons:
+    image: ghcr.io/smkent/safeway-coupons:latest
+    environment:
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM each day
+      SMTPHOST: your.smtp.host
+      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
+      SAFEWAY_ACCOUNT_PASSWORD: very_secret
+      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
+      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+    restart: unless-stopped
+```
+
+Start the container by running:
+
+```console
+docker-compose up -d
+```
+
+Debugging information can be viewed in the container log:
+
+```console
+docker-compose logs -f
+```
+
+## Installation from PyPI
 
 [safeway-coupons is available on PyPI][pypi]:
 
-```
+```console
 pip install safeway-coupons
 ```
 
-For email support, `sendmail` is needed.
+`sendmail` is needed for email support.
 
-## Usage
+For best results, run this program once a day or so with a cron daemon.
+
+### Usage
 
 For full usage options, run
 
-```sh
+```console
 safeway-coupons --help
 ```
 
@@ -67,7 +103,7 @@ notify = your.email@example.com     ; optional
 Provide the path to your config file using the `-c` or `--accounts-config`
 option:
 
-```sh
+```console
 safeway-coupons -c path/to/config/file
 ```
 
