@@ -38,8 +38,8 @@ def test_app_error(
         os,
         "environ",
         {
-            "SAFEWAY_COUPONS_USERNAME": "ness@onett.example",
-            "SAFEWAY_COUPONS_PASSWORD": "pk_fire",
+            "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
+            "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
         },
     )
     cast(
@@ -111,8 +111,8 @@ def test_args(
         os,
         "environ",
         {
-            "SAFEWAY_COUPONS_USERNAME": "ness@onett.example",
-            "SAFEWAY_COUPONS_PASSWORD": "pk_fire",
+            "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
+            "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
         },
     )
     main()

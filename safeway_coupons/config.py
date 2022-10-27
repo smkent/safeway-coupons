@@ -20,10 +20,10 @@ class Config:
 
     @classmethod
     def load_account_from_env(cls) -> Optional[Account]:
-        username = os.environ.get("SAFEWAY_COUPONS_USERNAME")
-        password = os.environ.get("SAFEWAY_COUPONS_PASSWORD")
-        mail_to = os.environ.get("SAFEWAY_COUPONS_MAIL_TO")
-        mail_from = os.environ.get("SAFEWAY_COUPONS_MAIL_TO")
+        username = os.environ.get("SAFEWAY_ACCOUNT_USERNAME")
+        password = os.environ.get("SAFEWAY_ACCOUNT_PASSWORD")
+        mail_to = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
+        mail_from = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
         if username and password:
             return Account(
                 username=username,
