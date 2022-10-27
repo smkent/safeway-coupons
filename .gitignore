@@ -4,6 +4,5 @@
 .pytest_cache/
 .pytest_coverage.xml
 .pytest_results.xml
-.tox/
 .venv/
 dist/

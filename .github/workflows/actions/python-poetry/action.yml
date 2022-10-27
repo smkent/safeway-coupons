@@ -16,17 +16,31 @@ runs:
       run: |
         python3 -m pip install \
             "poetry==${{ inputs.poetry_version }}.*" \
-            "poetry-dynamic-versioning<=0.17.1"
+            "poetry-dynamic-versioning"
+        python3 -m pip install --upgrade requests
 
     - name: 🐍 Set up Python
       uses: actions/setup-python@v4
+      id: setuppy
       with:
         python-version: ${{ inputs.python_version }}
         cache: poetry
 
     - name: 🛠️ Install project dependencies
       shell: bash
+      env:
+        # https://github.com/python-poetry/poetry/issues/1917
+        # https://github.com/actions/runner-images/issues/6185
+        PYTHON_KEYRING_BACKEND: "keyring.backends.null.Keyring"
       run: |
         poetry install
         [ "$(poetry version -s)" != "0.0.0" ] \
             || { echo "Versioning broken"; exit 1; }
+
+    - name: 🪝 Cache pre-commit hooks
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pre-commit
+        key: "pre-commit-${{ runner.os }}-python\
+          -${{ steps.setuppy.outputs.python-version }}\
+          -${{ hashFiles('.pre-commit-config.yaml') }}"

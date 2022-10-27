@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    - id: check-yaml
+    - id: check-merge-conflict
+    - id: debug-statements
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+    - id: black
+      args: ["--config", "pyproject.toml"]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+    - id: isort
+      args: ["--show-config"]
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.4
+    hooks:
+    - id: bandit
+      additional_dependencies: ['.[toml]']
+      args: ["--configfile", "pyproject.toml"]
+      exclude: '^tests/'
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+    - id: flake8
+      additional_dependencies:
+      - flake8-bugbear
+      - flake8-pyproject
+      - flake8-simplify
+      - pep8-naming
+  - repo: local
+    hooks:
+    - id: mypy
+      name: mypy
+      language: python
+      types_or: [python, pyi]
+      entry: env -u VIRTUAL_ENV poetry run mypy
