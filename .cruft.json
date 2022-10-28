@@ -10,6 +10,7 @@
       "project_license": "GPL-3.0-or-later",
       "enable_coverage": "yes",
       "enable_pypi_publish": "yes",
+      "enable_container_publish": "yes",
       "author_name": "Stephen Kent",
       "author_email": "smkent@smkent.net",
       "github_user": "smkent",
