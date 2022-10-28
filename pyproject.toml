@@ -35,6 +35,7 @@ isort = "*"
 mypy = "*"
 pep8-naming = "*"
 poethepoet = "*"
+py = "1.11.0"  # https://github.com/Teemu/pytest-sugar/issues/241
 pytest = "*"
 pytest-cov = "*"
 pytest-github-actions-annotate-failures = "*"
