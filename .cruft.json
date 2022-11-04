@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/smkent/cookie-python",
-  "commit": "89d231246d5218b50b1b9b85415bde7af3441064",
+  "commit": "224c0e2ca30f461007b0204e81155b256ac13fc4",
   "checkout": null,
   "context": {
     "cookiecutter": {
