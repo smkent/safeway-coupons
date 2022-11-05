@@ -13,10 +13,10 @@ so they don't have to each be clicked manually.
 ## Installation and usage with Docker
 
 A Docker container is provided which runs safeway-coupons with cron. The cron
-schedule and your Safeway account details should be configured using environment
-variables.
+schedule and your Safeway account details may be configured using environment
+variables, or with an accounts file.
 
-Example `docker-compose.yaml`:
+Example `docker-compose.yaml` with configuration via environment variables:
 
 ```yaml
 version: "3.7"
@@ -32,6 +32,23 @@ services:
       SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
       SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
     restart: unless-stopped
+```
+
+Example `docker-compose.yaml` with configuration via accounts file:
+
+```yaml
+version: "3.7"
+
+services:
+  safeway-coupons:
+    image: ghcr.io/smkent/safeway-coupons:latest
+    environment:
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM each day
+      SMTPHOST: your.smtp.host
+      SAFEWAY_ACCOUNTS_FILE: /accounts_file
+    restart: unless-stopped
+    volumes:
+      - path/to/safeway_accounts_file:/accounts_file:ro
 ```
 
 Start the container by running:
