@@ -48,7 +48,7 @@ jobs:
           paths: ./.pytest_results.xml
 
       - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         if: ${{ env.ENABLE_COVERAGE == 'true' }}
         with:
           fail_ci_if_error: true
