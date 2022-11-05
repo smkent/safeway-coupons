@@ -2,24 +2,29 @@
 
 set -ex
 
-if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
-        && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then
-    export SAFEWAY_ACCOUNT_MAIL_TO="${SAFEWAY_ACCOUNT_USERNAME}"
-fi
-
-if [ -n "${SAFEWAY_ACCOUNT_MAIL_FROM}" ]; then
-    export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_FROM}"
-fi
-if [ -n "${SAFEWAY_ACCOUNT_MAIL_TO}" ]; then
-    export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_TO}"
+args=
+if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
+    echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
+    args="--accounts-config ${SAFEWAY_ACCOUNTS_FILE}"
+else
+    echo "Using environment variables for configuration"
+    if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
+            && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then
+        export SAFEWAY_ACCOUNT_MAIL_TO="${SAFEWAY_ACCOUNT_USERNAME}"
+    fi
+    if [ -n "${SAFEWAY_ACCOUNT_MAIL_FROM}" ]; then
+        export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_FROM}"
+    fi
+    if [ -n "${SAFEWAY_ACCOUNT_MAIL_TO}" ]; then
+        export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_TO}"
+    fi
+    env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
 fi
 
 mkdir /etc/cron.d
 (
-    echo "${CRON_SCHEDULE?} safeway-coupons >/proc/1/fd/1 2>/proc/1/fd/2"
+    echo "${CRON_SCHEDULE?} safeway-coupons ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
 ) > /var/spool/cron/crontabs/root
-
-env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
 
 crontab -l
 

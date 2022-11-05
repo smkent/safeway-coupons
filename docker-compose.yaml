@@ -6,8 +6,7 @@ services:
     environment:
       CRON_SCHEDULE: "0 2 * * *"
       SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: very_secret
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      SAFEWAY_ACCOUNTS_FILE: /accounts_file
     restart: unless-stopped
+    volumes:
+      - path/to/safeway_accounts_file:/accounts_file:ro
