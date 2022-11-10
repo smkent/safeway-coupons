@@ -34,6 +34,7 @@ runs:
         PYTHON_KEYRING_BACKEND: "keyring.backends.null.Keyring"
       run: |
         poetry install
+        poetry lock --check
         [ "$(poetry version -s)" != "0.0.0" ] \
             || { echo "Versioning broken"; exit 1; }
 
