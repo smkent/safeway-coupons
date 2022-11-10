@@ -40,9 +40,9 @@ pytest = "*"
 pytest-cov = "*"
 pytest-github-actions-annotate-failures = "*"
 pytest-sugar = "*"
-types-requests = "^2.28.9"
-pytest-mock = "^3.8.2"
-responses = "^0.21.0"
+types-requests = "*"
+pytest-mock = "*"
+responses = "*"
 
 [tool.poetry.scripts]
 safeway-coupons = "safeway_coupons.app:main"
