@@ -35,7 +35,6 @@ mypy = "*"
 pep8-naming = "*"
 poethepoet = "*"
 pre-commit = "*"
-py = "1.11.0"  # https://github.com/Teemu/pytest-sugar/issues/241
 pytest = "*"
 pytest-cov = "*"
 pytest-github-actions-annotate-failures = "*"
