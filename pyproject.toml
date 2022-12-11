@@ -19,8 +19,8 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-dataclasses-json = "^0.5.7"
-requests = "^2.28.1"
+dataclasses-json = "*"
+requests = "*"
 
 [tool.poetry.dev-dependencies]
 bandit = {extras = ["toml"], version = "*"}
