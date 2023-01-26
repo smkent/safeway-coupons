@@ -15,7 +15,7 @@ AUTHORIZE_URL = (
 
 OAUTH_CLIENT_ID = "0oap6ku01XJqIRdl42p6"
 OAUTH_REDIRECT_URI = (
-    "https://www.safeway.com/bin/safeway/unified/sso/authorize"
+    "https://www.jewelosco.com/bin/safeway/unified/sso/authorize"
 )
 
 

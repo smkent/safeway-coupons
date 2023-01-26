@@ -26,7 +26,7 @@ class SafewayClient(BaseSession):
     def get_offers(self) -> List[Offer]:
         try:
             response = self.requests.get(
-                "https://www.safeway.com/abs/pub/xapi"
+                "https://www.jewelosco.com/abs/pub/xapi"
                 "/offers/companiongalleryoffer"
                 f"?storeId={self.session.store_id}"
                 f"&rand={random.randrange(100000,999999)}",
@@ -41,7 +41,7 @@ class SafewayClient(BaseSession):
         response: Optional[requests.Response] = None
         try:
             response = self.requests.post(
-                "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
+                "https://www.jewelosco.com/abs/pub/web/j4u/api/offers/clip"
                 f"?storeId={self.session.store_id}",
                 data=json.dumps(request.to_dict(encode_json=True)),
                 headers={"Content-Type": "application/json"},
