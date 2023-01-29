@@ -7,3 +7,4 @@ class Account:
     password: str = field(repr=False)
     mail_to: str
     mail_from: str
+    store_url: str

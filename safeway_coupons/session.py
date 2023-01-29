@@ -14,9 +14,6 @@ AUTHORIZE_URL = (
 )
 
 OAUTH_CLIENT_ID = "0oap6ku01XJqIRdl42p6"
-OAUTH_REDIRECT_URI = (
-    "https://www.jewelosco.com/bin/safeway/unified/sso/authorize"
-)
 
 
 class BaseSession:
@@ -62,7 +59,7 @@ class LoginSession(BaseSession):
         nonce = make_nonce()
         params = {
             "client_id": OAUTH_CLIENT_ID,
-            "redirect_uri": OAUTH_REDIRECT_URI,
+            "redirect_uri": (f"https://{account.store_url}/bin/safeway/unified/sso/authorize"),
             "response_type": "code",
             "response_mode": "query",
             "state": state_token,

@@ -28,7 +28,7 @@ class SafewayCoupons:
         self.max_clip_errors = max_clip_errors
 
     def clip_for_account(self, account: Account) -> None:
-        print(f"Clipping coupons for Safeway account {account.username}")
+        print(f"Clipping coupons for Safeway account {account.username} using url {account.store_url}")
         swy = SafewayClient(account)
         clipped_offers: List[Offer] = []
         clip_errors: List[ClipError] = []

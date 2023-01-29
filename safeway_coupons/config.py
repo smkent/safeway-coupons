@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from .accounts import Account
 
+DEFAULT_STORE_URL = "www.safeway.com"
 
 class Config:
     @classmethod
@@ -24,12 +25,14 @@ class Config:
         password = os.environ.get("SAFEWAY_ACCOUNT_PASSWORD")
         mail_to = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
         mail_from = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
+        store_url = os.environ.get("STORE_URL")
         if username and password:
             return Account(
                 username=username,
                 password=password,
                 mail_to=mail_to or username,
                 mail_from=mail_from or username,
+                store_url=store_url or DEFAULT_STORE_URL
             )
         return None
 
@@ -50,6 +53,11 @@ class Config:
                 if config.has_option(section, "notify")
                 else None
             )
+            store_url = (
+                config.get(section, "store_url")
+                if config.has_option(section, "store_url")
+                else None
+            )
             username = str(section)
             accounts.append(
                 Account(
@@ -57,6 +65,7 @@ class Config:
                     password=config.get(section, "password"),
                     mail_to=mail_to or username,
                     mail_from=mail_from or username,
+                    store_url=store_url or DEFAULT_STORE_URL
                 )
             )
         return accounts
