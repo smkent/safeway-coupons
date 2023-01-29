@@ -7,7 +7,7 @@ from .safeway import SafewayCoupons
 
 
 def _parse_args() -> argparse.Namespace:
-    description = 'Automatic coupon clipper for "Jewel Just4U" coupons'
+    description = 'Automatic coupon clipper for "Just4U" coupons'
     arg_parser = argparse.ArgumentParser(description=description)
     arg_parser.add_argument(
         "-c",
