@@ -36,7 +36,7 @@ jobs:
 
       - name: 📡 Collect image metadata
         id: meta
-        uses: docker/metadata-action@v4.1.1
+        uses: docker/metadata-action@v4.3.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -57,9 +57,11 @@ jobs:
         run: poetry run poe test
 
       - name: 📦 Build and publish container image
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v4.0.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            "POETRY_DYNAMIC_VERSIONING_BYPASS=${{ env.PROJECT_VERSION }}"
