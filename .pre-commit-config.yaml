@@ -33,6 +33,15 @@ repos:
       - flake8-pyproject
       - flake8-simplify
       - pep8-naming
+  - repo: https://github.com/pycqa/autoflake
+    rev: v2.0.1
+    hooks:
+    - id: autoflake
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
+    hooks:
+    - id: pyupgrade
+      args: ["--keep-runtime-typing"]
   - repo: local
     hooks:
     - id: mypy
