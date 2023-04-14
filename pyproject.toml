@@ -21,6 +21,9 @@ classifiers = [
 python = "^3.8"
 dataclasses-json = "*"
 requests = "*"
+selenium = "^4.10"
+webdriver-manager = "^3.8.6"
+undetected-chromedriver = "^3.5.0"
 
 [tool.poetry.dev-dependencies]
 bandit = {extras = ["toml"], version = "*"}
