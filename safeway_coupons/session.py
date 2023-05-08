@@ -1,8 +1,12 @@
 import json
+import time
 import urllib
 from typing import Optional
 
 import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from .accounts import Account
 from .errors import AuthenticationFailure
@@ -18,12 +22,24 @@ OAUTH_REDIRECT_URI = (
     "https://www.safeway.com/bin/safeway/unified/sso/authorize"
 )
 
+WEBDRIVER = webdriver.Firefox
+
 
 class BaseSession:
     USER_AGENT = (
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:103.0) "
         "Gecko/20100101 Firefox/103.0"
     )
+
+    def __del__(self) -> None:
+        if getattr(self, "_browser", None):
+            self._browser.close()
+
+    @property
+    def browser(self) -> WEBDRIVER:
+        if not hasattr(self, "_browser"):
+            self._browser = WEBDRIVER()
+        return self._browser
 
     @property
     def requests(self) -> requests.Session:
@@ -47,40 +63,28 @@ class LoginSession(BaseSession):
             raise AuthenticationFailure(e, account) from e
 
     def _login(self, account: Account) -> None:
-        # Log in
-        response = self.requests.post(
-            LOGIN_URL,
-            json={"username": account.username, "password": account.password},
-        )
-        response.raise_for_status()
-        login_data = response.json()
-        if login_data.get("status") != "SUCCESS":
-            raise Exception("Login was not successful")
-        session_token = login_data["sessionToken"]
-        # Retrieve session information
-        state_token = make_token()
-        nonce = make_nonce()
-        params = {
-            "client_id": OAUTH_CLIENT_ID,
-            "redirect_uri": OAUTH_REDIRECT_URI,
-            "response_type": "code",
-            "response_mode": "query",
-            "state": state_token,
-            "nonce": nonce,
-            "prompt": "none",
-            "sessionToken": session_token,
-            "scope": "openid profile email offline_access used_credentials",
-        }
-        url = f"{AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
-        response = self.requests.get(url)
-        response.raise_for_status()
+        self.browser.get("https://www.safeway.com/account/sign-in.html")
+        self.browser.implicitly_wait(10)
+        email_input = self.browser.find_element(By.ID, "label-email")
+        self.browser.implicitly_wait(10)
+        password_input = self.browser.find_element(By.ID, "label-password")
+        time.sleep(1)
+        email_input.send_keys(account.username)
+        time.sleep(1)
+        password_input.send_keys(account.password + Keys.RETURN)
+        self.browser.implicitly_wait(30)
+        self.browser.find_element(By.ID, "skip-main-content")
         session = json.loads(
-            urllib.parse.unquote(self.requests.cookies["SWY_SHARED_SESSION"])
+            urllib.parse.unquote(
+                (self.browser.get_cookie("SWY_SHARED_SESSION") or {})["value"]
+            )
         )
         self.access_token = session["accessToken"]
         session_info = json.loads(
             urllib.parse.unquote(
-                self.requests.cookies["SWY_SHARED_SESSION_INFO"]
+                (self.browser.get_cookie("SWY_SHARED_SESSION_INFO") or {})[
+                    "value"
+                ]
             )
         )
         try:
