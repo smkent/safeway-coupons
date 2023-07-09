@@ -9,6 +9,7 @@ ENV SAFEWAY_ACCOUNT_PASSWORD=
 ENV SAFEWAY_ACCOUNT_MAIL_FROM=
 ENV SAFEWAY_ACCOUNT_MAIL_TO=
 ENV SAFEWAY_ACCOUNTS_FILE=
+ENV DEBUG_DIR="/debug"
 
 RUN DEBIAN_FRONTEND=noninteractive && \
     wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub > /usr/share/keyrings/chrome.pub && \

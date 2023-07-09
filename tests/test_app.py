@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Type, cast
 from unittest import mock
 
@@ -57,6 +58,7 @@ def test_app_error(
             dict(
                 send_email=True,
                 debug_level=0,
+                debug_dir=Path("."),
                 sleep_level=0,
                 dry_run=False,
                 max_clip_count=0,
@@ -67,6 +69,7 @@ def test_app_error(
             dict(
                 send_email=True,
                 debug_level=2,
+                debug_dir=Path("."),
                 sleep_level=2,
                 dry_run=False,
                 max_clip_count=0,
@@ -77,6 +80,7 @@ def test_app_error(
             dict(
                 send_email=False,
                 debug_level=0,
+                debug_dir=Path("."),
                 sleep_level=0,
                 dry_run=False,
                 max_clip_count=0,
@@ -87,6 +91,7 @@ def test_app_error(
             dict(
                 send_email=True,
                 debug_level=0,
+                debug_dir=Path("."),
                 sleep_level=0,
                 dry_run=True,
                 max_clip_count=42,

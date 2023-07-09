@@ -1,11 +1,13 @@
 import json
 import time
 import urllib
+from pathlib import Path
 from typing import Any, Optional
 
 import requests
 import selenium.webdriver.support.expected_conditions as ec
 import undetected_chromedriver as uc  # type: ignore
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import By
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -32,16 +34,16 @@ class BaseSession:
 
 
 class LoginSession(BaseSession):
-    def __init__(self, account: Account) -> None:
+    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
         self.access_token: Optional[str] = None
         self.store_id: Optional[str] = None
+        self.debug_dir: Optional[Path] = debug_dir
         try:
             self._login(account)
         except Exception as e:
             raise AuthenticationFailure(e, account) from e
 
     def _login(self, account: Account) -> None:
-        screenshot_dir = "/data"
         options = uc.ChromeOptions()
         for option in [
             "--incognito",
@@ -55,84 +57,78 @@ class LoginSession(BaseSession):
         ]:
             options.add_argument(option)
         with uc.Chrome(options=options) as driver:
-            driver.implicitly_wait(10)
-            # Navigate to the website URL
-            url = "https://www.safeway.com"
-            print("GO", url)
-            driver.get(url)
-            print("CLICK")
-            button = driver.find_element(
-                By.XPATH, "//button [contains(text(), 'Necessary Only')]"
-            )
-            if button:
-                print("click no cookie-button")
-                button.click()
-            print("SS 0")
-            driver.save_screenshot(f"{screenshot_dir}/screenshot_0.png")
-            driver.find_element(
-                By.XPATH, "//span [contains(text(), 'Sign In')]"
-            ).click()
-            time.sleep(2)
-            driver.find_element(
-                By.XPATH, "//a [contains(text(), 'Sign In')]"
-            ).click()
-            time.sleep(2)
-
-            driver.find_element(By.ID, "label-email").send_keys(
-                account.username
-            )
-            driver.find_element(By.ID, "label-password").send_keys(
-                account.password
-            )
-            print("CLICK 2")
-            time.sleep(0.5)
-            driver.find_element(
-                By.XPATH, "//span [contains(text(), 'Keep Me Signed In')]"
-            ).click()
-            print("SS 1")
-            driver.save_screenshot(f"{screenshot_dir}/screenshot_1.png")
-            # print("RETURN")
-            # return
-            time.sleep(0.5)
-            print("CLICK 3")
-            driver.find_element("id", "btnSignIn").click()
-            time.sleep(0.5)
-            wdw = WebDriverWait(driver, 10)
-            wdw.until(
-                ec.text_to_be_present_in_element(
-                    (By.XPATH, '//span [contains(@class, "user-greeting")]'),
-                    "Account",
-                )
-            )
-            el = driver.find_element(
-                By.XPATH, '//span [contains(@class, "user-greeting")]'
-            )
-            print("TEXT", el.text)
-            print("SS 2")
-            driver.save_screenshot(f"{screenshot_dir}/screenshot_2.png")
-            print("PRINT COOKIE")
-            session_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION")["value"]
-            )
-            session_info_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION_INFO")["value"]
-            )
-            from pprint import pprint
-
-            print("SESSION COOKIE")
-            pprint(session_cookie)
-            print("SESSION INFO COOKIE")
-            pprint(session_info_cookie)
-            print("SESSION COOKIE ACCESS TOKEN")
-            pprint(session_cookie["accessToken"])
-            self.access_token = session_cookie["accessToken"]
-            print("SESSION COOKIE STORE ID")
             try:
-                pprint(session_info_cookie["info"]["J4U"]["storeId"])
-                self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
-            except Exception as e:
-                raise Exception("Unable to retrieve store ID") from e
-            print("DONE LOGGING IN")
+                driver.implicitly_wait(10)
+                wait = WebDriverWait(driver, 10)
+                # Navigate to the website URL
+                url = "https://www.safeway.com"
+                print("Connect to safeway.com")
+                driver.get(url)
+                button = driver.find_element(
+                    By.XPATH, "//button [contains(text(), 'Necessary Only')]"
+                )
+                if button:
+                    print("Decline cookie prompt")
+                    button.click()
+                print("Open Sign In sidebar")
+                wait.until(
+                    ec.visibility_of_element_located(
+                        (By.XPATH, "//span [contains(text(), 'Sign In')]")
+                    )
+                ).click()
+                print("Open Sign In form")
+                wait.until(
+                    ec.visibility_of_element_located(
+                        (By.XPATH, "//a [contains(text(), 'Sign In')]")
+                    )
+                ).click()
+                time.sleep(2)
+                print("Populate Sign In form")
+                driver.find_element(By.ID, "label-email").send_keys(
+                    account.username
+                )
+                driver.find_element(By.ID, "label-password").send_keys(
+                    account.password
+                )
+                time.sleep(0.5)
+                print("Deselect Keep Me Signed In")
+                driver.find_element(
+                    By.XPATH, "//span [contains(text(), 'Keep Me Signed In')]"
+                ).click()
+                time.sleep(0.5)
+                print("Click Sign In button")
+                driver.find_element("id", "btnSignIn").click()
+                time.sleep(0.5)
+                print("Wait for signed in landing page to load")
+                wait.until(
+                    ec.text_to_be_present_in_element(
+                        (
+                            By.XPATH,
+                            '//span [contains(@class, "user-greeting")]',
+                        ),
+                        "Account",
+                    )
+                )
+                print("Retrieve session information")
+                session_cookie = self._parse_cookie_value(
+                    driver.get_cookie("SWY_SHARED_SESSION")["value"]
+                )
+                session_info_cookie = self._parse_cookie_value(
+                    driver.get_cookie("SWY_SHARED_SESSION_INFO")["value"]
+                )
+                self.access_token = session_cookie["accessToken"]
+                try:
+                    self.store_id = session_info_cookie["info"]["J4U"][
+                        "storeId"
+                    ]
+                except Exception as e:
+                    raise Exception("Unable to retrieve store ID") from e
+            except TimeoutException as e:
+                if self.debug_dir:
+                    driver.save_screenshot(
+                        self.debug_dir / "screenshot_error.png"
+                    )
+                raise Exception("Browser authentication timed out") from e
 
     def _parse_cookie_value(self, value: str) -> Any:
         return json.loads(urllib.parse.unquote(value))
