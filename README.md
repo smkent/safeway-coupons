@@ -10,6 +10,17 @@
 and attempt to select all of the "Safeway for U" electronic coupons on the site
 so they don't have to each be clicked manually.
 
+## Design notes
+
+Safeway's sign in page is protected by a web application firewall (WAF).
+safeway-coupons performs authentication using a headless instance of Google
+Chrome. Authentication may fail based on your IP's reputation, either by
+presenting a CAPTCHA or denying sign in attempts altogether. safeway-coupons
+currently does not have support for prompting the user to solve CAPTCHAs.
+
+Once a signed in session is established, coupon clipping is performed using HTTP
+requests via [requests][requests].
+
 ## Installation and usage with Docker
 
 A Docker container is provided which runs safeway-coupons with cron. The cron
@@ -65,17 +76,22 @@ docker-compose logs -f
 
 ## Installation from PyPI
 
+### Prerequisites
+
+* Google Chrome (for authentication performed via Selenium).
+* Optional: `sendmail` (for email support)
+
+### Installation
+
 [safeway-coupons is available on PyPI][pypi]:
 
 ```console
 pip install safeway-coupons
 ```
 
-`sendmail` is needed for email support.
+### Usage
 
 For best results, run this program once a day or so with a cron daemon.
-
-### Usage
 
 For full usage options, run
 
@@ -163,3 +179,4 @@ Created from [smkent/cookie-python][cookie-python] using
 [poetry]: https://python-poetry.org/docs/#installation
 [pypi]: https://pypi.org/project/safeway-coupons/
 [repo]: https://github.com/smkent/safeway-coupons
+[requests]: https://requests.readthedocs.io/en/latest/

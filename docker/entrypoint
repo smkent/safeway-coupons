@@ -28,6 +28,4 @@ mkdir -vp /etc/cron.d /var/spool/cron/crontabs
 
 busybox crontab -l
 
-Xvfb "${DISPLAY}" -screen "${DISPLAY}" 1280x1024x16 &
-
 exec busybox crond -f
