@@ -8,6 +8,7 @@ import requests
 import selenium.webdriver.support.expected_conditions as ec
 import undetected_chromedriver as uc  # type: ignore
 from selenium.common.exceptions import (
+    NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
 )
@@ -93,12 +94,16 @@ class LoginSession(BaseSession):
                 url = "https://www.safeway.com"
                 print("Connect to safeway.com")
                 driver.get(url)
-                button = driver.find_element(
-                    By.XPATH, "//button [contains(text(), 'Necessary Only')]"
-                )
-                if button:
-                    print("Decline cookie prompt")
-                    button.click()
+                try:
+                    button = driver.find_element(
+                        By.XPATH,
+                        "//button [contains(text(), 'Necessary Only')]",
+                    )
+                    if button:
+                        print("Decline cookie prompt")
+                        button.click()
+                except NoSuchElementException:
+                    print("Skipping cookie prompt which is not present")
                 print("Open Sign In sidebar")
                 wait.until(
                     ec.visibility_of_element_located(
