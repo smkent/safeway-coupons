@@ -7,7 +7,10 @@ from typing import Any, List, Optional
 import requests
 import selenium.webdriver.support.expected_conditions as ec
 import undetected_chromedriver as uc  # type: ignore
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    TimeoutException,
+)
 from selenium.webdriver.remote.webdriver import By
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -59,12 +62,15 @@ class LoginSession(BaseSession):
 
     @staticmethod
     def _sign_in_success(driver: ec.AnyDriver) -> bool:
-        element = driver.find_element(
-            By.XPATH, '//span [contains(@class, "user-greeting")]'
-        )
-        if not (element and element.text):
+        try:
+            element = driver.find_element(
+                By.XPATH, '//span [contains(@class, "user-greeting")]'
+            )
+            if not (element and element.text):
+                return False
+            return not element.text.lower().startswith("sign in")
+        except StaleElementReferenceException:
             return False
-        return not element.text.lower().startswith("sign in")
 
     def _login(self, account: Account) -> None:
         options = uc.ChromeOptions()
