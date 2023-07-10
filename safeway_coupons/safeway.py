@@ -32,10 +32,10 @@ class SafewayCoupons:
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")
-        swy = SafewayClient(account, self.debug_dir)
-        clipped_offers: List[Offer] = []
-        clip_errors: List[ClipError] = []
         try:
+            swy = SafewayClient(account, self.debug_dir)
+            clipped_offers: List[Offer] = []
+            clip_errors: List[ClipError] = []
             offers = swy.get_offers()
             unclipped_offers = [
                 o for o in offers if o.status == OfferStatus.Unclipped

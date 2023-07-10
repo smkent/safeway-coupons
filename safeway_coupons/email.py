@@ -1,7 +1,9 @@
 import collections
+import mimetypes
 import os
 import subprocess
-from email.mime.text import MIMEText
+from email.message import EmailMessage
+from pathlib import Path
 from typing import List, Optional
 
 from .accounts import Account
@@ -15,6 +17,7 @@ def _send_email(
     mail_message: List[str],
     debug_level: int,
     send_email: bool,
+    attachments: Optional[List[Path]] = None,
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
     if debug_level >= 1:
@@ -27,16 +30,26 @@ def _send_email(
         print("<<<<<<")
     if not send_email:
         return
-    email_data = MIMEText(mail_message_str)
-    email_data["To"] = account.mail_to
-    email_data["From"] = account.mail_from
+    msg = EmailMessage()
+    msg["To"] = account.mail_to
+    msg["From"] = account.mail_from
     if subject:
-        email_data["Subject"] = subject
+        msg["Subject"] = subject
+    msg.set_content(mail_message_str)
+    for attachment in attachments or []:
+        mt = mimetypes.guess_type(attachment.name)[0]
+        main, sub = mt.split("/", 1) if mt else ("application", "octet-stream")
+        msg.add_attachment(
+            attachment.read_bytes(),
+            filename=attachment.name,
+            maintype=main,
+            subtype=sub,
+        )
     p = subprocess.Popen(
         ["/usr/sbin/sendmail", "-f", account.mail_to, "-t"],
         stdin=subprocess.PIPE,
     )
-    p.communicate(bytes(email_data.as_string(), "UTF-8"))
+    p.communicate(bytes(msg.as_string(), "UTF-8"))
 
 
 def email_clip_results(
@@ -77,4 +90,11 @@ def email_error(
         mail_message += ["Clipped coupons:", ""]
         for offer in error.clipped_offers:
             mail_message += str(offer)
-    _send_email(account, mail_subject, mail_message, debug_level, send_email)
+    _send_email(
+        account,
+        mail_subject,
+        mail_message,
+        debug_level,
+        send_email,
+        attachments=getattr(error, "attachments", None),
+    )

@@ -2,7 +2,7 @@ import json
 import time
 import urllib
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import requests
 import selenium.webdriver.support.expected_conditions as ec
@@ -13,6 +13,16 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from .accounts import Account
 from .errors import AuthenticationFailure
+
+
+class ExceptionWithAttachments(Exception):
+    def __init__(
+        self,
+        *args: Any,
+        attachments: Optional[List[Path]] = None,
+        **kwargs: Any
+    ):
+        self.attachments = attachments
 
 
 class BaseSession:
@@ -40,6 +50,10 @@ class LoginSession(BaseSession):
         self.debug_dir: Optional[Path] = debug_dir
         try:
             self._login(account)
+        except ExceptionWithAttachments as e:
+            raise AuthenticationFailure(
+                e, account, attachments=e.attachments
+            ) from e
         except Exception as e:
             raise AuthenticationFailure(e, account) from e
 
@@ -124,11 +138,14 @@ class LoginSession(BaseSession):
                 except Exception as e:
                     raise Exception("Unable to retrieve store ID") from e
             except TimeoutException as e:
+                attachments: List[Path] = []
                 if self.debug_dir:
-                    driver.save_screenshot(
-                        self.debug_dir / "screenshot_error.png"
-                    )
-                raise Exception("Browser authentication timed out") from e
+                    path = self.debug_dir / "screenshot.png"
+                    driver.save_screenshot(path)
+                    attachments.append(path)
+                raise ExceptionWithAttachments(
+                    "Browser authentication timed out", attachments=attachments
+                ) from e
 
     def _parse_cookie_value(self, value: str) -> Any:
         return json.loads(urllib.parse.unquote(value))
