@@ -57,6 +57,15 @@ class LoginSession(BaseSession):
         except Exception as e:
             raise AuthenticationFailure(e, account) from e
 
+    @staticmethod
+    def _sign_in_success(driver: ec.AnyDriver) -> bool:
+        element = driver.find_element(
+            By.XPATH, '//span [contains(@class, "user-greeting")]'
+        )
+        if not (element and element.text):
+            return False
+        return not element.text.lower().startswith("sign in")
+
     def _login(self, account: Account) -> None:
         options = uc.ChromeOptions()
         for option in [
@@ -114,15 +123,7 @@ class LoginSession(BaseSession):
                 driver.find_element("id", "btnSignIn").click()
                 time.sleep(0.5)
                 print("Wait for signed in landing page to load")
-                wait.until(
-                    ec.text_to_be_present_in_element(
-                        (
-                            By.XPATH,
-                            '//span [contains(@class, "user-greeting")]',
-                        ),
-                        "Account",
-                    )
-                )
+                wait.until(self._sign_in_success)
                 print("Retrieve session information")
                 session_cookie = self._parse_cookie_value(
                     driver.get_cookie("SWY_SHARED_SESSION")["value"]
