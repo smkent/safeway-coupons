@@ -21,11 +21,15 @@ else
     env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
 fi
 
-mkdir /etc/cron.d
+if [ -d "${DEBUG_DIR}" ]; then
+    args="${args} --debug-dir ${DEBUG_DIR}"
+fi
+
+mkdir -vp /etc/cron.d /var/spool/cron/crontabs
 (
     echo "${CRON_SCHEDULE?} safeway-coupons ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
 ) > /var/spool/cron/crontabs/root
 
-crontab -l
+busybox crontab -l
 
-exec crond -f -d 8
+exec busybox crond -f

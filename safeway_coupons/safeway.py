@@ -1,4 +1,5 @@
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
 from .accounts import Account
 from .client import SafewayClient
@@ -15,6 +16,7 @@ class SafewayCoupons:
         self,
         send_email: bool = True,
         debug_level: int = 0,
+        debug_dir: Optional[Path] = None,
         sleep_level: int = 0,
         dry_run: bool = False,
         max_clip_count: int = 0,
@@ -22,6 +24,7 @@ class SafewayCoupons:
     ) -> None:
         self.send_email = send_email
         self.debug_level = debug_level
+        self.debug_dir = debug_dir
         self.sleep_level = sleep_level
         self.dry_run = dry_run
         self.max_clip_count = max_clip_count
@@ -29,10 +32,10 @@ class SafewayCoupons:
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")
-        swy = SafewayClient(account)
-        clipped_offers: List[Offer] = []
-        clip_errors: List[ClipError] = []
         try:
+            swy = SafewayClient(account, self.debug_dir)
+            clipped_offers: List[Offer] = []
+            clip_errors: List[ClipError] = []
             offers = swy.get_offers()
             unclipped_offers = [
                 o for o in offers if o.status == OfferStatus.Unclipped

@@ -1,22 +1,28 @@
 import json
+import time
 import urllib
-from typing import Optional
+from pathlib import Path
+from typing import Any, List, Optional
 
 import requests
+import selenium.webdriver.support.expected_conditions as ec
+import undetected_chromedriver as uc  # type: ignore
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.remote.webdriver import By
+from selenium.webdriver.support.wait import WebDriverWait
 
 from .accounts import Account
 from .errors import AuthenticationFailure
-from .utils import make_nonce, make_token
 
-LOGIN_URL = "https://albertsons.okta.com/api/v1/authn"
-AUTHORIZE_URL = (
-    "https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize"
-)
 
-OAUTH_CLIENT_ID = "0oap6ku01XJqIRdl42p6"
-OAUTH_REDIRECT_URI = (
-    "https://www.safeway.com/bin/safeway/unified/sso/authorize"
-)
+class ExceptionWithAttachments(Exception):
+    def __init__(
+        self,
+        *args: Any,
+        attachments: Optional[List[Path]] = None,
+        **kwargs: Any
+    ):
+        self.attachments = attachments
 
 
 class BaseSession:
@@ -38,52 +44,108 @@ class BaseSession:
 
 
 class LoginSession(BaseSession):
-    def __init__(self, account: Account) -> None:
+    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
         self.access_token: Optional[str] = None
         self.store_id: Optional[str] = None
+        self.debug_dir: Optional[Path] = debug_dir
         try:
             self._login(account)
+        except ExceptionWithAttachments as e:
+            raise AuthenticationFailure(
+                e, account, attachments=e.attachments
+            ) from e
         except Exception as e:
             raise AuthenticationFailure(e, account) from e
 
     def _login(self, account: Account) -> None:
-        # Log in
-        response = self.requests.post(
-            LOGIN_URL,
-            json={"username": account.username, "password": account.password},
-        )
-        response.raise_for_status()
-        login_data = response.json()
-        if login_data.get("status") != "SUCCESS":
-            raise Exception("Login was not successful")
-        session_token = login_data["sessionToken"]
-        # Retrieve session information
-        state_token = make_token()
-        nonce = make_nonce()
-        params = {
-            "client_id": OAUTH_CLIENT_ID,
-            "redirect_uri": OAUTH_REDIRECT_URI,
-            "response_type": "code",
-            "response_mode": "query",
-            "state": state_token,
-            "nonce": nonce,
-            "prompt": "none",
-            "sessionToken": session_token,
-            "scope": "openid profile email offline_access used_credentials",
-        }
-        url = f"{AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
-        response = self.requests.get(url)
-        response.raise_for_status()
-        session = json.loads(
-            urllib.parse.unquote(self.requests.cookies["SWY_SHARED_SESSION"])
-        )
-        self.access_token = session["accessToken"]
-        session_info = json.loads(
-            urllib.parse.unquote(
-                self.requests.cookies["SWY_SHARED_SESSION_INFO"]
-            )
-        )
-        try:
-            self.store_id = session_info["info"]["J4U"]["storeId"]
-        except Exception as e:
-            raise Exception("Unable to retrieve store ID") from e
+        options = uc.ChromeOptions()
+        for option in [
+            "--incognito",
+            "--no-sandbox",
+            "--disable-extensions",
+            "--disable-application-cache",
+            "--disable-gpu",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--headless=new",
+        ]:
+            options.add_argument(option)
+        with uc.Chrome(options=options) as driver:
+            try:
+                driver.implicitly_wait(10)
+                wait = WebDriverWait(driver, 10)
+                # Navigate to the website URL
+                url = "https://www.safeway.com"
+                print("Connect to safeway.com")
+                driver.get(url)
+                button = driver.find_element(
+                    By.XPATH, "//button [contains(text(), 'Necessary Only')]"
+                )
+                if button:
+                    print("Decline cookie prompt")
+                    button.click()
+                print("Open Sign In sidebar")
+                wait.until(
+                    ec.visibility_of_element_located(
+                        (By.XPATH, "//span [contains(text(), 'Sign In')]")
+                    )
+                ).click()
+                print("Open Sign In form")
+                wait.until(
+                    ec.visibility_of_element_located(
+                        (By.XPATH, "//a [contains(text(), 'Sign In')]")
+                    )
+                ).click()
+                time.sleep(2)
+                print("Populate Sign In form")
+                driver.find_element(By.ID, "label-email").send_keys(
+                    account.username
+                )
+                driver.find_element(By.ID, "label-password").send_keys(
+                    account.password
+                )
+                time.sleep(0.5)
+                print("Deselect Keep Me Signed In")
+                driver.find_element(
+                    By.XPATH, "//span [contains(text(), 'Keep Me Signed In')]"
+                ).click()
+                time.sleep(0.5)
+                print("Click Sign In button")
+                driver.find_element("id", "btnSignIn").click()
+                time.sleep(0.5)
+                print("Wait for signed in landing page to load")
+                wait.until(
+                    ec.text_to_be_present_in_element(
+                        (
+                            By.XPATH,
+                            '//span [contains(@class, "user-greeting")]',
+                        ),
+                        "Account",
+                    )
+                )
+                print("Retrieve session information")
+                session_cookie = self._parse_cookie_value(
+                    driver.get_cookie("SWY_SHARED_SESSION")["value"]
+                )
+                session_info_cookie = self._parse_cookie_value(
+                    driver.get_cookie("SWY_SHARED_SESSION_INFO")["value"]
+                )
+                self.access_token = session_cookie["accessToken"]
+                try:
+                    self.store_id = session_info_cookie["info"]["J4U"][
+                        "storeId"
+                    ]
+                except Exception as e:
+                    raise Exception("Unable to retrieve store ID") from e
+            except TimeoutException as e:
+                attachments: List[Path] = []
+                if self.debug_dir:
+                    path = self.debug_dir / "screenshot.png"
+                    driver.save_screenshot(path)
+                    attachments.append(path)
+                raise ExceptionWithAttachments(
+                    "Browser authentication timed out", attachments=attachments
+                ) from e
+
+    def _parse_cookie_value(self, value: str) -> Any:
+        return json.loads(urllib.parse.unquote(value))

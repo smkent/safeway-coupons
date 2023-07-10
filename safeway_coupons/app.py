@@ -1,6 +1,7 @@
 import argparse
 import sys
 from http.client import HTTPConnection
+from pathlib import Path
 
 from .config import Config
 from .safeway import SafewayCoupons
@@ -17,6 +18,17 @@ def _parse_args() -> argparse.Namespace:
         help=(
             "Path to configuration file containing Safeway "
             "accounts information"
+        ),
+    )
+    arg_parser.add_argument(
+        "-D",
+        "--debug-dir",
+        dest="debug_dir",
+        metavar="directory",
+        default=".",
+        help=(
+            "Destination directory for debug output files, "
+            "such as browser screenshots (default: %(default)s)"
         ),
     )
     arg_parser.add_argument(
@@ -79,6 +91,7 @@ def main() -> None:
     sc = SafewayCoupons(
         send_email=args.send_email,
         debug_level=args.debug_level,
+        debug_dir=Path(args.debug_dir) if args.debug_dir else None,
         sleep_level=args.sleep_level,
         dry_run=args.dry_run,
         max_clip_count=args.max_clip_count,

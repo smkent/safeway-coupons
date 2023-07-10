@@ -1,5 +1,6 @@
 import json
 import random
+from pathlib import Path
 from typing import List, Optional
 
 import requests
@@ -12,8 +13,8 @@ from .session import BaseSession, LoginSession
 
 
 class SafewayClient(BaseSession):
-    def __init__(self, account: Account) -> None:
-        self.session = LoginSession(account)
+    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
+        self.session = LoginSession(account, debug_dir)
         self.requests.headers.update(
             {
                 "Authorization": f"Bearer {self.session.access_token}",
