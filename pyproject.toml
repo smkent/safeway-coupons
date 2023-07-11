@@ -69,6 +69,7 @@ help = "Run all tests"
 [tool.bandit]
 skips = [
     "B101",  # assert_used
+    "B113",  # request_without_timeout
     "B311",  # blacklist_random
     "B404",  # blacklist_subprocess
     "B603",  # subprocess_without_shell_equals_true
