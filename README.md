@@ -36,7 +36,8 @@ services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
     environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM each day
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
+      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
       SMTPHOST: your.smtp.host
       SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
       SAFEWAY_ACCOUNT_PASSWORD: very_secret
@@ -55,7 +56,8 @@ services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
     environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM each day
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
+      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
       SMTPHOST: your.smtp.host
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
       # EXTRA_ARGS: --debug  # Optional
