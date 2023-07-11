@@ -1,9 +1,11 @@
 import argparse
 import sys
+import traceback
 from http.client import HTTPConnection
 from pathlib import Path
 
 from .config import Config
+from .errors import Error
 from .safeway import SafewayCoupons
 
 
@@ -77,6 +79,13 @@ def _parse_args() -> argparse.Namespace:
             "Don't wait between long requests. Specify twice to never wait."
         ),
     )
+    arg_parser.add_argument(
+        "-E",
+        "--continue-on-error",
+        dest="continue_on_error",
+        action="store_true",
+        help="Continue clipping coupons for the next account on error",
+    )
     return arg_parser.parse_args()
 
 
@@ -96,9 +105,19 @@ def main() -> None:
         dry_run=args.dry_run,
         max_clip_count=args.max_clip_count,
     )
+    errors = 0
     try:
         for account in accounts:
-            sc.clip_for_account(account)
+            try:
+                sc.clip_for_account(account)
+            except Error:
+                if not args.continue_on_error:
+                    raise
+                traceback.print_exc()
+                errors += 1
+        if errors:
+            print(f"Error clipping coupons for {errors} account(s)")
+            sys.exit(1)
     except Exception as e:
         if args.debug_level:
             raise
