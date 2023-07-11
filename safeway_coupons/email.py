@@ -12,6 +12,7 @@ from .models import Offer
 
 
 def _send_email(
+    sendmail: List[str],
     account: Account,
     subject: str,
     mail_message: List[str],
@@ -46,13 +47,13 @@ def _send_email(
             subtype=sub,
         )
     p = subprocess.Popen(
-        ["/usr/sbin/sendmail", "-f", account.mail_to, "-t"],
-        stdin=subprocess.PIPE,
+        sendmail + ["-f", account.mail_to, "-t"], stdin=subprocess.PIPE
     )
     p.communicate(bytes(msg.as_string(), "UTF-8"))
 
 
 def email_clip_results(
+    sendmail: List[str],
     account: Account,
     offers: List[Offer],
     error: Optional[Error],
@@ -72,10 +73,13 @@ def email_clip_results(
         mail_message.append(
             f"    {offer_type.name}: {len(offers_this_type)} coupons"
         )
-    _send_email(account, mail_subject, mail_message, debug_level, send_email)
+    _send_email(
+        sendmail, account, mail_subject, mail_message, debug_level, send_email
+    )
 
 
 def email_error(
+    sendmail: List[str],
     account: Account,
     error: Error,
     debug_level: int,
@@ -91,6 +95,7 @@ def email_error(
         for offer in error.clipped_offers:
             mail_message += str(offer)
     _send_email(
+        sendmail,
         account,
         mail_subject,
         mail_message,
