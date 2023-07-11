@@ -2,10 +2,10 @@
 
 set -ex
 
-args=
+args=${EXTRA_ARGS-}
 if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
     echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
-    args="--accounts-config ${SAFEWAY_ACCOUNTS_FILE}"
+    args="${args} --accounts-config \"${SAFEWAY_ACCOUNTS_FILE}\""
 else
     echo "Using environment variables for configuration"
     if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
@@ -22,7 +22,7 @@ else
 fi
 
 if [ -d "${DEBUG_DIR}" ]; then
-    args="${args} --debug-dir ${DEBUG_DIR}"
+    args="${args} --debug-dir \"${DEBUG_DIR}\""
 fi
 
 mkdir -vp /etc/cron.d /var/spool/cron/crontabs
