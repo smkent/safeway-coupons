@@ -1,4 +1,5 @@
 import argparse
+import shlex
 import sys
 import traceback
 from http.client import HTTPConnection
@@ -54,6 +55,17 @@ def _parse_args() -> argparse.Namespace:
         help="Maximum number of coupons to clip (default: all)",
     )
     arg_parser.add_argument(
+        "--sendmail",
+        metavar="path/to/sendmail",
+        dest="sendmail",
+        type=shlex.split,
+        default="/usr/sbin/sendmail",
+        help=(
+            "Path to sendmail and any additional arguments to use when "
+            "sending email (default: %(default)s)"
+        ),
+    )
+    arg_parser.add_argument(
         "-n",
         "--no-email",
         dest="send_email",
@@ -99,6 +111,7 @@ def main() -> None:
         HTTPConnection.debuglevel = 1
     sc = SafewayCoupons(
         send_email=args.send_email,
+        sendmail=args.sendmail,
         debug_level=args.debug_level,
         debug_dir=Path(args.debug_dir) if args.debug_dir else None,
         sleep_level=args.sleep_level,

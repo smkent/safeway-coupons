@@ -57,6 +57,7 @@ def test_app_error(
             [],
             dict(
                 send_email=True,
+                sendmail=["/usr/sbin/sendmail"],
                 debug_level=0,
                 debug_dir=Path("."),
                 sleep_level=0,
@@ -68,6 +69,7 @@ def test_app_error(
             ["-d", "-d", "-SS"],
             dict(
                 send_email=True,
+                sendmail=["/usr/sbin/sendmail"],
                 debug_level=2,
                 debug_dir=Path("."),
                 sleep_level=2,
@@ -76,9 +78,44 @@ def test_app_error(
             ),
         ),
         (
+            ["--sendmail", "/my/special/sendmail"],
+            dict(
+                send_email=True,
+                sendmail=["/my/special/sendmail"],
+                debug_level=0,
+                debug_dir=Path("."),
+                sleep_level=0,
+                dry_run=False,
+                max_clip_count=0,
+            ),
+        ),
+        (
+            [
+                "--sendmail",
+                (
+                    "/my/special/sendmail "
+                    '--do-the-thing "with an argument value with spaces"'
+                ),
+            ],
+            dict(
+                send_email=True,
+                sendmail=[
+                    "/my/special/sendmail",
+                    "--do-the-thing",
+                    "with an argument value with spaces",
+                ],
+                debug_level=0,
+                debug_dir=Path("."),
+                sleep_level=0,
+                dry_run=False,
+                max_clip_count=0,
+            ),
+        ),
+        (
             ["-n"],
             dict(
                 send_email=False,
+                sendmail=["/usr/sbin/sendmail"],
                 debug_level=0,
                 debug_dir=Path("."),
                 sleep_level=0,
@@ -90,6 +127,7 @@ def test_app_error(
             ["-p", "--max-clip", "42"],
             dict(
                 send_email=True,
+                sendmail=["/usr/sbin/sendmail"],
                 debug_level=0,
                 debug_dir=Path("."),
                 sleep_level=0,
@@ -101,6 +139,8 @@ def test_app_error(
     ids=[
         "Default values",
         "Debug and sleep levels 2",
+        "Custom sendmail",
+        "Custom sendmail with arguments",
         "No email",
         "Dry run and max clip count",
     ],

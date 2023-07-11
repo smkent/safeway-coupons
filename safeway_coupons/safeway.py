@@ -15,6 +15,7 @@ class SafewayCoupons:
     def __init__(
         self,
         send_email: bool = True,
+        sendmail: Optional[List[str]] = None,
         debug_level: int = 0,
         debug_dir: Optional[Path] = None,
         sleep_level: int = 0,
@@ -23,6 +24,7 @@ class SafewayCoupons:
         max_clip_errors: int = CLIP_ERROR_MAX,
     ) -> None:
         self.send_email = send_email
+        self.sendmail = sendmail or ["/usr/sbin/sendmail"]
         self.debug_level = debug_level
         self.debug_dir = debug_dir
         self.sleep_level = sleep_level
@@ -82,6 +84,7 @@ class SafewayCoupons:
 
             print(f"Clipped {len(clipped_offers)} coupons")
             email_clip_results(
+                self.sendmail,
                 account,
                 clipped_offers,
                 error=None,
@@ -91,6 +94,7 @@ class SafewayCoupons:
             )
         except Error as e:
             email_error(
+                self.sendmail,
                 account,
                 error=e,
                 debug_level=self.debug_level,
