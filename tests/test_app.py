@@ -53,7 +53,7 @@ def test_app_error(
 @pytest.mark.parametrize(
     ["argv", "expected_args"],
     [
-        (
+        pytest.param(
             [],
             dict(
                 send_email=True,
@@ -64,8 +64,9 @@ def test_app_error(
                 dry_run=False,
                 max_clip_count=0,
             ),
+            id="Default values",
         ),
-        (
+        pytest.param(
             ["-d", "-d", "-SS"],
             dict(
                 send_email=True,
@@ -76,8 +77,9 @@ def test_app_error(
                 dry_run=False,
                 max_clip_count=0,
             ),
+            id="Debug and sleep levels 2",
         ),
-        (
+        pytest.param(
             ["--sendmail", "/my/special/sendmail"],
             dict(
                 send_email=True,
@@ -88,8 +90,9 @@ def test_app_error(
                 dry_run=False,
                 max_clip_count=0,
             ),
+            id="Custom sendmail",
         ),
-        (
+        pytest.param(
             [
                 "--sendmail",
                 (
@@ -110,8 +113,9 @@ def test_app_error(
                 dry_run=False,
                 max_clip_count=0,
             ),
+            id="Custom sendmail with arguments",
         ),
-        (
+        pytest.param(
             ["-n"],
             dict(
                 send_email=False,
@@ -122,8 +126,9 @@ def test_app_error(
                 dry_run=False,
                 max_clip_count=0,
             ),
+            id="No email",
         ),
-        (
+        pytest.param(
             ["-p", "--max-clip", "42"],
             dict(
                 send_email=True,
@@ -134,15 +139,8 @@ def test_app_error(
                 dry_run=True,
                 max_clip_count=42,
             ),
+            id="Dry run and max clip count",
         ),
-    ],
-    ids=[
-        "Default values",
-        "Debug and sleep levels 2",
-        "Custom sendmail",
-        "Custom sendmail with arguments",
-        "No email",
-        "Dry run and max clip count",
     ],
 )
 def test_args(
