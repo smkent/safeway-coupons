@@ -125,11 +125,18 @@ class LoginSession(BaseSession):
                     account.password
                 )
                 time.sleep(0.5)
-                print("Deselect Keep Me Signed In")
-                driver.find_element(
-                    By.XPATH, "//span [contains(text(), 'Keep Me Signed In')]"
-                ).click()
-                time.sleep(0.5)
+                try:
+                    driver.find_element(
+                        By.XPATH,
+                        "//span [contains(text(), 'Keep Me Signed In')]",
+                    ).click()
+                    print("Deselect Keep Me Signed In")
+                    time.sleep(0.5)
+                except NoSuchElementException:
+                    print(
+                        "Skipping Keep Me Signed In checkbox "
+                        "which is not present"
+                    )
                 print("Click Sign In button")
                 driver.find_element("id", "btnSignIn").click()
                 time.sleep(0.5)
