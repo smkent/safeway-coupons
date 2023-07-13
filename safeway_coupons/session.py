@@ -1,3 +1,4 @@
+import contextlib
 import json
 import time
 import urllib
@@ -10,7 +11,7 @@ import undetected_chromedriver as uc  # type: ignore
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
-    TimeoutException,
+    WebDriverException,
 )
 from selenium.webdriver.remote.webdriver import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -24,7 +25,7 @@ class ExceptionWithAttachments(Exception):
         self,
         *args: Any,
         attachments: Optional[List[Path]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         self.attachments = attachments
 
@@ -156,14 +157,15 @@ class LoginSession(BaseSession):
                     ]
                 except Exception as e:
                     raise Exception("Unable to retrieve store ID") from e
-            except TimeoutException as e:
+            except WebDriverException as e:
                 attachments: List[Path] = []
                 if self.debug_dir:
                     path = self.debug_dir / "screenshot.png"
-                    driver.save_screenshot(path)
-                    attachments.append(path)
+                    with contextlib.suppress(WebDriverException):
+                        driver.save_screenshot(path)
+                        attachments.append(path)
                 raise ExceptionWithAttachments(
-                    "Browser authentication timed out", attachments=attachments
+                    f"[{type(e).__name__}] {e}", attachments=attachments
                 ) from e
 
     def _parse_cookie_value(self, value: str) -> Any:
