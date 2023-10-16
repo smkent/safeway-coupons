@@ -92,7 +92,7 @@ class LoginSession(BaseSession):
                 driver.implicitly_wait(10)
                 wait = WebDriverWait(driver, 10)
                 # Navigate to the website URL
-                url = "https://www.safeway.com"
+                url = "https://www.safeway.com/account/sign-in.html?goto=/foru/coupons-deals.html"
                 print("Connect to safeway.com")
                 driver.get(url)
                 try:
@@ -105,18 +105,6 @@ class LoginSession(BaseSession):
                         button.click()
                 except NoSuchElementException:
                     print("Skipping cookie prompt which is not present")
-                print("Open Sign In sidebar")
-                wait.until(
-                    ec.visibility_of_element_located(
-                        (By.XPATH, "//span [contains(text(), 'Sign In')]")
-                    )
-                ).click()
-                print("Open Sign In form")
-                wait.until(
-                    ec.visibility_of_element_located(
-                        (By.XPATH, "//a [contains(text(), 'Sign In')]")
-                    )
-                ).click()
                 time.sleep(2)
                 print("Populate Sign In form")
                 driver.find_element(By.ID, "label-email").send_keys(
