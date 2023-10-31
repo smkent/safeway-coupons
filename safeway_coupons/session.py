@@ -121,6 +121,10 @@ class LoginSession(BaseSession):
                 if button:
                     print("Decline cookie prompt")
                     button.click()
+                    print(
+                        "Return to safeway.com after declining cookie prompt"
+                    )
+                    driver.get(url)
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
             print("Open Sign In sidebar")
