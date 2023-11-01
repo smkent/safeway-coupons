@@ -30,7 +30,7 @@ class SafewayClient(BaseSession):
                 "https://www.safeway.com/abs/pub/xapi"
                 "/offers/companiongalleryoffer"
                 f"?storeId={self.session.store_id}"
-                f"&rand={random.randrange(100000,999999)}"
+                f"&rand={random.randrange(100000, 999999)}"
             )
             response.raise_for_status()
             return OfferList.from_dict(response.json()).offers
