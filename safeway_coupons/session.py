@@ -94,7 +94,7 @@ class LoginSession(BaseSession):
         driver.quit()
 
     @staticmethod
-    def _sign_in_success(driver: ec.AnyDriver) -> bool:
+    def _sign_in_success(driver: uc.Chrome) -> bool:
         try:
             element = driver.find_element(
                 By.XPATH, '//span [contains(@class, "user-greeting")]'
