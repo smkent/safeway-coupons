@@ -7,3 +7,4 @@
 .pytest_results.xml
 .venv/
 dist/
+accounts
