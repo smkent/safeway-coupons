@@ -163,6 +163,32 @@ pip install poetry
 poetry self add poetry-dynamic-versioning poetry-pre-commit-plugin
 ```
 
+### Invocation with docker-compose
+
+safeway-coupons can be executed within a Docker container using
+`docker-compose.dev.yaml`.
+
+To use, first create an `accounts` file in the same directory with your
+safeway-coupons accounts configuration. Then, execute safeway-coupons within a
+container using docker-compose:
+
+```console
+docker-compose -f docker-compose.dev.yaml up --build
+```
+
+The container will run safeway-coupons once, attempt to clip one coupon, and
+then stop.
+
+To change the safeway-coupons arguments, modify the `command` value in
+`docker-compose.dev.yaml`.
+
+When finished with development tasks, the docker-compose state can be cleaned up
+with:
+
+```console
+docker-compose -f docker-compose.dev.yaml down
+```
+
 ### Development tasks
 
 * Setup: `poetry install`
