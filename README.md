@@ -182,6 +182,13 @@ then stop.
 To change the safeway-coupons arguments, modify the `command` value in
 `docker-compose.dev.yaml`.
 
+When finished with development tasks, the docker-compose state can be cleaned up
+with:
+
+```console
+docker-compose -f docker-compose.dev.yaml down
+```
+
 ### Development tasks
 
 * Setup: `poetry install`
