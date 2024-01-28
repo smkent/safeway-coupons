@@ -29,6 +29,7 @@ COPY docker/entrypoint /
 
 COPY . /python-build
 RUN python3 -m pip install /python-build && rm -rf /python-build
+RUN safeway-coupons-init-chromedriver
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]
