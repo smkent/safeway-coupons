@@ -17,6 +17,7 @@ from selenium.webdriver.remote.webdriver import By
 from selenium.webdriver.support.wait import WebDriverWait
 
 from .accounts import Account
+from .chrome_driver import chrome_driver
 from .errors import AuthenticationFailure
 
 
@@ -64,23 +65,9 @@ class LoginSession(BaseSession):
 
     @contextlib.contextmanager
     def _chrome_driver(self, headless: bool = True) -> Iterator[uc.Chrome]:
-        options = uc.ChromeOptions()
-        options.headless = headless
-        for option in [
-            "--incognito",
-            "--no-sandbox",
-            "--disable-extensions",
-            "--disable-application-cache",
-            "--disable-gpu",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-        ]:
-            options.add_argument(option)
-        if headless:
-            options.add_argument("--headless=new")
-        driver = uc.Chrome(options=options)
         try:
-            yield driver
+            with chrome_driver(headless=headless) as driver:
+                yield driver
         except WebDriverException as e:
             attachments: List[Path] = []
             if self.debug_dir:
@@ -91,7 +78,6 @@ class LoginSession(BaseSession):
             raise ExceptionWithAttachments(
                 f"[{type(e).__name__}] {e}", attachments=attachments
             ) from e
-        driver.quit()
 
     @staticmethod
     def _sign_in_success(driver: uc.Chrome) -> bool:
