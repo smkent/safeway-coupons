@@ -20,18 +20,18 @@ jobs:
         os:
           - Ubuntu
         python-version:
-          - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
         poetry-version:
-          - "1.6"
+          - "2.0"
 
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: 💾 Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Set up Python project with Poetry
         uses: ./.github/workflows/actions/python-poetry
@@ -43,13 +43,15 @@ jobs:
         run: poetry run poe test
 
       - name: 🚒 Create test summary
-        uses: test-summary/action@v1
+        uses: test-summary/action@v2
         if: success() || failure()
         with:
           paths: ./.pytest_results.xml
 
       - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         if: ${{ env.ENABLE_COVERAGE == 'true' }}
         with:
           fail_ci_if_error: true

@@ -3,15 +3,14 @@ name: Release
 
 env:
   ENABLE_PYPI_PUBLISH: true
-  ENABLE_TEST_PYPI_PUBLISH: true
+  ENABLE_TEST_PYPI_PUBLISH: false
   RELEASE_PYTHON_VERSION: "3.12"
-  RELEASE_POETRY_VERSION: "1.6"
+  RELEASE_POETRY_VERSION: "2.0"
 
 on:
   push:
     tags:
       - '*'
-  workflow_dispatch:
 
 jobs:
   Publish:
@@ -19,10 +18,15 @@ jobs:
 
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/safeway-coupons
+    permissions:
+      id-token: write
 
     steps:
       - name: 💾 Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Set up Python project with Poetry
         uses: ./.github/workflows/actions/python-poetry
@@ -49,15 +53,12 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ env.ENABLE_TEST_PYPI_PUBLISH == 'true' }}
         with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-          skip_existing: true
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
 
       - name: ☢️ Publish to PyPI
         if: ${{ env.ENABLE_PYPI_PUBLISH == 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

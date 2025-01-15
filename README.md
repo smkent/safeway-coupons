@@ -153,14 +153,14 @@ Via [`pipx`][pipx]:
 ```console
 pip install pipx
 pipx install poetry
-pipx inject poetry poetry-dynamic-versioning poetry-pre-commit-plugin
+pipx inject poetry poetry-pre-commit-plugin
 ```
 
 Via `pip`:
 
 ```console
 pip install poetry
-poetry self add poetry-dynamic-versioning poetry-pre-commit-plugin
+poetry self add poetry-pre-commit-plugin
 ```
 
 ### Invocation with docker-compose
