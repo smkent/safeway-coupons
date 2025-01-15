@@ -2,9 +2,9 @@ import contextlib
 import json
 import time
 import urllib
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional
-from collections.abc import Iterator
 
 import requests
 import selenium.webdriver.support.expected_conditions as ec
@@ -132,18 +132,17 @@ class LoginSession(BaseSession):
                 account.username
             )
             time.sleep(0.5)
-            print("Click Continue button")
-            driver.find_element(By.XPATH, '//button[contains(text(), "Continue")]').click()
+            print("Click Sign in with password button")
+            driver.find_element(
+                By.XPATH, '//button[contains(text(), "Sign in with password")]'
+            ).click()
             time.sleep(2)
-            print("Click Use password")
-            driver.find_element(By.XPATH, '//a[contains(text(), "Use password")]').click()
-            time.sleep(2)
-            driver.find_element(By.ID, "password").send_keys(
-                account.password
-            )
+            driver.find_element(By.ID, "password").send_keys(account.password)
             time.sleep(0.5)
             print("Click Sign In button")
-            driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
+            driver.find_element(
+                By.XPATH, '//button[contains(text(), "Sign In")]'
+            ).click()
             time.sleep(0.5)
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
