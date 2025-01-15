@@ -3,7 +3,8 @@ import json
 import time
 import urllib
 from pathlib import Path
-from typing import Any, Iterator, List, Optional
+from typing import Any, Optional
+from collections.abc import Iterator
 
 import requests
 import selenium.webdriver.support.expected_conditions as ec
@@ -25,7 +26,7 @@ class ExceptionWithAttachments(Exception):
     def __init__(
         self,
         *args: Any,
-        attachments: Optional[List[Path]] = None,
+        attachments: Optional[list[Path]] = None,
         **kwargs: Any,
     ):
         self.attachments = attachments
@@ -69,7 +70,7 @@ class LoginSession(BaseSession):
             with chrome_driver(headless=headless) as driver:
                 yield driver
         except WebDriverException as e:
-            attachments: List[Path] = []
+            attachments: list[Path] = []
             if self.debug_dir:
                 path = self.debug_dir / "screenshot.png"
                 with contextlib.suppress(WebDriverException):

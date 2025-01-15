@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 import dataclasses_json
 
@@ -28,7 +28,7 @@ class Model(dataclasses_json.DataClassJsonMixin):
 
 @dataclass
 class OfferList(Model):
-    offers: List[Offer] = field(
+    offers: list[Offer] = field(
         metadata=dataclasses_json.config(
             field_name="companionGalleryOfferList"
         )

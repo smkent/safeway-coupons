@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 from .models import Model, Offer, OfferType
 
@@ -15,7 +14,7 @@ class ClipRequestItem(Model):
 
 @dataclass
 class ClipRequest(Model):
-    items: List[ClipRequestItem]
+    items: list[ClipRequestItem]
 
     @classmethod
     def from_offer(cls, offer: Offer) -> ClipRequest:
@@ -43,7 +42,7 @@ class ClipResponseItem(Model):
 
 @dataclass
 class ClipResponse(Model):
-    items: List[ClipResponseItem]
+    items: list[ClipResponseItem]
 
     @property
     def success(self) -> bool:

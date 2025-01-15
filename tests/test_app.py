@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Type, cast
+from typing import Any, cast
 from unittest import mock
 
 import pytest
@@ -29,7 +29,7 @@ def test_no_accounts(mocker: pytest_mock.MockerFixture) -> None:
 def test_app_error(
     mocker: pytest_mock.MockerFixture,
     debug_level: int,
-    expected_exception: Type[Exception],
+    expected_exception: type[Exception],
 ) -> None:
     mocker.patch.object(app, "SafewayCoupons")
     mocker.patch.object(
@@ -145,8 +145,8 @@ def test_app_error(
 )
 def test_args(
     mocker: pytest_mock.MockerFixture,
-    argv: List[str],
-    expected_args: Dict[str, Any],
+    argv: list[str],
+    expected_args: dict[str, Any],
 ) -> None:
     mocker.patch.object(app, "SafewayCoupons")
     mocker.patch.object(sys, "argv", ["safeway-coupons"] + argv)

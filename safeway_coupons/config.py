@@ -1,14 +1,14 @@
 import configparser
 import itertools
 import os
-from typing import List, Optional
+from typing import Optional
 
 from .accounts import Account
 
 
 class Config:
     @classmethod
-    def load_accounts(cls, config_file: Optional[str] = None) -> List[Account]:
+    def load_accounts(cls, config_file: Optional[str] = None) -> list[Account]:
         account = cls.load_account_from_env()
         if account:
             return [account]
@@ -34,11 +34,11 @@ class Config:
         return None
 
     @classmethod
-    def load_accounts_from_config(cls, config_file: str) -> List[Account]:
+    def load_accounts_from_config(cls, config_file: str) -> list[Account]:
         config = configparser.ConfigParser()
         with open(config_file) as f:
             config.read_file(itertools.chain(["[_no_section]"], f))
-        accounts: List[Account] = []
+        accounts: list[Account] = []
         mail_from = None
         for section in config.sections():
             if section in ["_no_section", "_global"]:

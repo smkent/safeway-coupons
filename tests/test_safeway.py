@@ -1,4 +1,3 @@
-from typing import List
 from unittest import mock
 
 import pytest
@@ -14,7 +13,7 @@ from .utils import ClipsTestConfig, create_account, create_offer
 @pytest.mark.usefixtures("login_success")
 def test_safeway_coupons(
     http_responses: responses.RequestsMock,
-    available_offers: List[Offer],
+    available_offers: list[Offer],
     clips: ClipsTestConfig,
 ) -> None:
     available_offers.append(create_offer("1138"))
@@ -27,7 +26,7 @@ def test_safeway_coupons(
 @pytest.mark.usefixtures("login_success")
 def test_safeway_coupons_few_clip_errors(
     http_responses: responses.RequestsMock,
-    available_offers: List[Offer],
+    available_offers: list[Offer],
     clips: ClipsTestConfig,
 ) -> None:
     available_offers += [create_offer(str(i)) for i in range(5)]
@@ -44,7 +43,7 @@ def test_safeway_coupons_few_clip_errors(
 )
 def test_safeway_coupons_too_many_clip_errors(
     http_responses: responses.RequestsMock,
-    available_offers: List[Offer],
+    available_offers: list[Offer],
     clips: ClipsTestConfig,
     clip_fail_type: str,
 ) -> None:
@@ -64,7 +63,7 @@ def test_safeway_coupons_too_many_clip_errors(
 )
 def test_safeway_coupons_sleep_time(
     http_responses: responses.RequestsMock,
-    available_offers: List[Offer],
+    available_offers: list[Offer],
     clips: ClipsTestConfig,
     mock_sleep: mock.MagicMock,
     sleep_level: int,

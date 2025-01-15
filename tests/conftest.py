@@ -1,7 +1,8 @@
 import json
 import time
 import urllib
-from typing import Dict, Iterator, List, Mapping, Optional, Tuple, cast
+from typing import Optional, cast
+from collections.abc import Iterator, Mapping
 from unittest import mock
 
 import pytest
@@ -46,7 +47,7 @@ def login_success(mock_undetected_chromedriver: mock.MagicMock) -> None:
         "SWY_SHARED_SESSION_INFO": {"info": {"J4U": {"storeId": 42}}},
     }
 
-    def _get_cookie(name: str) -> Dict[str, Optional[str]]:
+    def _get_cookie(name: str) -> dict[str, Optional[str]]:
         value = cookies.get(name)
         return {
             "value": urllib.parse.quote(json.dumps(value)) if value else None
@@ -64,7 +65,7 @@ def clips(
 
     def _clip_response(
         request: requests.PreparedRequest,
-    ) -> Tuple[int, Mapping[str, str], str]:
+    ) -> tuple[int, Mapping[str, str], str]:
         assert request.body
         data = json.loads(request.body)
         offer_id = data["items"][0]["itemId"]
@@ -98,8 +99,8 @@ def clips(
 @pytest.fixture
 def available_offers(
     http_responses: responses.RequestsMock,
-) -> Iterator[List[Offer]]:
-    offers_list: List[Offer] = []
+) -> Iterator[list[Offer]]:
+    offers_list: list[Offer] = []
     http_responses.add_callback(
         method=responses.GET,
         url=(
