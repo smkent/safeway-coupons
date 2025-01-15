@@ -1,7 +1,7 @@
 import json
 import random
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import requests
 
@@ -24,7 +24,7 @@ class SafewayClient(BaseSession):
             }
         )
 
-    def get_offers(self) -> List[Offer]:
+    def get_offers(self) -> list[Offer]:
         try:
             response = self.requests.get(
                 "https://www.safeway.com/abs/pub/xapi"

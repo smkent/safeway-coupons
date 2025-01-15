@@ -2,7 +2,7 @@ import contextlib
 import subprocess
 import sys
 from pathlib import Path
-from typing import Iterator
+from collections.abc import Iterator
 
 import undetected_chromedriver as uc  # type: ignore
 

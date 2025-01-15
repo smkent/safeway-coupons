@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from .accounts import Account
 from .client import SafewayClient
@@ -15,7 +15,7 @@ class SafewayCoupons:
     def __init__(
         self,
         send_email: bool = True,
-        sendmail: Optional[List[str]] = None,
+        sendmail: Optional[list[str]] = None,
         debug_level: int = 0,
         debug_dir: Optional[Path] = None,
         sleep_level: int = 0,
@@ -36,8 +36,8 @@ class SafewayCoupons:
         print(f"Clipping coupons for Safeway account {account.username}")
         try:
             swy = SafewayClient(account, self.debug_dir)
-            clipped_offers: List[Offer] = []
-            clip_errors: List[ClipError] = []
+            clipped_offers: list[Offer] = []
+            clip_errors: list[ClipError] = []
             offers = swy.get_offers()
             unclipped_offers = [
                 o for o in offers if o.status == OfferStatus.Unclipped

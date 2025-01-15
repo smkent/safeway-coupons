@@ -4,7 +4,7 @@ import os
 import subprocess
 from email.message import EmailMessage
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from .accounts import Account
 from .errors import ClipError, Error, TooManyClipErrors
@@ -12,13 +12,13 @@ from .models import Offer
 
 
 def _send_email(
-    sendmail: List[str],
+    sendmail: list[str],
     account: Account,
     subject: str,
-    mail_message: List[str],
+    mail_message: list[str],
     debug_level: int,
     send_email: bool,
-    attachments: Optional[List[Path]] = None,
+    attachments: Optional[list[Path]] = None,
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
     if debug_level >= 1:
@@ -53,11 +53,11 @@ def _send_email(
 
 
 def email_clip_results(
-    sendmail: List[str],
+    sendmail: list[str],
     account: Account,
-    offers: List[Offer],
+    offers: list[Offer],
     error: Optional[Error],
-    clip_errors: Optional[List[ClipError]],
+    clip_errors: Optional[list[ClipError]],
     debug_level: int,
     send_email: bool,
 ) -> None:
@@ -65,7 +65,7 @@ def email_clip_results(
     for offer in offers:
         offers_by_type[offer.offer_pgm].append(offer)
     mail_subject = f"Safeway coupons: {len(offers)} clipped"
-    mail_message: List[str] = [
+    mail_message: list[str] = [
         f"Safeway account: {account.username}",
         f"Clipped {len(offers)} total:",
     ]
@@ -79,14 +79,14 @@ def email_clip_results(
 
 
 def email_error(
-    sendmail: List[str],
+    sendmail: list[str],
     account: Account,
     error: Error,
     debug_level: int,
     send_email: bool,
 ) -> None:
     mail_subject = f"Safeway coupons: {error.__class__.__name__} error"
-    mail_message: List[str] = [
+    mail_message: list[str] = [
         f"Safeway account: {account.username}",
         f"Error: {error}",
     ]

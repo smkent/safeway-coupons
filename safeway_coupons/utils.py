@@ -1,6 +1,7 @@
 import random
 import time
-from typing import Generator, Iterable, TypeVar
+from typing import TypeVar
+from collections.abc import Generator, Iterable
 
 T = TypeVar("T")
 

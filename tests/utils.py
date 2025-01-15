@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Set
 
 from safeway_coupons.accounts import Account
 from safeway_coupons.models import Offer, OfferStatus, OfferType
@@ -8,10 +7,10 @@ from safeway_coupons.models import Offer, OfferStatus, OfferType
 
 @dataclass
 class ClipsTestConfig:
-    fail_http_offer_ids: Set[str] = field(default_factory=set)
-    fail_response_offer_ids: Set[str] = field(default_factory=set)
-    clipped_offer_ids: List[str] = field(default_factory=list)
-    failed_offer_ids: List[str] = field(default_factory=list)
+    fail_http_offer_ids: set[str] = field(default_factory=set)
+    fail_response_offer_ids: set[str] = field(default_factory=set)
+    clipped_offer_ids: list[str] = field(default_factory=list)
+    failed_offer_ids: list[str] = field(default_factory=list)
 
 
 def create_offer(offer_id: str) -> Offer:
