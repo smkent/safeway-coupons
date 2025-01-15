@@ -2,9 +2,9 @@ import contextlib
 import json
 import time
 import urllib
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional
-from collections.abc import Iterator
 
 import requests
 import selenium.webdriver.support.expected_conditions as ec
@@ -123,32 +123,26 @@ class LoginSession(BaseSession):
             print("Open Sign In form")
             wait.until(
                 ec.visibility_of_element_located(
-                    (By.XPATH, "//a [contains(text(), 'Sign In')]")
+                    (By.XPATH, "//button [contains(text(), 'Sign in')]")
                 )
             ).click()
             time.sleep(2)
-            print("Populate Sign In form")
-            driver.find_element(By.ID, "label-email").send_keys(
+            print("Populate Sign In form username")
+            driver.find_element(By.ID, "enterUsername").send_keys(
                 account.username
             )
-            driver.find_element(By.ID, "label-password").send_keys(
-                account.password
-            )
             time.sleep(0.5)
-            try:
-                driver.find_element(
-                    By.XPATH,
-                    "//span [contains(text(), 'Keep Me Signed In')]",
-                ).click()
-                print("Deselect Keep Me Signed In")
-                time.sleep(0.5)
-            except NoSuchElementException:
-                print(
-                    "Skipping Keep Me Signed In checkbox "
-                    "which is not present"
-                )
+            print("Click Sign in with password button")
+            driver.find_element(
+                By.XPATH, '//button[contains(text(), "Sign in with password")]'
+            ).click()
+            time.sleep(2)
+            driver.find_element(By.ID, "password").send_keys(account.password)
+            time.sleep(0.5)
             print("Click Sign In button")
-            driver.find_element("id", "btnSignIn").click()
+            driver.find_element(
+                By.XPATH, '//button[contains(text(), "Sign In")]'
+            ).click()
             time.sleep(0.5)
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
