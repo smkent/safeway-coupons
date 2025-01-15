@@ -22,7 +22,8 @@ dependencies = [
     "requests",
     "selenium (>=4.10)",
     "undetected-chromedriver (>=3.5.0)",
-    "webdriver-manager (>=3.8.6)"
+    "webdriver-manager (>=3.8.6)",
+    "standard-distutils (>=3.11.9,<4.0.0)"
 ]
 
 [project.scripts]

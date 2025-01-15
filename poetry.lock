@@ -1549,6 +1549,18 @@ files = [
 ]
 
 [[package]]
+name = "standard-distutils"
+version = "3.11.9"
+description = "Standard library distutils redistribution. \"dead battery\"."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "standard_distutils-3.11.9-py3-none-any.whl", hash = "sha256:9ba3300167f1c95d5a24e9ac2eb323ad6cb146ec0bea703851a7720e8ffd7878"},
+    {file = "standard_distutils-3.11.9.tar.gz", hash = "sha256:37d6c9f0f0321ed3c9c923e54b0fdbafa3d7bf556821de55fd8158d7f440deb5"},
+]
+
+[[package]]
 name = "stevedore"
 version = "5.4.0"
 description = "Manage dynamic plugins for Python applications"
@@ -1946,4 +1958,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "5efcd51cbacc7dd52d2521297e15a24c3d3560b66c268c9cd69e0cd23b4a8a26"
+content-hash = "bf22f79be14461e573d4be1b816246a59ffe1c185570f4583fcfb76b5713d351"
