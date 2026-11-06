@@ -46,7 +46,7 @@ RUN poetry config virtualenvs.create false && \
 FROM python:3
 
 # Copy installed Python project dependencies from builder system site-packages
-COPY --from=builder /usr/local/lib/python3.15/site-packages /usr/local/lib/python3.15/site-packages
+COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3.*/site-packages
 
 # Copy builder's /app (pyproject.toml, poetry.lock) into the final image
 COPY --from=builder /app /app
