@@ -48,9 +48,14 @@ FROM python:3
 COPY --from=builder /opt/poetry /opt/poetry
 COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3./site-packages
 
+# Copy builder's /app (pyproject.toml, poetry.lock) into the final image
+COPY --from=builder /app /app
+
+# Copy project source code so PYTHONPATH=/app can find the module
+COPY safeway_coupons/ /app/safeway_coupons
+
 # Fix .pth file to use /app instead of host path (Poetry installs with absolute host path)
 RUN sed -i 's|/home/bryan/repos/safeway-coupons|/app|g' /usr/local/lib/python3.*/site-packages/safeway_coupons.pth 2>/dev/null || true
-COPY --from=builder /app /app
 
 # Copy entrypoint and set up
 COPY docker/entrypoint /
