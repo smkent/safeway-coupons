@@ -1,6 +1,5 @@
-FROM busybox
+FROM python:3 as builder
 
-FROM python:3
 ARG POETRY_DYNAMIC_VERSIONING_BYPASS="0.0.0"
 ENV CRON_SCHEDULE "5 2 * * *"
 ENV SMTPHOST=
@@ -12,24 +11,47 @@ ENV SAFEWAY_ACCOUNTS_FILE=
 ENV DEBUG_DIR="/debug"
 ENV EXTRA_ARGS=
 
+# Install system deps including Chrome in one layer with proper cleanup
 RUN DEBIAN_FRONTEND=noninteractive && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub > /usr/share/keyrings/chrome.pub && \
-    echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/chrome.pub] http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list && \
-    apt update -y && \
-    apt install -y google-chrome-stable
-RUN apt install -y tini
+    apt-get update -y && \
+    apt-get install -y wget gnupg && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update -y && \
+    apt-get install -y google-chrome-stable --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install busybox utilities using static binary from official image
-COPY --from=busybox /bin/busybox /bin/busybox
-RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
-    ln -svf /bin/busybox ${target}; \
-    done
+# Install tini for signal processing
+RUN apt-get update -y && \
+    apt-get install -y tini && \
+    rm -rf /var/lib/apt/lists/*
 
+# Install Python project via Poetry
+WORKDIR /app
+COPY pyproject.toml poetry.lock ./
+RUN pip install poetry && \
+    poetry config virtualenv.create-system-site-packages true && \
+    poetry install --no-root --no-interaction --disable-pip-cache
+
+FROM python:3
+
+# Copy installed Python project from builder
+COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3./site-packages
+COPY --from=builder /app /app
+
+# Copy entrypoint and set up
 COPY docker/entrypoint /
+RUN chmod +x /entrypoint
 
-COPY . /python-build
-RUN python3 -m pip install /python-build && rm -rf /python-build
-RUN safeway-coupons-init-chromedriver
+# Install tini for proper process management
+RUN apt-get update -y && \
+    apt-get install -y tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create busybox symlinks for sendmail/crond if needed
+RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
+    if [ ! -f ${target} ]; then ln -sf /bin/busybox ${target}; fi; \
+    done
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]

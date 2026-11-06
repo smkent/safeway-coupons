@@ -1,35 +1,36 @@
 #!/bin/sh
+set -e
 
-set -ex
-
-args=${EXTRA_ARGS-}
+args="${EXTRA_ARGS-}"
 if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
     echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
     args="${args} --accounts-config \"${SAFEWAY_ACCOUNTS_FILE}\""
 else
     echo "Using environment variables for configuration"
-    if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
-            && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then
+    # Set default mail recipient if not provided
+    if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then
         export SAFEWAY_ACCOUNT_MAIL_TO="${SAFEWAY_ACCOUNT_USERNAME}"
     fi
+    # Configure mail from if provided
     if [ -n "${SAFEWAY_ACCOUNT_MAIL_FROM}" ]; then
         export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_FROM}"
     fi
     if [ -n "${SAFEWAY_ACCOUNT_MAIL_TO}" ]; then
-        export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_TO}"
+        export MAILTO="${SAFEWAY_ACCOUNT_MAIL_TO}"
     fi
-    env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
 fi
 
+# Support debug directory
 if [ -d "${DEBUG_DIR}" ]; then
     args="${args} --debug-dir \"${DEBUG_DIR}\""
 fi
 
+# Ensure cron directories exist
 mkdir -vp /etc/cron.d /var/spool/cron/crontabs
-(
-    echo "${CRON_SCHEDULE?} safeway-coupons ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
-) > /var/spool/cron/crontabs/root
 
-busybox crontab -l
+# Write cron schedule
+echo "${CRON_SCHEDULE?} safeway-coupons ${args} >/proc/1/fd/1 2>/proc/1/fd/2" \
+    > /var/spool/cron/crontabs/root
 
+# Start cron in foreground
 exec busybox crond -f

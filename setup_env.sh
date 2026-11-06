@@ -46,7 +46,7 @@ if [ -z "$CRON_SCHEDULE" ]; then
 fi
 
 # Optional: time zone
-read -p "Enter time zone (optional, e.g. 'America/New_York'): " TZ
+read -p "Enter time zone (optional, e.g. 'America/Arizona'): " TZ
 
 # Create .env file
 echo ""
@@ -60,7 +60,7 @@ SAFEWAY_ACCOUNT_PASSWORD="$SAFEWAY_ACCOUNT_PASSWORD"
 SAFEWAY_ACCOUNT_MAIL_FROM="$SAFEWAY_ACCOUNT_MAIL_FROM"
 SAFEWAY_ACCOUNT_MAIL_TO="$SAFEWAY_ACCOUNT_MAIL_TO"
 CRON_SCHEDULE="$CRON_SCHEDULE"
-TZ="${TZ:-UTC}"
+TZ="${TZ:-America/Arizona}"
 EOF
 
 echo ""
@@ -71,7 +71,7 @@ echo "Username: $SAFEWAY_ACCOUNT_USERNAME"
 echo "Mail From: $SAFEWAY_ACCOUNT_MAIL_FROM"
 echo "Mail To: $SAFEWAY_ACCOUNT_MAIL_TO"
 echo "Cron Schedule: $CRON_SCHEDULE"
-echo "Time Zone: ${TZ:-UTC}"
+echo "Time Zone: ${TZ:-America/Arizona}"
 echo ""
 echo "=== Next Steps ==="
 echo "1. Review the .env file to ensure values are correct"
