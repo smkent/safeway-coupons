@@ -40,7 +40,7 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 COPY pyproject.toml poetry.lock ./
 
 # Install project dependencies via Poetry
-RUN poetry config virtualenv.create-system-site-packages true && \
+RUN poetry config virtualenvs.options.system-site-packages false && \
     poetry install --no-root --no-interaction --disable-pip-cache
 
 FROM python:3
