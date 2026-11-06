@@ -26,16 +26,27 @@ RUN apt-get update -y && \
     apt-get install -y tini && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python project via Poetry
+# Install Poetry using the official installer
 WORKDIR /app
+ENV POETRY_HOME="/opt/poetry"
+ENV POETRY_VERSION="1.8.2"
+RUN curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION && \
+    chmod -R 777 $POETRY_HOME
+
+# Add Poetry to PATH
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+# Copy project files
 COPY pyproject.toml poetry.lock ./
-RUN pip install poetry && \
-    poetry config virtualenv.create-system-site-packages true && \
+
+# Install project dependencies via Poetry
+RUN poetry config virtualenv.create-system-site-packages true && \
     poetry install --no-root --no-interaction --disable-pip-cache
 
 FROM python:3
 
 # Copy installed Python project from builder
+COPY --from=builder /opt/poetry /opt/poetry
 COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3./site-packages
 COPY --from=builder /app /app
 
@@ -52,6 +63,8 @@ RUN apt-get update -y && \
 RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
     if [ ! -f ${target} ]; then ln -sf /bin/busybox ${target}; fi; \
     done
+
+ENV PATH="/opt/poetry/bin:$PATH"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]
