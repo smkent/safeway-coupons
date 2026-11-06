@@ -40,7 +40,7 @@ COPY pyproject.toml poetry.lock ./
 
 # Install project dependencies via Poetry
 RUN poetry config virtualenvs.options.system-site-packages false && \
-    poetry install --no-root --no-interaction --disable-pip-cache
+    poetry install --no-root --no-interaction --no-cache
 
 FROM python:3
 
