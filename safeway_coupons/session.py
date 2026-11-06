@@ -1,5 +1,6 @@
 import contextlib
 import json
+import os
 import time
 import urllib
 from collections.abc import Iterator
@@ -147,12 +148,33 @@ class LoginSession(BaseSession):
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
             print("Retrieve session information")
-            session_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION")["value"]
-            )
-            session_info_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION_INFO")["value"]
-            )
+            # Try environment variables first, then browser cookies
+            session_cookie_raw = os.environ.get("SWY_SHARED_SESSION")
+            if not session_cookie_raw:
+                session_cookie = driver.get_cookie("SWY_SHARED_SESSION")
+                if not session_cookie:
+                    raise AuthenticationFailure(
+                        Exception("SWY_SHARED_SESSION cookie not found. "
+                                  "Set SWY_SHARED_SESSION env var or log in via browser."),
+                        None
+                    )
+                session_cookie_raw = session_cookie["value"]
+            session_cookie = self._parse_cookie_value(session_cookie_raw)
+
+            session_info_cookie_raw = os.environ.get("SWY_SHARED_SESSION_INFO")
+            if not session_info_cookie_raw:
+                session_info_cookie = driver.get_cookie(
+                    "SWY_SHARED_SESSION_INFO"
+                )
+                if not session_info_cookie:
+                    raise AuthenticationFailure(
+                        Exception("SWY_SHARED_SESSION_INFO cookie not found. "
+                                  "Set SWY_SHARED_SESSION_INFO env var or log in via browser."),
+                        None
+                    )
+                session_info_cookie_raw = session_info_cookie["value"]
+            session_info_cookie = self._parse_cookie_value(session_info_cookie_raw)
+
             self.access_token = session_cookie["accessToken"]
             try:
                 self.store_id = session_info_cookie["info"]["J4U"]["storeId"]

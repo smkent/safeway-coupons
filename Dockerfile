@@ -39,14 +39,14 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 COPY pyproject.toml poetry.lock ./
 
 # Install project dependencies via Poetry
-RUN poetry config virtualenvs.options.system-site-packages false && \
+# Install project dependencies directly into system site-packages
+RUN poetry config virtualenvs.create false && \
     poetry install --no-root --no-interaction --no-cache
 
 FROM python:3
 
-# Copy installed Python project from builder
-COPY --from=builder /opt/poetry /opt/poetry
-COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3./site-packages
+# Copy installed Python project dependencies from builder system site-packages
+COPY --from=builder /usr/local/lib/python3.15/site-packages /usr/local/lib/python3.15/site-packages
 
 # Copy builder's /app (pyproject.toml, poetry.lock) into the final image
 COPY --from=builder /app /app
