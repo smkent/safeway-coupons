@@ -40,7 +40,7 @@ COPY pyproject.toml poetry.lock ./
 
 # Install project dependencies via Poetry
 RUN poetry config virtualenvs.options.system-site-packages false && \
-    poetry install --no-root --no-interaction --no-cache
+    poetry install --no-interaction --no-cache
 
 FROM python:3
 
@@ -64,6 +64,12 @@ RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
     done
 
 ENV PATH="/opt/poetry/bin:$PATH"
+ENV PYTHONPATH="/app:${PYTHONPATH:-}"
+
+# Create console script for the project (poetry install --no-root skips this)
+RUN echo '#!/bin/sh' > /usr/local/bin/safeway-coupons && \
+    echo 'exec /usr/bin/python3 -m safeway_coupons.app "$@"' >> /usr/local/bin/safeway-coupons && \
+    chmod +x /usr/local/bin/safeway-coupons
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]
