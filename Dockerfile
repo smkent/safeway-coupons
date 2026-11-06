@@ -29,7 +29,7 @@ RUN apt-get update -y && \
 # Install Poetry using the official installer
 WORKDIR /app
 ENV POETRY_HOME="/opt/poetry"
-ENV POETRY_VERSION="1.8.2"
+ENV POETRY_VERSION="2.2"
 RUN curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION && \
     chmod -R 777 $POETRY_HOME
 
