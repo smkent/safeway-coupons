@@ -47,6 +47,18 @@ FROM python:3
 # Copy installed Python project from builder
 COPY --from=builder /opt/poetry /opt/poetry
 COPY --from=builder /usr/local/lib/python3.*/site-packages /usr/local/lib/python3./site-packages
+
+# Fix .pth file to use /app instead of host path (Poetry installs with absolute host path)
+RUN python3 -c "
+import os, glob
+pth_files = glob.glob('/usr/local/lib/python*/site-packages/safeway_coupons.pth')
+for pth in pth_files:
+    with open(pth, 'r') as f:
+        content = f.read()
+    content = content.replace('/home/bryan/repos/safeway-coupons', '/app')
+    with open(pth, 'w') as f:
+        f.write(content)
+" 2>/dev/null || true
 COPY --from=builder /app /app
 
 # Copy entrypoint and set up
