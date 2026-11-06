@@ -123,6 +123,15 @@ A single Safeway account can be configured with environment variables:
 * `SAFEWAY_ACCOUNT_PASSWORD`: Account password (required)
 * `SAFEWAY_ACCOUNT_MAIL_FROM`: Sender address for email summary
 * `SAFEWAY_ACCOUNT_MAIL_TO`: Recipient address for email summary
+* `SWY_SHARED_SESSION`: Optional. JSON session cookie value. If set, bypasses
+  browser-based login and uses this cookie directly. Format:
+  `{"accessToken": "...", ...}` (URL-encoded JSON string).
+* `SWY_SHARED_SESSION_INFO`: Optional. JSON session info cookie value. If set,
+  bypasses browser-based login and uses this cookie directly. Format:
+  `{"info": {"J4U": {"storeId": 123}}, ...}` (URL-encoded JSON string).
+
+These are useful for headless/CI environments where browser automation is
+difficult, or when you already have valid session cookies from a previous login.
 
 #### With config file
 
