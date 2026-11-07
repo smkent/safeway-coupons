@@ -126,6 +126,8 @@ A single Safeway account can be configured with environment variables:
 * `SWY_SHARED_SESSION`: Optional. JSON session cookie value. If set, bypasses
   browser-based login and uses this cookie directly. Format:
   `{"accessToken": "...", ...}` (URL-encoded JSON string).
+  Useful for headless/CI environments or when configured via
+  `docker-compose.dev.yaml` environment section.
 * `SWY_SHARED_SESSION_INFO`: Optional. JSON session info cookie value. If set,
   bypasses browser-based login and uses this cookie directly. Format:
   `{"info": {"J4U": {"storeId": 123}}, ...}` (URL-encoded JSON string).
