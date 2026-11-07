@@ -4,6 +4,13 @@ services:
     command: /usr/local/bin/safeway-coupons -c /accounts -n -d -m 1
     environment:
       PYTHONUNBUFFERED: 1
+      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
+      SAFEWAY_ACCOUNT_PASSWORD: your_password
+      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
+      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      # Optional: environment variables for cookie auth fallback (bypasses browser login)
+      SWY_SHARED_SESSION: '{"accessToken": "your_session_cookie_value"}'
+      SWY_SHARED_SESSION_INFO: '{"info": {"J4U": {"storeId": 123}}}'
     restart: "no"
     volumes:
       - ./accounts:/accounts:ro
