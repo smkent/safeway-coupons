@@ -46,6 +46,18 @@ RUN poetry config virtualenvs.create false && \
 
 FROM python:3
 
+# Install Google Chrome for Selenium-based authentication. Chrome must be
+# present in the final stage; installing it only in the builder stage leaves
+# the runtime image without a browser.
+RUN DEBIAN_FRONTEND=noninteractive && \
+    apt-get update -y && \
+    apt-get install -y wget gnupg && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update -y && \
+    apt-get install -y google-chrome-stable --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy installed Python project dependencies from builder system site-packages
 COPY --from=builder /usr/local/lib/python3.15/site-packages /usr/local/lib/python3.15/site-packages
 

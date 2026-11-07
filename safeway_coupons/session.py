@@ -218,4 +218,11 @@ class LoginSession(BaseSession):
             )
 
     def _parse_cookie_value(self, value: str) -> Any:
-        return json.loads(urllib.parse.unquote(value))
+        decoded = urllib.parse.unquote(value)
+        try:
+            return json.loads(decoded)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"invalid session cookie JSON ({e}); decoded value starts "
+                f"with {decoded[:40]!r}"
+            ) from e

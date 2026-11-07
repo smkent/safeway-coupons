@@ -1,4 +1,6 @@
 import contextlib
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -14,14 +16,42 @@ CHROMEDRIVER_PATH = (
     / "undetected_chromedriver"
 )
 
+CHROME_BINARY_NAMES = (
+    "google-chrome",
+    "google-chrome-stable",
+    "chromium",
+    "chromium-browser",
+    "chrome",
+)
+
 
 class ChromeDriverDoesNotExist(Exception):
     pass
 
 
+def chrome_binary() -> str:
+    """Return the path to the Chrome binary or raise a clear error."""
+    configured = os.environ.get("CHROME_BINARY")
+    if configured:
+        if Path(configured).is_file():
+            return configured
+        raise ChromeDriverDoesNotExist(
+            f"Error: CHROME_BINARY={configured} does not exist"
+        )
+    for name in CHROME_BINARY_NAMES:
+        path = shutil.which(name)
+        if path:
+            return path
+    raise ChromeDriverDoesNotExist(
+        "Error: no Google Chrome/Chromium binary found. Install Chrome or "
+        "set CHROME_BINARY to its path."
+    )
+
+
 @contextlib.contextmanager
 def chrome_driver(headless: bool = True) -> Iterator[uc.Chrome]:
     options = uc.ChromeOptions()
+    options.binary_location = chrome_binary()
     options.headless = headless
     for option in [
         "--incognito",
