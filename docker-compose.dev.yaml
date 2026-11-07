@@ -4,10 +4,10 @@ services:
     command: /usr/local/bin/safeway-coupons -c /accounts -n -d -m 1
     environment:
       PYTHONUNBUFFERED: 1
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: your_password
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      SAFEWAY_ACCOUNT_USERNAME: "${SAFEWAY_ACCOUNT_USERNAME:-your.safeway.account.email@example.com}"
+      SAFEWAY_ACCOUNT_PASSWORD: "${SAFEWAY_ACCOUNT_PASSWORD:-your_password}"
+      SAFEWAY_ACCOUNT_MAIL_FROM: "${SAFEWAY_ACCOUNT_MAIL_FROM:-your.email@example.com}"
+      SAFEWAY_ACCOUNT_MAIL_TO: "${SAFEWAY_ACCOUNT_MAIL_TO:-your.email@example.com}"
       # Cookie auth (optional, bypasses browser login). Export these in your
       # shell and they are passed through to the container. Note: the session
       # access token expires about 45 minutes after it is issued.
