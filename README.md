@@ -27,6 +27,17 @@ A Docker container is provided which runs safeway-coupons with cron. The cron
 schedule and your Safeway account details may be configured using environment
 variables, or with an accounts file.
 
+To configure with environment variables, copy the example environment file and
+fill in your details:
+
+```console
+cp .env.example .env
+$EDITOR .env
+```
+
+Docker Compose loads `.env` automatically. Do not commit it; it is listed in
+`.gitignore`.
+
 Example `docker-compose.yaml` with configuration via environment variables:
 
 ```yaml
