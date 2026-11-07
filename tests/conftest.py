@@ -113,7 +113,9 @@ def available_offers(
             200,
             {"Content-Type": "application/json"},
             json.dumps(
-                OfferList(offers=offers_list).to_dict(encode_json=True)
+                OfferList(
+                    offers={offer.offer_id: offer for offer in offers_list}
+                ).to_dict(encode_json=True)
             ),
         ),
     )
