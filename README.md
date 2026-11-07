@@ -137,6 +137,9 @@ about 45 minutes after it is issued). These variables are only usable for a run
 started within that window. For scheduled/cron runs, use browser login (leave
 these unset) or refresh the cookie values before each run.
 
+If both variables are set but either value is malformed, truncated, or expired,
+the app prints a warning and falls back to browser login instead of failing.
+
 These are useful for one-off headless/CI runs where browser automation is
 difficult and the cookies were just obtained from a fresh login.
 

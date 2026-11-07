@@ -100,19 +100,43 @@ class LoginSession(BaseSession):
         session_info_cookie = self._parse_cookie_value(
             session_info_cookie_raw
         )
-        self.access_token = session_cookie["accessToken"]
+        access_token = session_cookie["accessToken"]
         try:
-            self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
+            store_id = session_info_cookie["info"]["J4U"]["storeId"]
         except Exception as e:
             raise Exception("Unable to retrieve store ID") from e
+        expire_time = session_cookie.get("expireTime")
+        if expire_time is not None:
+            if int(expire_time) / 1000 <= time.time():
+                raise Exception("session cookie has expired")
+        self.access_token = access_token
+        self.store_id = store_id
 
     def _login(self, account: Account) -> None:
         env_session = os.environ.get("SWY_SHARED_SESSION")
         env_session_info = os.environ.get("SWY_SHARED_SESSION_INFO")
+        if bool(env_session) != bool(env_session_info):
+            print(
+                "Warning: both SWY_SHARED_SESSION and "
+                "SWY_SHARED_SESSION_INFO must be set to bypass browser "
+                "login; ignoring the incomplete cookie configuration"
+            )
         if env_session and env_session_info:
-            print("Using session cookies from environment variables")
-            self._load_session_from_cookies(env_session, env_session_info)
-            return
+            try:
+                self._load_session_from_cookies(
+                    env_session, env_session_info
+                )
+            except Exception as e:
+                print(
+                    "Warning: cannot use SWY_SHARED_SESSION / "
+                    f"SWY_SHARED_SESSION_INFO from environment ({e}); "
+                    f"lengths: SWY_SHARED_SESSION={len(env_session)}, "
+                    f"SWY_SHARED_SESSION_INFO={len(env_session_info)}; "
+                    "falling back to browser login"
+                )
+            else:
+                print("Using session cookies from environment variables")
+                return
         with self._chrome_driver() as driver:
             driver.implicitly_wait(10)
             wait = WebDriverWait(driver, 10)
@@ -167,36 +191,27 @@ class LoginSession(BaseSession):
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
             print("Retrieve session information")
-            session_cookie_raw = os.environ.get("SWY_SHARED_SESSION")
-            if not session_cookie_raw:
-                session_cookie = driver.get_cookie("SWY_SHARED_SESSION")
-                if not session_cookie:
-                    raise AuthenticationFailure(
-                        Exception(
-                            "SWY_SHARED_SESSION cookie not found. Set "
-                            "SWY_SHARED_SESSION env var or log in via browser."
-                        ),
-                        None,
-                    )
-                session_cookie_raw = session_cookie["value"]
+            session_cookie = driver.get_cookie("SWY_SHARED_SESSION")
+            if not session_cookie:
+                raise AuthenticationFailure(
+                    Exception(
+                        "SWY_SHARED_SESSION cookie not found after login"
+                    ),
+                    account,
+                )
+            session_cookie_raw = session_cookie["value"]
 
-            session_info_cookie_raw = os.environ.get(
+            session_info_cookie = driver.get_cookie(
                 "SWY_SHARED_SESSION_INFO"
             )
-            if not session_info_cookie_raw:
-                session_info_cookie = driver.get_cookie(
-                    "SWY_SHARED_SESSION_INFO"
+            if not session_info_cookie:
+                raise AuthenticationFailure(
+                    Exception(
+                        "SWY_SHARED_SESSION_INFO cookie not found after login"
+                    ),
+                    account,
                 )
-                if not session_info_cookie:
-                    raise AuthenticationFailure(
-                        Exception(
-                            "SWY_SHARED_SESSION_INFO cookie not found. Set "
-                            "SWY_SHARED_SESSION_INFO env var or log in via "
-                            "browser."
-                        ),
-                        None,
-                    )
-                session_info_cookie_raw = session_info_cookie["value"]
+            session_info_cookie_raw = session_info_cookie["value"]
 
             self._load_session_from_cookies(
                 session_cookie_raw, session_info_cookie_raw
