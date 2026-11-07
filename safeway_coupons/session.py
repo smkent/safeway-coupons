@@ -11,6 +11,8 @@ import requests
 import selenium.webdriver.support.expected_conditions as ec
 import undetected_chromedriver as uc  # type: ignore
 from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    ElementNotInteractableException,
     NoSuchElementException,
     StaleElementReferenceException,
     WebDriverException,
@@ -93,6 +95,50 @@ class LoginSession(BaseSession):
         except StaleElementReferenceException:
             return False
 
+    @staticmethod
+    def _click(wait: WebDriverWait, locator: tuple[str, str]) -> None:
+        """Click an element, retrying if the page re-renders under us."""
+
+        def attempt(driver: uc.Chrome) -> bool:
+            try:
+                element = driver.find_element(*locator)
+                if not (element.is_displayed() and element.is_enabled()):
+                    return False
+                element.click()
+                return True
+            except (
+                NoSuchElementException,
+                StaleElementReferenceException,
+                ElementClickInterceptedException,
+                ElementNotInteractableException,
+            ):
+                return False
+
+        wait.until(attempt)
+
+    @staticmethod
+    def _send_keys(
+        wait: WebDriverWait, locator: tuple[str, str], text: str
+    ) -> None:
+        """Type into an element, retrying if the page re-renders under us."""
+
+        def attempt(driver: uc.Chrome) -> bool:
+            try:
+                element = driver.find_element(*locator)
+                if not element.is_displayed():
+                    return False
+                element.clear()
+                element.send_keys(text)
+                return True
+            except (
+                NoSuchElementException,
+                StaleElementReferenceException,
+                ElementNotInteractableException,
+            ):
+                return False
+
+        wait.until(attempt)
+
     def _load_session_from_cookies(
         self, session_cookie_raw: str, session_info_cookie_raw: str
     ) -> None:
@@ -139,7 +185,8 @@ class LoginSession(BaseSession):
                 return
         with self._chrome_driver() as driver:
             driver.implicitly_wait(10)
-            wait = WebDriverWait(driver, 10)
+            driver.set_window_size(1920, 1080)
+            wait = WebDriverWait(driver, 30)
             # Navigate to the website URL
             url = "https://www.safeway.com"
             print("Connect to safeway.com")
@@ -159,34 +206,38 @@ class LoginSession(BaseSession):
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
             print("Open Sign In sidebar")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//span [contains(text(), 'Sign In')]")
-                )
-            ).click()
+            self._click(wait, (By.ID, "auth_signin_link"))
             print("Open Sign In form")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//button [contains(text(), 'Sign in')]")
-                )
-            ).click()
+            self._click(
+                wait,
+                (
+                    By.XPATH,
+                    "//*[@id='signin-dropdown']"
+                    "//button[normalize-space()='Sign in']",
+                ),
+            )
             time.sleep(2)
             print("Populate Sign In form username")
-            driver.find_element(By.ID, "enterUsername").send_keys(
-                account.username
+            self._send_keys(
+                wait, (By.ID, "enterUsername"), account.username
             )
             time.sleep(0.5)
             print("Click Sign in with password button")
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign in with password")]'
-            ).click()
+            self._click(
+                wait,
+                (
+                    By.XPATH,
+                    "//button[normalize-space()='Sign in with password']",
+                ),
+            )
             time.sleep(2)
-            driver.find_element(By.ID, "password").send_keys(account.password)
+            print("Populate Sign In form password")
+            self._send_keys(wait, (By.ID, "password"), account.password)
             time.sleep(0.5)
             print("Click Sign In button")
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign In")]'
-            ).click()
+            self._click(
+                wait, (By.XPATH, "//button[normalize-space()='Sign In']")
+            )
             time.sleep(0.5)
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)

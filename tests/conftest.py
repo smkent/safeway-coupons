@@ -28,7 +28,10 @@ def mock_undetected_chromedriver(
     mock_web_driver_wait: mock.MagicMock,
     mock_sleep: mock.MagicMock,
 ) -> Iterator[mock.MagicMock]:
-    with mock.patch.object(uc, "Chrome") as mock_uc:
+    with mock.patch.object(uc, "Chrome") as mock_uc, mock.patch(
+        "safeway_coupons.chrome_driver.chrome_binary",
+        return_value="/usr/bin/google-chrome",
+    ):
         mock_driver = mock_uc.return_value
         mock_driver.quit.side_effect = lambda *a, **kw: mock_sleep.reset_mock()
         yield mock_driver
