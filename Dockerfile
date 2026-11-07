@@ -41,7 +41,8 @@ COPY pyproject.toml poetry.lock ./
 # Install project dependencies via Poetry
 # Install project dependencies directly into system site-packages
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-root --no-interaction --no-cache
+    poetry install --no-root --no-interaction --no-cache && \
+    pip install --upgrade typing_extensions 2>/dev/null || true
 
 FROM python:3
 
@@ -76,7 +77,7 @@ ENV PYTHONPATH="/app:${PYTHONPATH:-}"
 
 # Create console script for the project (poetry install --no-root skips this)
 RUN echo '#!/bin/sh' > /usr/local/bin/safeway-coupons && \
-    echo 'exec /usr/bin/python3 -m safeway_coupons.app "$@"' >> /usr/local/bin/safeway-coupons && \
+    echo 'exec python3 -m safeway_coupons.app "$@"' >> /usr/local/bin/safeway-coupons && \
     chmod +x /usr/local/bin/safeway-coupons
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
