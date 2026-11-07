@@ -60,6 +60,8 @@ class LoginSession(BaseSession):
         self.debug_dir: Optional[Path] = debug_dir
         try:
             self._login(account)
+        except AuthenticationFailure:
+            raise
         except ExceptionWithAttachments as e:
             raise AuthenticationFailure(
                 e, account, attachments=e.attachments
@@ -84,16 +86,76 @@ class LoginSession(BaseSession):
             ) from e
 
     @staticmethod
-    def _sign_in_success(driver: uc.Chrome) -> bool:
+    def _sign_in_result(driver: uc.Chrome) -> Optional[str]:
+        """Return "success", a failure reason, or None while still pending."""
         try:
-            element = driver.find_element(
+            elements = driver.find_elements(
                 By.XPATH, '//span [contains(@class, "user-greeting")]'
             )
-            if not (element and element.text):
-                return False
-            return not element.text.lower().startswith("sign in")
+            for element in elements:
+                if element.text and not element.text.lower().startswith(
+                    "sign in"
+                ):
+                    return "success"
         except StaleElementReferenceException:
+            return None
+        try:
+            body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        except (NoSuchElementException, StaleElementReferenceException):
+            return None
+        if "password entered doesn't match" in body or (
+            "password" in body
+            and ("incorrect" in body or "doesn't match" in body)
+        ):
+            return "bad-password"
+        if "send code to" in body or "new device" in body:
+            return "verify-device"
+        return None
+
+    @staticmethod
+    def _try_click(driver: uc.Chrome, locator: tuple[str, str]) -> bool:
+        try:
+            for element in driver.find_elements(*locator):
+                if element.is_displayed() and element.is_enabled():
+                    element.click()
+                    return True
+        except (
+            StaleElementReferenceException,
+            ElementClickInterceptedException,
+            ElementNotInteractableException,
+        ):
             return False
+        return False
+
+    @classmethod
+    def _open_sign_in_form(
+        cls, wait: WebDriverWait, timeout: float = 30
+    ) -> None:
+        """Open the account menu and click its "Sign in" item.
+
+        The account link is present before the page's JavaScript is ready,
+        so an early click can be silently ignored. Keep trying until the
+        menu item is actually displayed and clickable.
+        """
+        menu_item = (
+            By.XPATH,
+            "//*[@id='signin-dropdown']"
+            "//button[normalize-space()='Sign in']",
+        )
+        state = {"last_toggle": 0.0}
+
+        def attempt(driver: uc.Chrome) -> bool:
+            if cls._try_click(driver, menu_item):
+                return True
+            # Re-click the account control periodically in case the page
+            # was not yet interactive when it was first clicked.
+            now = time.time()
+            if now - state["last_toggle"] >= 4:
+                state["last_toggle"] = now
+                cls._try_click(driver, (By.ID, "auth_signin_link"))
+            return False
+
+        wait.until(attempt)
 
     @staticmethod
     def _click(wait: WebDriverWait, locator: tuple[str, str]) -> None:
@@ -184,7 +246,7 @@ class LoginSession(BaseSession):
                 print("Using session cookies from environment variables")
                 return
         with self._chrome_driver() as driver:
-            driver.implicitly_wait(10)
+            driver.implicitly_wait(0)
             driver.set_window_size(1920, 1080)
             wait = WebDriverWait(driver, 30)
             # Navigate to the website URL
@@ -206,16 +268,8 @@ class LoginSession(BaseSession):
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
             print("Open Sign In sidebar")
-            self._click(wait, (By.ID, "auth_signin_link"))
+            self._open_sign_in_form(wait)
             print("Open Sign In form")
-            self._click(
-                wait,
-                (
-                    By.XPATH,
-                    "//*[@id='signin-dropdown']"
-                    "//button[normalize-space()='Sign in']",
-                ),
-            )
             time.sleep(2)
             print("Populate Sign In form username")
             self._send_keys(
@@ -240,7 +294,27 @@ class LoginSession(BaseSession):
             )
             time.sleep(0.5)
             print("Wait for signed in landing page to load")
-            wait.until(self._sign_in_success)
+            result = wait.until(self._sign_in_result)
+            if result == "bad-password":
+                raise AuthenticationFailure(
+                    Exception(
+                        "Safeway rejected the username or password "
+                        "(the site reported that the password does not "
+                        "match its records)"
+                    ),
+                    account,
+                )
+            if result == "verify-device":
+                raise AuthenticationFailure(
+                    Exception(
+                        "Safeway requires verification of a new device. "
+                        "Sign in once in a regular browser, complete the "
+                        "verification, or use SWY_SHARED_SESSION / "
+                        "SWY_SHARED_SESSION_INFO"
+                    ),
+                    account,
+                )
+            print("Signed in")
             print("Retrieve session information")
             session_cookie = driver.get_cookie("SWY_SHARED_SESSION")
             if not session_cookie:
