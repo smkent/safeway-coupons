@@ -93,7 +93,26 @@ class LoginSession(BaseSession):
         except StaleElementReferenceException:
             return False
 
+    def _load_session_from_cookies(
+        self, session_cookie_raw: str, session_info_cookie_raw: str
+    ) -> None:
+        session_cookie = self._parse_cookie_value(session_cookie_raw)
+        session_info_cookie = self._parse_cookie_value(
+            session_info_cookie_raw
+        )
+        self.access_token = session_cookie["accessToken"]
+        try:
+            self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
+        except Exception as e:
+            raise Exception("Unable to retrieve store ID") from e
+
     def _login(self, account: Account) -> None:
+        env_session = os.environ.get("SWY_SHARED_SESSION")
+        env_session_info = os.environ.get("SWY_SHARED_SESSION_INFO")
+        if env_session and env_session_info:
+            print("Using session cookies from environment variables")
+            self._load_session_from_cookies(env_session, env_session_info)
+            return
         with self._chrome_driver() as driver:
             driver.implicitly_wait(10)
             wait = WebDriverWait(driver, 10)
@@ -148,38 +167,40 @@ class LoginSession(BaseSession):
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
             print("Retrieve session information")
-            # Try environment variables first, then browser cookies
             session_cookie_raw = os.environ.get("SWY_SHARED_SESSION")
             if not session_cookie_raw:
                 session_cookie = driver.get_cookie("SWY_SHARED_SESSION")
                 if not session_cookie:
                     raise AuthenticationFailure(
-                        Exception("SWY_SHARED_SESSION cookie not found. "
-                                  "Set SWY_SHARED_SESSION env var or log in via browser."),
-                        None
+                        Exception(
+                            "SWY_SHARED_SESSION cookie not found. Set "
+                            "SWY_SHARED_SESSION env var or log in via browser."
+                        ),
+                        None,
                     )
                 session_cookie_raw = session_cookie["value"]
-            session_cookie = self._parse_cookie_value(session_cookie_raw)
 
-            session_info_cookie_raw = os.environ.get("SWY_SHARED_SESSION_INFO")
+            session_info_cookie_raw = os.environ.get(
+                "SWY_SHARED_SESSION_INFO"
+            )
             if not session_info_cookie_raw:
                 session_info_cookie = driver.get_cookie(
                     "SWY_SHARED_SESSION_INFO"
                 )
                 if not session_info_cookie:
                     raise AuthenticationFailure(
-                        Exception("SWY_SHARED_SESSION_INFO cookie not found. "
-                                  "Set SWY_SHARED_SESSION_INFO env var or log in via browser."),
-                        None
+                        Exception(
+                            "SWY_SHARED_SESSION_INFO cookie not found. Set "
+                            "SWY_SHARED_SESSION_INFO env var or log in via "
+                            "browser."
+                        ),
+                        None,
                     )
                 session_info_cookie_raw = session_info_cookie["value"]
-            session_info_cookie = self._parse_cookie_value(session_info_cookie_raw)
 
-            self.access_token = session_cookie["accessToken"]
-            try:
-                self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
-            except Exception as e:
-                raise Exception("Unable to retrieve store ID") from e
+            self._load_session_from_cookies(
+                session_cookie_raw, session_info_cookie_raw
+            )
 
     def _parse_cookie_value(self, value: str) -> Any:
         return json.loads(urllib.parse.unquote(value))

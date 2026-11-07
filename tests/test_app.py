@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -162,3 +163,15 @@ def test_args(
     cast(mock.MagicMock, app.SafewayCoupons).assert_called_once_with(
         **expected_args
     )
+
+
+def test_module_entry_point_runs() -> None:
+    # Regression test: ``python -m safeway_coupons.app`` must actually call
+    # main() rather than only importing the module and exiting silently.
+    result = subprocess.run(
+        [sys.executable, "-m", "safeway_coupons.app", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "Automatic coupon clipper" in result.stdout

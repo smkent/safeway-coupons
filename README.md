@@ -123,17 +123,22 @@ A single Safeway account can be configured with environment variables:
 * `SAFEWAY_ACCOUNT_PASSWORD`: Account password (required)
 * `SAFEWAY_ACCOUNT_MAIL_FROM`: Sender address for email summary
 * `SAFEWAY_ACCOUNT_MAIL_TO`: Recipient address for email summary
-* `SWY_SHARED_SESSION`: Optional. JSON session cookie value. If set, bypasses
-  browser-based login and uses this cookie directly. Format:
-  `{"accessToken": "...", ...}` (URL-encoded JSON string).
-  Useful for headless/CI environments or when configured via
-  `docker-compose.dev.yaml` environment section.
-* `SWY_SHARED_SESSION_INFO`: Optional. JSON session info cookie value. If set,
-  bypasses browser-based login and uses this cookie directly. Format:
+* `SWY_SHARED_SESSION`: Optional. JSON session cookie value. When set together
+  with `SWY_SHARED_SESSION_INFO`, bypasses browser-based login and uses this
+  cookie directly. Format: `{"accessToken": "...", ...}` (URL-encoded JSON
+  string).
+* `SWY_SHARED_SESSION_INFO`: Optional. JSON session info cookie value. When set
+  together with `SWY_SHARED_SESSION`, bypasses browser-based login and uses
+  this cookie directly. Format:
   `{"info": {"J4U": {"storeId": 123}}, ...}` (URL-encoded JSON string).
 
-These are useful for headless/CI environments where browser automation is
-difficult, or when you already have valid session cookies from a previous login.
+**Important:** the Safeway session access token is short-lived (it expires
+about 45 minutes after it is issued). These variables are only usable for a run
+started within that window. For scheduled/cron runs, use browser login (leave
+these unset) or refresh the cookie values before each run.
+
+These are useful for one-off headless/CI runs where browser automation is
+difficult and the cookies were just obtained from a fresh login.
 
 #### With config file
 
