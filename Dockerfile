@@ -74,9 +74,10 @@ RUN sed -i 's|/home/bryan/repos/safeway-coupons|/app|g' /usr/local/lib/python3.1
 COPY docker/entrypoint /
 RUN chmod +x /entrypoint
 
-# Install tini for proper process management
+# Install tini for proper process management and busybox for the cron
+# daemon/sendmail/crontab symlinks created below.
 RUN apt-get update -y && \
-    apt-get install -y tini && \
+    apt-get install -y tini busybox && \
     rm -rf /var/lib/apt/lists/*
 
 # Create busybox symlinks for sendmail/crond if needed
