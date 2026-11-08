@@ -29,9 +29,7 @@ class Model(dataclasses_json.DataClassJsonMixin):
 @dataclass
 class OfferList(Model):
     offers: dict[str, Offer] = field(
-        metadata=dataclasses_json.config(
-            field_name="companionGalleryOffer"
-        )
+        metadata=dataclasses_json.config(field_name="companionGalleryOffer")
     )
 
 
