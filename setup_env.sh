@@ -40,9 +40,9 @@ else
 fi
 
 # Optional: cron schedule
-read -p "Enter cron schedule (default: '0 2 * * *' for 2AM daily): " CRON_SCHEDULE
+read -p "Enter cron schedule (default: '*/5 * * * *' for every 5 minutes): " CRON_SCHEDULE
 if [ -z "$CRON_SCHEDULE" ]; then
-    CRON_SCHEDULE="0 2 * * *"
+    CRON_SCHEDULE="*/5 * * * *"
 fi
 
 # Optional: time zone

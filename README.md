@@ -48,7 +48,7 @@ services:
   safeway-coupons:
     build: .
     environment:
-      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"  # Default: 2:00 AM UTC daily
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-*/5 * * * *}"  # Default: every 5 minutes
       # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
       SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNT_USERNAME: "${SAFEWAY_ACCOUNT_USERNAME:-}"
@@ -70,7 +70,7 @@ services:
   safeway-coupons:
     build: .
     environment:
-      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"  # Default: 2:00 AM UTC daily
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-*/5 * * * *}"  # Default: every 5 minutes
       # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
       SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file

@@ -6,7 +6,7 @@ services:
     build: .
     environment:
       PYTHONUNBUFFERED: 1
-      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-*/5 * * * *}"
       # Optional time zone, e.g. America/Phoenix
       # TZ: "${TZ:-America/Phoenix}"
       SMTPHOST: "${SMTPHOST:-}"
