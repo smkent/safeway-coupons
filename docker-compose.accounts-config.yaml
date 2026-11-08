@@ -11,12 +11,19 @@ services:
       # TZ: "${TZ:-America/Phoenix}"
       SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
+      # Sessions are saved here so refreshed tokens survive cron runs and
+      # container restarts. Backed by the safeway_session volume below.
+      SWY_SESSION_FILE: "${SWY_SESSION_FILE:-/data/safeway-session.json}"
       # Cookie auth (optional, bypasses browser login). Export these in your
-      # shell and they are passed through to the container. Note: the session
-      # access token expires about 45 minutes after it is issued.
+      # shell and they are passed through to the container. Expired tokens
+      # are refreshed automatically when a refresh token is available.
       SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
       SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
       # EXTRA_ARGS: "${EXTRA_ARGS:-}"
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
+      - safeway_session:/data
+
+volumes:
+  safeway_session:

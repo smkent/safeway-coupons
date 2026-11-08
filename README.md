@@ -55,11 +55,18 @@ services:
       SAFEWAY_ACCOUNT_PASSWORD: "${SAFEWAY_ACCOUNT_PASSWORD:-}"
       SAFEWAY_ACCOUNT_MAIL_FROM: "${SAFEWAY_ACCOUNT_MAIL_FROM:-}"
       SAFEWAY_ACCOUNT_MAIL_TO: "${SAFEWAY_ACCOUNT_MAIL_TO:-}"
+      # Save refreshed sessions across cron runs and container restarts
+      SWY_SESSION_FILE: "${SWY_SESSION_FILE:-/data/safeway-session.json}"
       # Optional cookie auth (set both to skip browser login)
       SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
       SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
       # EXTRA_ARGS: "${EXTRA_ARGS:-}"  # Optional, e.g. --debug
     restart: unless-stopped
+    volumes:
+      - safeway_session:/data
+
+volumes:
+  safeway_session:
 ```
 
 Example `docker-compose.accounts-config.yaml` with configuration via accounts
@@ -74,6 +81,8 @@ services:
       # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
       SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
+      # Save refreshed sessions across cron runs and container restarts
+      SWY_SESSION_FILE: "${SWY_SESSION_FILE:-/data/safeway-session.json}"
       # Optional cookie auth (set both to skip browser login)
       SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
       SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
@@ -81,6 +90,10 @@ services:
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
+      - safeway_session:/data
+
+volumes:
+  safeway_session:
 ```
 
 Replace `path/to/safeway_accounts_file` with the absolute path to your accounts
@@ -97,6 +110,7 @@ and development differ only in how the container runs:
 | Email summary | Sent when mail settings are configured | Disabled (`-n`) |
 | Debug output | Off by default; enable with `EXTRA_ARGS: --debug` | Enabled (`-d`) |
 | Restart policy | `unless-stopped` | `no` |
+| Session state | Saved to the persistent `safeway_session` volume | Not persisted |
 
 After pulling changes, rebuild and restart the production container:
 
@@ -172,17 +186,21 @@ A single Safeway account can be configured with environment variables:
   together with `SWY_SHARED_SESSION`, bypasses browser-based login and uses
   this cookie directly. Format:
   `{"info": {"J4U": {"storeId": 123}}, ...}` (URL-encoded JSON string).
+* `SWY_SESSION_FILE`: Optional. Path to a JSON file where the current session,
+  including any rotated refresh token, is saved and later reused. The
+  production compose files set this to `/data/safeway-session.json` on a
+  persistent volume. Delete the file to force a fresh browser login.
 
-**Important:** the Safeway session access token is short-lived (it expires
-about 45 minutes after it is issued). These variables are only usable for a run
-started within that window. For scheduled/cron runs, use browser login (leave
-these unset) or refresh the cookie values before each run.
+**Automatic refresh:** the Safeway access token is short-lived (about 45
+minutes). When a session is expired or about to expire and includes a
+`refreshToken`, safeway-coupons requests a fresh access token from Safeway's
+Okta endpoint, saves the updated session, and continues without a browser
+login. This makes scheduled/cron runs work unattended.
 
-If both variables are set but either value is malformed, truncated, or expired,
-the app prints a warning and falls back to browser login instead of failing.
-
-These are useful for one-off headless/CI runs where browser automation is
-difficult and the cookies were just obtained from a fresh login.
+If a session is malformed, expired beyond refreshing, or the refresh request
+fails, the app prints a warning and falls back to browser login. A successful
+browser login also saves the session to `SWY_SESSION_FILE` when configured, so
+later runs reuse it.
 
 #### With config file
 
