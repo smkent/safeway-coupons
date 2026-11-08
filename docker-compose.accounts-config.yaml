@@ -1,10 +1,22 @@
 services:
   safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
+    # Build from this checkout so the scheduled/production container runs the
+    # same code as docker-compose.dev.yaml. Rebuild after pulling changes:
+    #   docker compose up -d --build
+    build: .
     environment:
-      CRON_SCHEDULE: "0 2 * * *"
-      SMTPHOST: your.smtp.host
+      PYTHONUNBUFFERED: 1
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"
+      # Optional time zone, e.g. America/Phoenix
+      # TZ: "${TZ:-America/Phoenix}"
+      SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
+      # Cookie auth (optional, bypasses browser login). Export these in your
+      # shell and they are passed through to the container. Note: the session
+      # access token expires about 45 minutes after it is issued.
+      SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
+      SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
+      # EXTRA_ARGS: "${EXTRA_ARGS:-}"
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro

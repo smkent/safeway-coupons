@@ -38,44 +38,53 @@ $EDITOR .env
 Docker Compose loads `.env` automatically. Do not commit it; it is listed in
 `.gitignore`.
 
-Example `docker-compose.yaml` with configuration via environment variables:
+Example `docker-compose.yaml` with configuration via environment variables
+(credentials are read from `.env`):
 
 ```yaml
-version: "3.7"
-
 services:
   safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
+    build: .
     environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
-      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: very_secret
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
-      # EXTRA_ARGS: --debug  # Optional
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"  # Default: 2:00 AM UTC daily
+      # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
+      SMTPHOST: "${SMTPHOST:-}"
+      SAFEWAY_ACCOUNT_USERNAME: "${SAFEWAY_ACCOUNT_USERNAME:-}"
+      SAFEWAY_ACCOUNT_PASSWORD: "${SAFEWAY_ACCOUNT_PASSWORD:-}"
+      SAFEWAY_ACCOUNT_MAIL_FROM: "${SAFEWAY_ACCOUNT_MAIL_FROM:-}"
+      SAFEWAY_ACCOUNT_MAIL_TO: "${SAFEWAY_ACCOUNT_MAIL_TO:-}"
+      # EXTRA_ARGS: "${EXTRA_ARGS:-}"  # Optional, e.g. --debug
     restart: unless-stopped
 ```
 
-Example `docker-compose.yaml` with configuration via accounts file:
+Example `docker-compose.accounts-config.yaml` with configuration via accounts
+file:
 
 ```yaml
-version: "3.7"
-
 services:
   safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
+    build: .
     environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
-      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
+      CRON_SCHEDULE: "${CRON_SCHEDULE:-0 2 * * *}"  # Default: 2:00 AM UTC daily
+      # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
+      SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
-      # EXTRA_ARGS: --debug  # Optional
+      # EXTRA_ARGS: "${EXTRA_ARGS:-}"  # Optional, e.g. --debug
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
 ```
+
+Both production compose files build the image from this checkout, so the
+scheduled container runs the same code as `docker-compose.dev.yaml`. After
+pulling changes, rebuild it:
+
+```console
+docker compose up -d --build
+```
+
+The upstream published image (`ghcr.io/smkent/safeway-coupons:latest`) does not
+include this fork's fixes.
 
 Start the container by running:
 
