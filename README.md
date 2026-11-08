@@ -36,7 +36,9 @@ $EDITOR .env
 ```
 
 Docker Compose loads `.env` automatically. Do not commit it; it is listed in
-`.gitignore`.
+`.gitignore`. Make sure `SAFEWAY_ACCOUNT_USERNAME` and
+`SAFEWAY_ACCOUNT_PASSWORD` are correct: the scheduled container uses them for
+every run.
 
 Example `docker-compose.yaml` with configuration via environment variables
 (credentials are read from `.env`):
@@ -53,6 +55,9 @@ services:
       SAFEWAY_ACCOUNT_PASSWORD: "${SAFEWAY_ACCOUNT_PASSWORD:-}"
       SAFEWAY_ACCOUNT_MAIL_FROM: "${SAFEWAY_ACCOUNT_MAIL_FROM:-}"
       SAFEWAY_ACCOUNT_MAIL_TO: "${SAFEWAY_ACCOUNT_MAIL_TO:-}"
+      # Optional cookie auth (set both to skip browser login)
+      SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
+      SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
       # EXTRA_ARGS: "${EXTRA_ARGS:-}"  # Optional, e.g. --debug
     restart: unless-stopped
 ```
@@ -69,33 +74,49 @@ services:
       # TZ: "${TZ:-America/Phoenix}"  # Optional time zone
       SMTPHOST: "${SMTPHOST:-}"
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
+      # Optional cookie auth (set both to skip browser login)
+      SWY_SHARED_SESSION: "${SWY_SHARED_SESSION:-}"
+      SWY_SHARED_SESSION_INFO: "${SWY_SHARED_SESSION_INFO:-}"
       # EXTRA_ARGS: "${EXTRA_ARGS:-}"  # Optional, e.g. --debug
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
 ```
 
+Replace `path/to/safeway_accounts_file` with the absolute path to your accounts
+file.
+
 Both production compose files build the image from this checkout, so the
-scheduled container runs the same code as `docker-compose.dev.yaml`. After
-pulling changes, rebuild it:
+scheduled container runs the same code as `docker-compose.dev.yaml`. Production
+and development differ only in how the container runs:
+
+| | Production (`docker-compose.yaml`, `docker-compose.accounts-config.yaml`) | Development (`docker-compose.dev.yaml`) |
+| --- | --- | --- |
+| Run mode | Recurring cron job (`CRON_SCHEDULE`) | One-shot, stops after the run |
+| Coupons clipped | All available coupons | One coupon (`-m 1`) |
+| Email summary | Sent when mail settings are configured | Disabled (`-n`) |
+| Debug output | Off by default; enable with `EXTRA_ARGS: --debug` | Enabled (`-d`) |
+| Restart policy | `unless-stopped` | `no` |
+
+After pulling changes, rebuild and restart the production container:
 
 ```console
 docker compose up -d --build
 ```
 
-The upstream published image (`ghcr.io/smkent/safeway-coupons:latest`) does not
-include this fork's fixes.
-
-Start the container by running:
+For the accounts-file setup, edit the volume path as described above, then run:
 
 ```console
-docker-compose up -d
+docker compose -f docker-compose.accounts-config.yaml up -d --build
 ```
+
+The upstream published image (`ghcr.io/smkent/safeway-coupons:latest`) does not
+include this fork's fixes, so keep using the locally built image.
 
 Debugging information can be viewed in the container log:
 
 ```console
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Installation from PyPI
