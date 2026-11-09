@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-password"
+[[rules.allowlists]]
+description = "Example and test placeholder passwords"
+regexes = ['''^(12345|very_secret|pk_fire)$''']
+
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "safeway.com public OAuth client ID"
+regexes = ['''^0oap6ku01XJqIRdl42p6$''']

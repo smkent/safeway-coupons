@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: betterleaks
         name: betterleaks
-        entry: betterleaks git . --pre-commit --staged --redact
+        entry: betterleaks git . --pre-commit --staged --redact --config .betterleaks.toml
         language: system
         pass_filenames: false
       - id: jactionlint

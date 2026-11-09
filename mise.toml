@@ -55,7 +55,7 @@ run = "uv run bump-my-version bump -v"
 [tasks.secretscan]
 description = "Scan git history for secrets"
 raw_args = true
-run = "betterleaks git . --redact"
+run = "betterleaks git . --redact --config .betterleaks.toml"
 
 [tasks.snapup]
 description = "Update test snapshots"
