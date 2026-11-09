@@ -123,5 +123,9 @@ addopts = """\
     --cov-report xml:.pytest_coverage.xml \
     --junitxml=.pytest_results.xml \
 """
+filterwarnings = [
+    # undetected-chromedriver imports distutils (via standard-distutils)
+    "ignore:The distutils package is deprecated:DeprecationWarning:undetected_chromedriver.patcher",
+]
 
 # vim: ft=cfg
