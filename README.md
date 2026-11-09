@@ -1,10 +1,14 @@
-# Automatic Safeway coupon clipper
+# safeway-coupons
 
-[![PyPI](https://img.shields.io/pypi/v/safeway-coupons)][pypi]
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/safeway-coupons)][pypi]
-[![Build](https://img.shields.io/github/checks-status/smkent/safeway-coupons/main?label=build)][gh-actions]
-[![codecov](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)][codecov]
-[![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)][repo]
+Automatic coupon clipper for Safeway's online "Safeway for U" coupons
+
+[![License](https://img.shields.io/github/license/smkent/safeway-coupons)](https://github.com/smkent/safeway-coupons/blob/main/COPYING)
+[![PyPI](https://img.shields.io/pypi/v/safeway-coupons)](https://pypi.org/project/safeway-coupons/)
+[![Python](https://img.shields.io/pypi/pyversions/safeway-coupons)](https://pypi.org/project/safeway-coupons/)
+[![CI](https://github.com/smkent/safeway-coupons/actions/workflows/ci.yaml/badge.svg)](https://github.com/smkent/safeway-coupons/actions/workflows/ci.yaml)
+[![Coverage](https://codecov.io/gh/smkent/safeway-coupons/branch/main/graph/badge.svg)](https://codecov.io/gh/smkent/safeway-coupons)
+[![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
+[![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)](https://github.com/smkent/safeway-coupons)
 
 **safeway-coupons** is a script that will log in to an account on safeway.com,
 and attempt to select all of the "Safeway for U" electronic coupons on the site
@@ -27,11 +31,9 @@ A Docker container is provided which runs safeway-coupons with cron. The cron
 schedule and your Safeway account details may be configured using environment
 variables, or with an accounts file.
 
-Example `docker-compose.yaml` with configuration via environment variables:
+Example `compose.yaml` with configuration via environment variables:
 
 ```yaml
-version: "3.7"
-
 services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
@@ -47,11 +49,9 @@ services:
     restart: unless-stopped
 ```
 
-Example `docker-compose.yaml` with configuration via accounts file:
+Example `compose.yaml` with configuration via accounts file:
 
 ```yaml
-version: "3.7"
-
 services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
@@ -68,14 +68,14 @@ services:
 
 Start the container by running:
 
-```console
-docker-compose up -d
+```sh
+docker compose up -d
 ```
 
 Debugging information can be viewed in the container log:
 
-```console
-docker-compose logs -f
+```sh
+docker compose logs -f
 ```
 
 ## Installation from PyPI
@@ -87,9 +87,7 @@ docker-compose logs -f
 
 ### Installation
 
-[safeway-coupons is available on PyPI][pypi]:
-
-```console
+```sh
 pip install safeway-coupons
 ```
 
@@ -99,7 +97,7 @@ For best results, run this program once a day or so with a cron daemon.
 
 For full usage options, run
 
-```console
+```sh
 safeway-coupons --help
 ```
 
@@ -140,73 +138,48 @@ notify = your.email@example.com     ; optional
 Provide the path to your config file using the `-c` or `--accounts-config`
 option:
 
-```console
+```sh
 safeway-coupons -c path/to/config/file
 ```
 
 ## Development
 
-### [Poetry][poetry] installation
-
-Via [`pipx`][pipx]:
-
-```console
-pip install pipx
-pipx install poetry
-pipx inject poetry poetry-pre-commit-plugin
-```
-
-Via `pip`:
-
-```console
-pip install poetry
-poetry self add poetry-pre-commit-plugin
-```
-
-### Invocation with docker-compose
+### Invocation with `docker compose`
 
 safeway-coupons can be executed within a Docker container using
-`docker-compose.dev.yaml`.
+`compose.dev.yaml`.
 
 To use, first create an `accounts` file in the same directory with your
 safeway-coupons accounts configuration. Then, execute safeway-coupons within a
-container using docker-compose:
+container using `docker compose`:
 
-```console
-docker-compose -f docker-compose.dev.yaml up --build
+```sh
+docker compose -f compose.dev.yaml up --build
 ```
 
 The container will run safeway-coupons once, attempt to clip one coupon, and
 then stop.
 
 To change the safeway-coupons arguments, modify the `command` value in
-`docker-compose.dev.yaml`.
+`compose.dev.yaml`.
 
-When finished with development tasks, the docker-compose state can be cleaned up
-with:
+When finished with development tasks, the `docker compose` state can be cleaned
+up with:
 
-```console
-docker-compose -f docker-compose.dev.yaml down
+```sh
+docker compose -f compose.dev.yaml down
 ```
 
-### Development tasks
+## License
 
-* Setup: `poetry install`
-* Run static checks: `poetry run poe lint` or
-  `poetry run pre-commit run --all-files`
-* Run static checks and tests: `poetry run poe test`
+Copyright (C) 2012 Stephen Kent and contributors
 
----
+Licensed under the GNU General Public License v3.0 or later
+([`GPL-3.0-or-later`](https://github.com/smkent/safeway-coupons/blob/main/COPYING)).
 
-Created from [smkent/cookie-python][cookie-python] using
-[cookiecutter][cookiecutter]
+## Project template
 
-[codecov]: https://codecov.io/gh/smkent/safeway-coupons
-[cookie-python]: https://github.com/smkent/cookie-python
-[cookiecutter]: https://github.com/cookiecutter/cookiecutter
-[gh-actions]: https://github.com/smkent/safeway-coupons/actions?query=branch%3Amain
-[pipx]: https://pypa.github.io/pipx/
-[poetry]: https://python-poetry.org/docs/#installation
-[pypi]: https://pypi.org/project/safeway-coupons/
-[repo]: https://github.com/smkent/safeway-coupons
+This project is based on and maintained with [copier-project][copier-project].
+
+[copier-project]: https://smkent.github.io/copier-project
 [requests]: https://requests.readthedocs.io/en/latest/

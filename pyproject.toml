@@ -1,127 +1,148 @@
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0", "poetry-dynamic-versioning"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
 
 [project]
 name = "safeway-coupons"
+dynamic = ["version"]
 description = "Automatic coupon clipper for Safeway's online \"Safeway for U\" coupons"
-license = "GPL-3.0-or-later"
-authors = [ { name = "Stephen Kent", email = "smkent@smkent.net" } ]
 readme = "README.md"
-repository = "https://github.com/smkent/safeway-coupons"
+license = "GPL-3.0-or-later"
+license-files = ["COPYING"]
+requires-python = ">=3.11"
+authors = [{ name = "Stephen Kent", email = "smkent@smkent.net" }]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Operating System :: OS Independent",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Typing :: Typed",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
+  "Topic :: Software Development",
+  "Topic :: Utilities",
+  "Typing :: Typed",
 ]
-requires-python = ">=3.9,<4.0"
-dynamic = [ "version" ]
+keywords = []
 dependencies = [
-    "dataclasses-json",
-    "requests",
-    "selenium (>=4.10)",
-    "undetected-chromedriver (>=3.5.0)",
-    "webdriver-manager (>=3.8.6)",
-    "standard-distutils (>=3.11.9,<4.0.0)"
+  "dataclasses-json",
+  "requests",
+  "selenium (>=4.10)",
+  "undetected-chromedriver (>=3.5.0)",
+  "webdriver-manager (>=3.8.6)",
+  "standard-distutils (>=3.11.9,<4.0.0)",
 ]
 
 [project.scripts]
-safeway-coupons = "safeway_coupons.app:main"
-safeway-coupons-init-chromedriver = "safeway_coupons.chrome_driver:init"
+"safeway-coupons" = "safeway_coupons.__main__:main"
+"safeway-coupons-init-chromedriver" = "safeway_coupons.chrome_driver:init"
 
-[tool.poetry]
-requires-poetry = ">=2.0"
-version = "0.0.0"
+[project.urls]
+Homepage = "https://smkent.github.io/safeway-coupons"
+Repository = "https://github.com/smkent/safeway-coupons"
+Issues = "https://github.com/smkent/safeway-coupons/issues"
 
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
-
-[tool.poetry.group.dev.dependencies]
-bandit = {extras = ["toml"], version = "*"}
-black = "*"
-cruft = "*"
-flake8 = "*"
-flake8-bugbear = "*"
-flake8-pyproject = "*"
-flake8-simplify = "*"
-isort = "*"
-mypy = "*"
-pep8-naming = "*"
-poethepoet = "*"
-pre-commit = "*"
-pytest = "*"
-pytest-cov = "*"
-pytest-github-actions-annotate-failures = "*"
-pytest-sugar = "*"
-types-requests = "*"
-pytest-mock = "*"
-responses = "*"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "semver"
-
-[tool.poe.tasks.lint]
-cmd = "pre-commit run --all-files --show-diff-on-failure"
-help = "Check all files"
-
-[tool.poe.tasks.pytest]
-cmd = "pytest"
-help = "Run unit tests with pytest"
-
-[tool.poe.tasks.test]
-sequence = ["lint", "pytest"]
-help = "Run all tests"
-
-[tool.bandit]
-skips = [
-    "B101",  # assert_used
-    "B113",  # request_without_timeout
-    "B311",  # blacklist_random
-    "B404",  # blacklist_subprocess
-    "B603",  # subprocess_without_shell_equals_true
+[dependency-groups]
+dev = [
+  "bump-my-version>=1.3.0",
+  "commit-check>=2.18",
+  "pysentry-rs>=0.5",
+  "pytest>=9,<9.2",
+  "pytest-cov>=7",
+  "pytest-mock",
+  "pytest-sugar>=1",
+  "pytest-xdist>=3",
+  "responses",
+  "ruff>=0.17",
+  "syrupy>=5",
+  "ty>=0.0.84",
+  "types-requests",
 ]
+docs = ["mkdocstrings[python]>=1", "zensical>=0.1"]
 
-[tool.black]
-line-length = 79
+[tool.bumpversion]
+commit = false
+tag = true
+tag_name = "v{new_version}"
+tag_message = ""
+push = true
+
+[tool.hatch.build.targets.sdist]
+include = ["/safeway_coupons", "/tests", "*.md", "COPYING"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["safeway_coupons"]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.pytest]
+addopts = [
+  "-ra",
+  "--cov=safeway_coupons",
+  "--strict-config",
+  "--strict-markers",
+  "--numprocesses",
+  "auto",
+]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["safeway_coupons"]
+branch = true
 
 [tool.coverage.report]
-fail_under = 0
 show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@abstractmethod"]
 
-[tool.cruft]
-skip = [".git"]
+[tool.ruff]
+line-length = 79
+output-format = "concise"
+target-version = "py311"
 
-[tool.flake8]
-exclude = "./.*"
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+  "COM812", # Trailing comma missing
+  "CPY001", # Missing copyright notice at top of file
+  "D1",     # Missing docstring presence rules
+  "EM",     # flake8-errmsg
+  "G004",   # Logging statement uses f-string
+  "PLR",    # pylint Refactor
+  "S607",   # Starting a process with a partial executable path
+  "TD",     # flake8-todos
+  "TRY003", # Avoid specifying long messages outside the exception class
+]
 
-[tool.isort]
-atomic = true
-profile = "black"
-line_length = 79
+[tool.ruff.lint.isort]
+known-first-party = ["safeway_coupons"]
 
-[tool.mypy]
-files = [ "tests", "safeway_coupons" ]
-mypy_path = "types"
-disallow_untyped_defs = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-show_error_codes = true
-warn_unused_ignores = true
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "ARG",  # flake8-unused-arguments
+  "S101", # Use of assert detected
+]
 
-[tool.pytest.ini_options]
-addopts = """\
-    --cov \
-    --cov-append \
-    --cov-report term \
-    --cov-report xml:.pytest_coverage.xml \
-    --junitxml=.pytest_results.xml \
-"""
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
-# vim: ft=cfg
+[tool.ty.src]
+include = ["safeway_coupons/", "tests/"]
+
+[tool.ty.terminal]
+error-on-warning = true
+output-format = "concise"
+
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { git = { commit = true, tags = true } },
+]
+default-groups = ["dev", "docs"]
+
+[tool.uv-dynamic-versioning]
+pattern = "default-unprefixed"
+fallback-version = "0.0.0"

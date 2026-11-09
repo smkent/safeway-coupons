@@ -1,51 +1,61 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
-    - id: check-yaml
-    - id: check-merge-conflict
-    - id: debug-statements
-    - id: end-of-file-fixer
-    - id: trailing-whitespace
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: debug-statements
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.16.0
     hooks:
-    - id: black
-      args: ["--config", "pyproject.toml"]
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-    - id: isort
-      args: ["--show-config"]
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.8.2
-    hooks:
-    - id: bandit
-      additional_dependencies: ['.[toml]']
-      args: ["--configfile", "pyproject.toml"]
-      exclude: '^tests/'
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
-    hooks:
-    - id: flake8
-      additional_dependencies:
-      - flake8-bugbear
-      - flake8-pyproject
-      - flake8-simplify
-      - pep8-naming
-  - repo: https://github.com/pycqa/autoflake
-    rev: v2.3.1
-    hooks:
-    - id: autoflake
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
-    hooks:
-    - id: pyupgrade
-      args: ["--py39-plus", "--keep-runtime-typing"]
+      - id: pretty-format-yaml
+        args: [--autofix, --offset, '2']
+        exclude: ^\.copier-answers\.yml$
   - repo: local
     hooks:
-    - id: mypy
-      name: mypy
-      language: python
-      types_or: [python, pyi]
-      entry: env -u VIRTUAL_ENV poetry run mypy
+      - id: betterleaks
+        name: betterleaks
+        entry: betterleaks git . --pre-commit --staged --redact
+        language: system
+        pass_filenames: false
+      - id: jactionlint
+        name: jactionlint
+        entry: jactionlint --fix
+        language: system
+        types:
+          - yaml
+        files: ^\.github/workflows/
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff-format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: taplo
+        name: taplo
+        entry: taplo format
+        language: system
+        types: [toml]
+      - id: ty
+        name: ty
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: commit-check
+        name: commit-check
+        entry: uv run commit-check --no-banner --message
+        language: system
+        stages: [commit-msg]

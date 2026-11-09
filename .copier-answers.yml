@@ -1,0 +1,27 @@
+# Changes here will be overwritten by Copier
+_commit: v0.42.0
+_src_path: gh:smkent/copier-project
+copyright_holder: Stephen Kent
+copyright_license: GPL-3.0-or-later
+copyright_year: '2012'
+enable_container: true
+enable_coverage: true
+enable_docs: true
+enable_features:
+- syrupy
+- xdist
+enable_pypi: true
+github_user: smkent
+llm_contribution_policy: accepted-with-disclosure
+project_description: Automatic coupon clipper for Safeway's online "Safeway for U"
+    coupons
+project_name: safeway-coupons
+project_slug: safeway_coupons
+project_type: application
+project_visibility: public
+python_version_maximum: No maximum
+python_version_minimum: '3.11'
+template_attribution: true
+template_variant: python
+user_email: smkent@smkent.net
+user_name: Stephen Kent
