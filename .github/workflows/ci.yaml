@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_LOCKED: 1
+  UV_PYTHON: '3.15'
+
+jobs:
+  ci:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.11'
+          - '3.12'
+          - '3.13'
+          - '3.14'
+          - '3.15'
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: 📦 Cache uv managed packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: 🍳 Set up mise
+        uses: jdx/mise-action@v5
+        with:
+          cache: true
+          install: true
+
+      - name: 📐 Lint
+        run: mise run lint
+
+      - name: 🔥 Test
+        run: mise run test
+
+      - name: 🔍 Collect coverage results
+        run: uv run coverage xml
+        if: ${{ matrix.python-version == '3.15' }}
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        if: ${{ matrix.python-version == '3.15' }}
+        with:
+          fail_ci_if_error: true
+          use_pypi: true
+          version: 11.3.2
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 📦 Cache uv managed packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: 🍳 Set up mise
+        uses: jdx/mise-action@v5
+        with:
+          cache: true
+          install: true
+
+      - name: 📖 Build documentation
+        run: mise run docs-build
+
+  betterleaks:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 📦 Cache uv managed packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: 🍳 Set up mise
+        uses: jdx/mise-action@v5
+        with:
+          cache: true
+          install: true
+
+      - name: 🔍 Check for secrets
+        run: mise run secretscan
+
+  commit-messages:
+    name: Commit messages
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: ✉️ Check commit messages
+        uses: commit-check/commit-check-action@v2
+        with:
+          branch: false

@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import collections
 import mimetypes
 import os
 import subprocess
 from email.message import EmailMessage
-from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
-from .accounts import Account
-from .errors import ClipError, Error, TooManyClipErrors
-from .models import Offer
+from .errors import Error, TooManyClipErrors
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from .accounts import Account
+    from .models import Offer
 
 
 def _send_email(
@@ -17,18 +22,19 @@ def _send_email(
     subject: str,
     mail_message: list[str],
     debug_level: int,
+    attachments: list[Path] | None = None,
+    *,
     send_email: bool,
-    attachments: Optional[list[Path]] = None,
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
     if debug_level >= 1:
         if send_email:
-            print(f"Sending email to {account.mail_to}")
+            print(f"Sending email to {account.mail_to}")  # noqa: T201
         else:
-            print(f"Would send email to {account.mail_to}")
-        print(">>>>>>")
-        print(mail_message_str)
-        print("<<<<<<")
+            print(f"Would send email to {account.mail_to}")  # noqa: T201
+        print(">>>>>>")  # noqa: T201
+        print(mail_message_str)  # noqa: T201
+        print("<<<<<<")  # noqa: T201
     if not send_email:
         return
     msg = EmailMessage()
@@ -46,8 +52,9 @@ def _send_email(
             maintype=main,
             subtype=sub,
         )
-    p = subprocess.Popen(
-        sendmail + ["-f", account.mail_to, "-t"], stdin=subprocess.PIPE
+    p = subprocess.Popen(  # noqa: S603
+        [*sendmail, "-f", account.mail_to, "-t"],
+        stdin=subprocess.PIPE,
     )
     p.communicate(bytes(msg.as_string(), "UTF-8"))
 
@@ -56,9 +63,8 @@ def email_clip_results(
     sendmail: list[str],
     account: Account,
     offers: list[Offer],
-    error: Optional[Error],
-    clip_errors: Optional[list[ClipError]],
     debug_level: int,
+    *,
     send_email: bool,
 ) -> None:
     offers_by_type = collections.defaultdict(list)
@@ -74,7 +80,12 @@ def email_clip_results(
             f"    {offer_type.name}: {len(offers_this_type)} coupons"
         )
     _send_email(
-        sendmail, account, mail_subject, mail_message, debug_level, send_email
+        sendmail,
+        account,
+        mail_subject,
+        mail_message,
+        debug_level,
+        send_email=send_email,
     )
 
 
@@ -83,6 +94,7 @@ def email_error(
     account: Account,
     error: Error,
     debug_level: int,
+    *,
     send_email: bool,
 ) -> None:
     mail_subject = f"Safeway coupons: {error.__class__.__name__} error"
@@ -100,6 +112,6 @@ def email_error(
         mail_subject,
         mail_message,
         debug_level,
-        send_email,
+        send_email=send_email,
         attachments=getattr(error, "attachments", None),
     )

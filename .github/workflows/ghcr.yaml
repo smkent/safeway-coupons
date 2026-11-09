@@ -1,0 +1,37 @@
+name: Container Registry
+
+on:
+  pull_request:
+    types:
+      - closed
+  schedule:
+    - cron: 0 3 * * 0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Clean up images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      packages: write
+    steps:
+      - name: 🧹 Clean up old container images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          keep-n-tagged: 5
+          keep-n-untagged: 2
+          delete-untagged: true
+          exclude-tags: |
+            ^\d+(\.\d+){0,2}$
+            ^edge$
+            ^latest$
+            ^main$

@@ -1,0 +1,52 @@
+name: Audit
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - pyproject.toml
+      - uv.lock
+  pull_request:
+    paths:
+      - pyproject.toml
+      - uv.lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_LOCKED: 1
+  UV_PYTHON: '3.15'
+
+jobs:
+  audit:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: 📦 Cache uv managed packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: 🍳 Set up mise
+        uses: jdx/mise-action@v5
+        with:
+          cache: true
+          install: true
+
+      - name: 🔍 Check dependencies
+        run: mise run audit

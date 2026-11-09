@@ -1,14 +1,15 @@
-import contextlib
+from __future__ import annotations
+
 import json
 import time
 import urllib
-from collections.abc import Iterator
-from pathlib import Path
-from typing import Any, Optional
+import urllib.parse
+from contextlib import contextmanager, suppress
+from typing import TYPE_CHECKING, Any
 
 import requests
+import requests.adapters
 import selenium.webdriver.support.expected_conditions as ec
-import undetected_chromedriver as uc  # type: ignore
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
@@ -17,18 +18,23 @@ from selenium.common.exceptions import (
 from selenium.webdriver.remote.webdriver import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from .accounts import Account
 from .chrome_driver import chrome_driver
 from .errors import AuthenticationFailure
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from pathlib import Path
 
-class ExceptionWithAttachments(Exception):
+    import undetected_chromedriver as uc
+
+    from .accounts import Account
+
+
+class ExceptionWithAttachmentsError(Exception):
     def __init__(
-        self,
-        *args: Any,
-        attachments: Optional[list[Path]] = None,
-        **kwargs: Any,
-    ):
+        self, *args: object, attachments: list[Path] | None = None
+    ) -> None:
+        super().__init__(*args)
         self.attachments = attachments
 
 
@@ -39,7 +45,7 @@ class BaseSession:
     )
 
     @property
-    def requests(self) -> requests.Session:
+    def session_requests(self) -> requests.Session:
         if not hasattr(self, "_requests"):
             session = requests.Session()
             session.mount(
@@ -51,21 +57,21 @@ class BaseSession:
 
 
 class LoginSession(BaseSession):
-    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
-        self.access_token: Optional[str] = None
-        self.store_id: Optional[str] = None
-        self.debug_dir: Optional[Path] = debug_dir
+    def __init__(self, account: Account, debug_dir: Path | None) -> None:
+        self.access_token: str | None = None
+        self.store_id: str | None = None
+        self.debug_dir: Path | None = debug_dir
         try:
             self._login(account)
-        except ExceptionWithAttachments as e:
+        except ExceptionWithAttachmentsError as e:
             raise AuthenticationFailure(
                 e, account, attachments=e.attachments
             ) from e
         except Exception as e:
             raise AuthenticationFailure(e, account) from e
 
-    @contextlib.contextmanager
-    def _chrome_driver(self, headless: bool = True) -> Iterator[uc.Chrome]:
+    @contextmanager
+    def _chrome_driver(self, *, headless: bool = True) -> Generator[uc.Chrome]:
         try:
             with chrome_driver(headless=headless) as driver:
                 yield driver
@@ -73,10 +79,10 @@ class LoginSession(BaseSession):
             attachments: list[Path] = []
             if self.debug_dir:
                 path = self.debug_dir / "screenshot.png"
-                with contextlib.suppress(WebDriverException):
+                with suppress(WebDriverException):
                     driver.save_screenshot(path)
                     attachments.append(path)
-            raise ExceptionWithAttachments(
+            raise ExceptionWithAttachmentsError(
                 f"[{type(e).__name__}] {e}", attachments=attachments
             ) from e
 
@@ -98,66 +104,68 @@ class LoginSession(BaseSession):
             wait = WebDriverWait(driver, 10)
             # Navigate to the website URL
             url = "https://www.safeway.com"
-            print("Connect to safeway.com")
-            driver.get(url)
+            print("Connect to safeway.com")  # noqa: T201
+            driver.get(url)  # ty: ignore[invalid-argument-type, missing-argument]
             try:
                 button = driver.find_element(
                     By.XPATH,
                     "//button [contains(text(), 'Necessary Only')]",
                 )
                 if button:
-                    print("Decline cookie prompt")
+                    print("Decline cookie prompt")  # noqa: T201
                     button.click()
-                    print(
+                    print(  # noqa: T201
                         "Return to safeway.com after declining cookie prompt"
                     )
-                    driver.get(url)
+                    driver.get(url)  # ty: ignore[invalid-argument-type, missing-argument]
             except NoSuchElementException:
-                print("Skipping cookie prompt which is not present")
-            print("Open Sign In sidebar")
+                print("Skipping cookie prompt which is not present")  # noqa: T201
+            print("Open Sign In sidebar")  # noqa: T201
             wait.until(
                 ec.visibility_of_element_located(
                     (By.XPATH, "//span [contains(text(), 'Sign In')]")
                 )
             ).click()
-            print("Open Sign In form")
+            print("Open Sign In form")  # noqa: T201
             wait.until(
                 ec.visibility_of_element_located(
                     (By.XPATH, "//button [contains(text(), 'Sign in')]")
                 )
             ).click()
             time.sleep(2)
-            print("Populate Sign In form username")
+            print("Populate Sign In form username")  # noqa: T201
             driver.find_element(By.ID, "enterUsername").send_keys(
                 account.username
             )
             time.sleep(0.5)
-            print("Click Sign in with password button")
+            print("Click Sign in with password button")  # noqa: T201
             driver.find_element(
                 By.XPATH, '//button[contains(text(), "Sign in with password")]'
             ).click()
             time.sleep(2)
             driver.find_element(By.ID, "password").send_keys(account.password)
             time.sleep(0.5)
-            print("Click Sign In button")
+            print("Click Sign In button")  # noqa: T201
             driver.find_element(
                 By.XPATH, '//button[contains(text(), "Sign In")]'
             ).click()
             time.sleep(0.5)
-            print("Wait for signed in landing page to load")
+            print("Wait for signed in landing page to load")  # noqa: T201
             wait.until(self._sign_in_success)
-            print("Retrieve session information")
-            session_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION")["value"]
+            print("Retrieve session information")  # noqa: T201
+            session_cookie = self._parse_cookie(
+                driver.get_cookie("SWY_SHARED_SESSION")
             )
-            session_info_cookie = self._parse_cookie_value(
-                driver.get_cookie("SWY_SHARED_SESSION_INFO")["value"]
+            session_info_cookie = self._parse_cookie(
+                driver.get_cookie("SWY_SHARED_SESSION_INFO")
             )
             self.access_token = session_cookie["accessToken"]
             try:
                 self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
             except Exception as e:
-                raise Exception("Unable to retrieve store ID") from e
+                raise Exception("Unable to retrieve store ID") from e  # noqa: TRY002
 
-    def _parse_cookie_value(self, value: str) -> Any:
-        return json.loads(urllib.parse.unquote(value))
+    def _parse_cookie(self, value: dict[Any, Any] | None) -> Any:
+        if value is None:
+            raise ValueError("No cookie value retrieved")
+        return json.loads(urllib.parse.unquote(value["value"]))

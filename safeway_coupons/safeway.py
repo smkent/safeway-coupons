@@ -1,12 +1,17 @@
-from pathlib import Path
-from typing import Optional
+from __future__ import annotations
 
-from .accounts import Account
+from typing import TYPE_CHECKING
+
 from .client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models import Offer, OfferStatus
 from .utils import yield_delay
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from .accounts import Account
 
 CLIP_ERROR_MAX = 5
 
@@ -14,14 +19,15 @@ CLIP_ERROR_MAX = 5
 class SafewayCoupons:
     def __init__(
         self,
-        send_email: bool = True,
-        sendmail: Optional[list[str]] = None,
+        sendmail: list[str] | None = None,
         debug_level: int = 0,
-        debug_dir: Optional[Path] = None,
+        debug_dir: Path | None = None,
         sleep_level: int = 0,
-        dry_run: bool = False,
         max_clip_count: int = 0,
         max_clip_errors: int = CLIP_ERROR_MAX,
+        *,
+        send_email: bool = True,
+        dry_run: bool = False,
     ) -> None:
         self.send_email = send_email
         self.sendmail = sendmail or ["/usr/sbin/sendmail"]
@@ -33,7 +39,7 @@ class SafewayCoupons:
         self.max_clip_errors = max_clip_errors
 
     def clip_for_account(self, account: Account) -> None:
-        print(f"Clipping coupons for Safeway account {account.username}")
+        print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
         try:
             swy = SafewayClient(account, self.debug_dir)
             clipped_offers: list[Offer] = []
@@ -43,7 +49,7 @@ class SafewayCoupons:
                 o for o in offers if o.status == OfferStatus.Unclipped
             ]
             if not unclipped_offers:
-                print("Nothing to do")
+                print("Nothing to do")  # noqa: T201
                 return
             rjust_size = len(str(len(unclipped_offers)))
             for i, offer in enumerate(
@@ -58,19 +64,19 @@ class SafewayCoupons:
                 try:
                     if not self.dry_run:
                         swy.clip(offer)
-                    print(f"{progress_count} Clipped {offer}")
+                    print(f"{progress_count} Clipped {offer}")  # noqa: T201
                     clipped_offers.append(offer)
                     if (
                         self.max_clip_count
                         and len(clipped_offers) >= self.max_clip_count
                     ):
-                        print(
+                        print(  # noqa: T201
                             "Clip maximum count of "
                             f"{self.max_clip_count} reached"
                         )
                         break
                 except ClipError as e:
-                    print(f"{progress_count} {e}")
+                    print(f"{progress_count} {e}")  # noqa: T201
                     clip_errors.append(e)
                     if (
                         self.max_clip_errors
@@ -80,15 +86,13 @@ class SafewayCoupons:
                             e,
                             clipped_offers=clipped_offers,
                             errors=clip_errors,
-                        )
+                        ) from e
 
-            print(f"Clipped {len(clipped_offers)} coupons")
+            print(f"Clipped {len(clipped_offers)} coupons")  # noqa: T201
             email_clip_results(
                 self.sendmail,
                 account,
                 clipped_offers,
-                error=None,
-                clip_errors=clip_errors,
                 debug_level=self.debug_level,
                 send_email=self.send_email and not self.dry_run,
             )

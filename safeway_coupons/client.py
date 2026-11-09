@@ -1,36 +1,45 @@
+from __future__ import annotations
+
 import json
 import random
-from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import requests
 
-from .accounts import Account
 from .errors import ClipError, HTTPError
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferList
 from .session import BaseSession, LoginSession
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from .accounts import Account
+
+
+class ClipResponseError(Exception):
+    pass
+
 
 class SafewayClient(BaseSession):
-    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
+    def __init__(self, account: Account, debug_dir: Path | None) -> None:
         self.session = LoginSession(account, debug_dir)
-        self.requests.headers.update(
+        self.session_requests.headers.update(
             {
                 "Authorization": f"Bearer {self.session.access_token}",
-                "X-SW" "Y_AP" "I_K" "EY": "em" "j" "ou",
-                "X-SW" "Y_VERSION": "1.1",
-                "X-SW" "Y-APPLICATION-TYPE": "web",
+                "X-SWY_API_KEY": "emjou",
+                "X-SWY_VERSION": "1.1",
+                "X-SWY-APPLICATION-TYPE": "web",
             }
         )
 
     def get_offers(self) -> list[Offer]:
         try:
-            response = self.requests.get(
+            response = self.session_requests.get(
                 "https://www.safeway.com/abs/pub/xapi"
                 "/offers/companiongalleryoffer"
                 f"?storeId={self.session.store_id}"
-                f"&rand={random.randrange(100000, 999999)}"
+                f"&rand={random.randrange(100000, 999999)}"  # noqa: S311
             )
             response.raise_for_status()
             return OfferList.from_dict(response.json()).offers
@@ -39,9 +48,9 @@ class SafewayClient(BaseSession):
 
     def clip(self, offer: Offer) -> None:
         request = ClipRequest.from_offer(offer)
-        response: Optional[requests.Response] = None
+        response: requests.Response | None = None
         try:
-            response = self.requests.post(
+            response = self.session_requests.post(
                 "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
                 f"?storeId={self.session.store_id}",
                 data=json.dumps(request.to_dict(encode_json=True)),
@@ -49,9 +58,13 @@ class SafewayClient(BaseSession):
             )
             response.raise_for_status()
             clip_response = ClipResponse.from_dict(response.json())
-            if not clip_response.success:
-                raise Exception(
-                    f"Unsuccessful clip response for coupon {offer}"
-                )
         except Exception as e:
             raise ClipError(e, response, offer) from e
+        if not clip_response.success:
+            raise ClipError(
+                ClipResponseError(
+                    f"Unsuccessful clip response for coupon {offer}"
+                ),
+                response,
+                offer,
+            )

@@ -1,8 +1,9 @@
 services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
+    init: true
     environment:
-      CRON_SCHEDULE: "0 2 * * *"
+      CRON_SCHEDULE: 0 2 * * *
       SMTPHOST: your.smtp.host
       SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
       SAFEWAY_ACCOUNT_PASSWORD: very_secret

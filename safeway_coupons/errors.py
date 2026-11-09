@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
-import requests
+if TYPE_CHECKING:
+    from pathlib import Path
 
-from .accounts import Account
-from .models import Offer
+    import requests
+
+    from .accounts import Account
+    from .models import Offer
 
 
 @dataclass
@@ -14,9 +18,9 @@ class Error(Exception):
 
 
 @dataclass
-class AuthenticationFailure(Error):
+class AuthenticationFailure(Error):  # noqa: N818
     account: Account
-    attachments: Optional[list[Path]] = None
+    attachments: list[Path] | None = None
 
     def __str__(self) -> str:
         return f"Authentication Failure ({self.exception})"
@@ -32,7 +36,7 @@ class HTTPError(Error):
 
 @dataclass
 class ClipError(Error):
-    response: Optional[requests.Response]
+    response: requests.Response | None
     offer: Offer
 
     def __str__(self) -> str:
@@ -40,7 +44,7 @@ class ClipError(Error):
 
 
 @dataclass
-class TooManyClipErrors(Error):
+class TooManyClipErrors(Error):  # noqa: N818
     clipped_offers: list[Offer]
     errors: list[ClipError]
 

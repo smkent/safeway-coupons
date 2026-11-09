@@ -1,10 +1,24 @@
-*.egg-info/
-*.pyc
-.coverage
-.git
-.pytest_cache/
-.pytest_coverage.xml
-.pytest_results.xml
-.venv/
-dist/
 accounts
+
+# Python
+__pycache__/
+*.egg-info/
+*.py[cod]
+
+# uv and packaging
+.venv*/
+/build/
+/dist/
+
+# mise
+mise.local.toml
+.mise.local.toml
+
+# Development tools
+.cache/
+.coverage*
+.pytest_cache/
+.ruff_cache/
+/htmlcov/
+/site/
+coverage.xml
