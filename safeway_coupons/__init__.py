@@ -11,4 +11,4 @@ try:
 except PackageNotFoundError:  # pragma: no cover
     version = "0.0.0"
 
-__all__ = ["version", "Account", "SafewayCoupons"]
+__all__ = ["Account", "SafewayCoupons", "version"]

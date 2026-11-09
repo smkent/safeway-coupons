@@ -59,7 +59,7 @@ def test_safeway_coupons_too_many_clip_errors(
 
 @pytest.mark.usefixtures("login_success")
 @pytest.mark.parametrize(
-    ["sleep_level", "max_sleep"], [(0, 25.0), (1, 1.0), (2, 0.0)]
+    ("sleep_level", "max_sleep"), [(0, 25.0), (1, 1.0), (2, 0.0)]
 )
 def test_safeway_coupons_sleep_time(
     http_responses: responses.RequestsMock,

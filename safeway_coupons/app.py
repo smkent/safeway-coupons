@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import shlex
 import sys
@@ -105,7 +107,7 @@ def main() -> None:
     args = _parse_args()
     accounts = Config.load_accounts(config_file=args.accounts_config)
     if not accounts:
-        print("Error: No Safeway account(s) configured", file=sys.stderr)
+        print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
         sys.exit(1)
     if args.debug_level >= 2:
         HTTPConnection.debuglevel = 1
@@ -129,10 +131,10 @@ def main() -> None:
                 traceback.print_exc()
                 errors += 1
         if errors:
-            print(f"Error clipping coupons for {errors} account(s)")
+            print(f"Error clipping coupons for {errors} account(s)")  # noqa: T201
             sys.exit(1)
     except Exception as e:
         if args.debug_level:
             raise
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
         sys.exit(1)

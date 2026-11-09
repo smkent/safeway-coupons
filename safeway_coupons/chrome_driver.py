@@ -1,10 +1,15 @@
-import contextlib
+from __future__ import annotations
+
 import subprocess
 import sys
+from contextlib import contextmanager, suppress
 from pathlib import Path
-from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
-import undetected_chromedriver as uc  # type: ignore
+import undetected_chromedriver as uc
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 CHROMEDRIVER_PATH = (
     Path.home()
@@ -15,14 +20,13 @@ CHROMEDRIVER_PATH = (
 )
 
 
-class ChromeDriverDoesNotExist(Exception):
+class ChromeDriverDoesNotExistError(Exception):
     pass
 
 
-@contextlib.contextmanager
-def chrome_driver(headless: bool = True) -> Iterator[uc.Chrome]:
+@contextmanager
+def chrome_driver(*, headless: bool = True) -> Generator[uc.Chrome]:
     options = uc.ChromeOptions()
-    options.headless = headless
     for option in [
         "--incognito",
         "--no-sandbox",
@@ -42,21 +46,21 @@ def chrome_driver(headless: bool = True) -> Iterator[uc.Chrome]:
 
 def chrome_driver_version() -> str:
     if not CHROMEDRIVER_PATH.is_file():
-        raise ChromeDriverDoesNotExist(
+        raise ChromeDriverDoesNotExistError(
             f"Error: {CHROMEDRIVER_PATH} does not exist"
         )
     cmd = [str(CHROMEDRIVER_PATH), "--version"]
-    print(f"+ {' '.join(cmd)}", file=sys.stderr)
-    result = subprocess.run(cmd, capture_output=True)
+    print(f"+ {' '.join(cmd)}", file=sys.stderr)  # noqa: T201
+    result = subprocess.run(cmd, capture_output=True, check=True)  # noqa: S603
     return result.stdout.decode()
 
 
 def init() -> None:
-    with contextlib.suppress(ChromeDriverDoesNotExist):
-        print(chrome_driver_version())
+    with suppress(ChromeDriverDoesNotExistError):
+        print(chrome_driver_version())  # noqa: T201
         return
-    print("Initializing Chrome Driver")
+    print("Initializing Chrome Driver")  # noqa: T201
     with chrome_driver() as driver:
-        print("Connect to example.com")
-        driver.get("https://example.com")
-    print(chrome_driver_version())
+        print("Connect to example.com")  # noqa: T201
+        driver.get("https://example.com")  # ty: ignore[invalid-argument-type, missing-argument]
+    print(chrome_driver_version())  # noqa: T201

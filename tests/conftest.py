@@ -1,15 +1,15 @@
 import json
 import time
-import urllib
-from typing import Optional, cast
+import urllib.parse
 from collections.abc import Iterator, Mapping
+from typing import cast
 from unittest import mock
 
 import pytest
 import pytest_mock
 import requests
 import responses
-import undetected_chromedriver as uc  # type: ignore
+import undetected_chromedriver as uc
 from selenium.webdriver.support.wait import WebDriverWait
 
 from safeway_coupons.models import Offer, OfferList
@@ -47,7 +47,7 @@ def login_success(mock_undetected_chromedriver: mock.MagicMock) -> None:
         "SWY_SHARED_SESSION_INFO": {"info": {"J4U": {"storeId": 42}}},
     }
 
-    def _get_cookie(name: str) -> dict[str, Optional[str]]:
+    def _get_cookie(name: str) -> dict[str, str | None]:
         value = cookies.get(name)
         return {
             "value": urllib.parse.quote(json.dumps(value)) if value else None
@@ -60,7 +60,7 @@ def login_success(mock_undetected_chromedriver: mock.MagicMock) -> None:
 @pytest.fixture
 def clips(
     http_responses: responses.RequestsMock,
-) -> Iterator[ClipsTestConfig]:
+) -> ClipsTestConfig:
     clips_test_config = ClipsTestConfig()
 
     def _clip_response(
@@ -93,13 +93,11 @@ def clips(
         url=("https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"),
         callback=_clip_response,
     )
-    yield clips_test_config
+    return clips_test_config
 
 
 @pytest.fixture
-def available_offers(
-    http_responses: responses.RequestsMock,
-) -> Iterator[list[Offer]]:
+def available_offers(http_responses: responses.RequestsMock) -> list[Offer]:
     offers_list: list[Offer] = []
     http_responses.add_callback(
         method=responses.GET,
@@ -114,10 +112,10 @@ def available_offers(
             ),
         ),
     )
-    yield offers_list
+    return offers_list
 
 
 @pytest.fixture
 def mock_sleep(mocker: pytest_mock.MockerFixture) -> Iterator[mock.MagicMock]:
     mocker.patch.object(time, "sleep")
-    yield cast(mock.MagicMock, time.sleep)
+    return cast("mock.MagicMock", time.sleep)
