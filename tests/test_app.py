@@ -1,21 +1,20 @@
+from __future__ import annotations
+
 import os
-import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
 
 from safeway_coupons import app
-from safeway_coupons.app import main
+
+if TYPE_CHECKING:
+    from .conftest import MainRunner
 
 
-def test_no_accounts() -> None:
-    with (
-        patch.object(sys, "argv", ["safeway-coupons"]),
-        patch.object(os, "environ", {}),
-        pytest.raises(SystemExit),
-    ):
-        main()
+def test_no_accounts(main_runner: MainRunner) -> None:
+    with patch.object(os, "environ", {}), pytest.raises(SystemExit):
+        main_runner()
 
 
 @pytest.mark.parametrize(
@@ -27,13 +26,12 @@ def test_no_accounts() -> None:
     ],
 )
 def test_app_error(
-    debug_level: int, expected_exception: type[Exception]
+    main_runner: MainRunner,
+    debug_level: int,
+    expected_exception: type[Exception],
 ) -> None:
     with (
         patch.object(app, "SafewayCoupons") as mock_app,
-        patch.object(
-            sys, "argv", ["safeway-coupons"] + (["-d"] * debug_level)
-        ),
         patch.object(
             os,
             "environ",
@@ -47,7 +45,7 @@ def test_app_error(
             "Test error"
         )
         with pytest.raises(expected_exception):
-            main()
+            main_runner(*(["-d"] * debug_level))
 
 
 @pytest.mark.parametrize(
@@ -156,10 +154,11 @@ def test_app_error(
         ),
     ],
 )
-def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
+def test_args(
+    main_runner: MainRunner, argv: list[str], expected_args: dict[str, Any]
+) -> None:
     with (
         patch.object(app, "SafewayCoupons") as mock_app,
-        patch.object(sys, "argv", ["safeway-coupons", *argv]),
         patch.object(
             os,
             "environ",
@@ -169,5 +168,5 @@ def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
             },
         ),
     ):
-        main()
+        main_runner(*argv)
     mock_app.assert_called_once_with(**expected_args)

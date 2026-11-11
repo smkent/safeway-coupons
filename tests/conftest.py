@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -20,6 +22,22 @@ if TYPE_CHECKING:
     from unittest import mock
 
     import requests
+
+from safeway_coupons.__main__ import main
+
+
+@dataclass
+class MainRunner:
+    monkeypatch: pytest.MonkeyPatch
+
+    def __call__(self, *cmd: str) -> None:
+        self.monkeypatch.setattr(sys, "argv", ["safeway-coupons", *cmd])
+        main()
+
+
+@pytest.fixture
+def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
+    return MainRunner(monkeypatch=monkeypatch)
 
 
 @pytest.fixture(autouse=True)
