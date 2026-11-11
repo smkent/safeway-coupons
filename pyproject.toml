@@ -25,18 +25,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 keywords = []
-dependencies = [
-  "dataclasses-json",
-  "requests",
-  "selenium (>=4.10)",
-  "undetected-chromedriver (>=3.5.0)",
-  "webdriver-manager (>=3.8.6)",
-  "standard-distutils (>=3.11.9,<4.0.0)",
-]
+dependencies = ["dataclasses-json", "patchright>=1.62", "requests"]
 
 [project.scripts]
 "safeway-coupons" = "safeway_coupons.__main__:main"
-"safeway-coupons-init-chromedriver" = "safeway_coupons.chrome_driver:init"
 
 [project.urls]
 Homepage = "https://smkent.github.io/safeway-coupons"
@@ -84,10 +76,6 @@ addopts = [
   "--strict-markers",
   "--numprocesses",
   "auto",
-]
-filterwarnings = [
-  # undetected-chromedriver imports distutils (via standard-distutils)
-  "ignore:The distutils package is deprecated:DeprecationWarning:undetected_chromedriver.patcher",
 ]
 testpaths = ["tests"]
 

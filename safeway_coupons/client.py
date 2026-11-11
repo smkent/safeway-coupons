@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import requests
+import requests.adapters
 
 from .errors import ClipError, HTTPError
 from .methods import ClipRequest, ClipResponse
 from .models import Offer, OfferMap
-from .session import BaseSession, LoginSession
+from .session import LoginSession
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -21,17 +23,42 @@ class ClipResponseError(Exception):
     pass
 
 
-class SafewayClient(BaseSession):
-    def __init__(self, account: Account, debug_dir: Path | None) -> None:
-        self.session = LoginSession(account, debug_dir)
-        self.session_requests.headers.update(
-            {
-                "Authorization": f"Bearer {self.session.access_token}",
-                "X-SWY_API_KEY": "emjou",
-                "X-SWY_VERSION": "1.1",
-                "X-SWY-APPLICATION-TYPE": "web",
-            }
+@dataclass
+class SafewayClient:
+    account: Account
+    debug_dir: Path | None = None
+    headless: bool = field(default=True, kw_only=True)
+    debug_level: int = field(default=0, kw_only=True)
+
+    def __post_init__(self) -> None:
+        self.session = LoginSession(
+            self.account,
+            self.debug_dir,
+            headless=self.headless,
+            debug_level=self.debug_level,
         )
+        self.session_requests.headers["Authorization"] = (
+            f"Bearer {self.session.access_token}"
+        )
+
+    @property
+    def session_requests(self) -> requests.Session:
+        if not hasattr(self, "_requests"):
+            session = requests.Session()
+            session.mount(
+                "https://", requests.adapters.HTTPAdapter(pool_maxsize=1)
+            )
+            session.headers.update(
+                {
+                    "DNT": "1",
+                    "User-Agent": self.session.user_agent,
+                    "X-SWY_API_KEY": "emjou",
+                    "X-SWY_VERSION": "1.1",
+                    "X-SWY-APPLICATION-TYPE": "web",
+                }
+            )
+            self._requests = session
+        return self._requests
 
     def get_offers(self) -> OfferMap:
         try:

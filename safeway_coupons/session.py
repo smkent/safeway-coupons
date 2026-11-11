@@ -1,31 +1,30 @@
 from __future__ import annotations
 
 import json
-import time
+import re
+import tempfile
 import urllib
 import urllib.parse
-from contextlib import contextmanager, suppress
-from typing import TYPE_CHECKING, Any
+from contextlib import ExitStack, contextmanager, nullcontext, suppress
+from dataclasses import dataclass, field
+from functools import cached_property
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Self
 
-import requests
-import requests.adapters
-import selenium.webdriver.support.expected_conditions as ec
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    StaleElementReferenceException,
-    WebDriverException,
+from patchright.sync_api import (
+    Frame,
+    Locator,
+    Page,
+    Playwright,
+    Response,
+    sync_playwright,
 )
-from selenium.webdriver.remote.webdriver import By
-from selenium.webdriver.support.wait import WebDriverWait
+from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from .chrome_driver import chrome_driver
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from pathlib import Path
-
-    import undetected_chromedriver as uc
 
     from .accounts import Account
 
@@ -38,134 +37,357 @@ class ExceptionWithAttachmentsError(Exception):
         self.attachments = attachments
 
 
-class BaseSession:
-    USER_AGENT = (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:122.0) "
-        "Gecko/20100101 Firefox/122.0"
-    )
+@dataclass
+class BrowserSession(ExitStack):
+    channel: str = field(default="chrome", kw_only=True)
+    headless: bool = field(default=True, kw_only=True)
+    screen: str | None = field(default="1920x1080", kw_only=True)
+    debug_dir: Path | None = None
+    debug_level: int = field(default=0, kw_only=True)
+
+    def __post_init__(self) -> None:
+        super().__init__()
+
+    @cached_property
+    def user_agent(self) -> str:
+        return self.page.evaluate("navigator.userAgent")
 
     @property
-    def session_requests(self) -> requests.Session:
-        if not hasattr(self, "_requests"):
-            session = requests.Session()
-            session.mount(
-                "https://", requests.adapters.HTTPAdapter(pool_maxsize=1)
-            )
-            session.headers.update({"DNT": "1", "User-Agent": self.USER_AGENT})
-            self._requests = session
-        return self._requests
+    def cookies(self) -> dict[str, str]:
+        return {c["name"]: c["value"] for c in self.page.context.cookies()}
 
+    def cookie_json(self, name: str) -> dict[str, Any]:
+        if not (value := self.cookies.get(name)):
+            raise ValueError(f'Unable to retrieve cookie "{name}"')
+        return json.loads(urllib.parse.unquote(value))
 
-class LoginSession(BaseSession):
-    def __init__(self, account: Account, debug_dir: Path | None) -> None:
-        self.access_token: str | None = None
-        self.store_id: str | None = None
-        self.debug_dir: Path | None = debug_dir
-        try:
-            self._login(account)
-        except ExceptionWithAttachmentsError as e:
-            raise AuthenticationFailure(
-                e, account, attachments=e.attachments
-            ) from e
-        except Exception as e:
-            raise AuthenticationFailure(e, account) from e
+    @cached_property
+    def page(self) -> Page:
+        return self.enter_context(self._new_page())
+
+    @cached_property
+    def configured_profile_dir(self) -> Path:
+        tempdir_factory = tempfile.TemporaryDirectory(
+            prefix="safeway-coupons."
+        )
+        dd = Path(self.enter_context(tempdir_factory)) / "browser-profile"
+        prefs_path = dd / "Default" / "Preferences"
+        prefs_path.parent.mkdir(parents=True, exist_ok=True)
+        prefs = (
+            json.loads(prefs_path.read_text()) if prefs_path.is_file() else {}
+        )
+        # Show new tab page on startup
+        prefs.setdefault("session", {})["restore_on_startup"] = 5
+        # Don't offer to restore crashed sessions
+        prefs.setdefault("profile", {})["exit_type"] = "Normal"
+        prefs_path.write_text(json.dumps(prefs))
+        print(f"Browser profile dir (user_data_dir): {dd}")  # noqa: T201
+        return dd
 
     @contextmanager
-    def _chrome_driver(self, *, headless: bool = True) -> Generator[uc.Chrome]:
+    def _new_page(self) -> Generator[Page]:
+        print("Starting browser session")  # noqa: T201
+        with sync_playwright() as p:
+            args = ["--window-size=1366,900"]
+            if self.screen:
+                args.append(f"--screen-info={{{self.screen}}}")
+            if user_agent := self._user_agent_override(p):
+                args.append(f"--user-agent={user_agent}")
+            with (
+                p.chromium.launch_persistent_context(
+                    user_data_dir=self.configured_profile_dir,
+                    channel=self.channel,
+                    headless=self.headless,
+                    no_viewport=True,
+                    args=args,
+                ) as ctx,
+                nullcontext() if ctx.pages else ctx.new_page(),
+            ):
+                page, *extra_tabs = ctx.pages
+                for extra_tab in extra_tabs:
+                    extra_tab.close()
+                page.wait_for_timeout(500)
+                self._check_user_agent(page)
+                print("Browser session ready")  # noqa: T201
+                try:
+                    yield page
+                except Exception as e:
+                    attachments = []
+                    if self.debug_dir:
+                        screenshot_path = self.debug_dir / "screenshot.png"
+                        with suppress(Exception):
+                            page.screenshot(path=screenshot_path)
+                        if screenshot_path.is_file():
+                            attachments.append(screenshot_path)
+                    raise ExceptionWithAttachmentsError(
+                        e, attachments=attachments
+                    ) from e
+
+    def _user_agent_override(self, p: Playwright) -> str | None:
+        if not self.headless:
+            return None
+        browser = p.chromium.launch(channel=self.channel, headless=True)
         try:
-            with chrome_driver(headless=headless) as driver:
-                yield driver
-        except WebDriverException as e:
-            attachments: list[Path] = []
-            if self.debug_dir:
-                path = self.debug_dir / "screenshot.png"
-                with suppress(WebDriverException):
-                    driver.save_screenshot(path)
-                    attachments.append(path)
-            raise ExceptionWithAttachmentsError(
-                f"[{type(e).__name__}] {e}", attachments=attachments
-            ) from e
+            cdp = browser.new_browser_cdp_session()
+            user_agent = cdp.send("Browser.getVersion")["userAgent"]
+        finally:
+            browser.close()
+        if "HeadlessChrome" not in user_agent:
+            return None
+        fixed = user_agent.replace("HeadlessChrome", "Chrome")
+        if self.debug_level >= 1:
+            print("Overriding user agent:", fixed)  # noqa: T201
+        return fixed
 
     @staticmethod
-    def _sign_in_success(driver: uc.Chrome) -> bool:
+    def _check_user_agent(page: Page) -> None:
+        """Ensure user agent and client hints match."""
+        url = "https://user-agent-check.invalid/"
+        page.route(url, lambda route: route.fulfill(body="<html></html>"))
         try:
-            element = driver.find_element(
-                By.XPATH, '//span [contains(@class, "user-greeting")]'
+            page.goto(url)
+            user_agent = page.evaluate("navigator.userAgent")
+            brands = {
+                b["brand"]: b["version"]
+                for b in page.evaluate("navigator.userAgentData.brands")
+            }
+        finally:
+            page.unroute(url)
+            page.goto("about:blank")
+        browser = next(
+            (b for b in ("Google Chrome", "Chromium") if b in brands), None
+        )
+        match = re.search(r"\bChrome/(\d+)\.", user_agent)
+        if (
+            "Headless" in user_agent
+            or browser is None
+            or match is None
+            or match.group(1) != brands[browser]
+        ):
+            raise RuntimeError(
+                "User agent doesn't match client hints:"
+                f" {user_agent!r} vs {brands!r}"
             )
-            if not (element and element.text):
-                return False
-            return not element.text.lower().startswith("sign in")
-        except StaleElementReferenceException:
-            return False
 
-    def _login(self, account: Account) -> None:
-        with self._chrome_driver() as driver:
-            driver.implicitly_wait(10)
-            wait = WebDriverWait(driver, 10)
-            # Navigate to the website URL
-            url = "https://www.safeway.com"
-            print("Connect to safeway.com")  # noqa: T201
-            driver.get(url)  # ty: ignore[invalid-argument-type, missing-argument]
+
+@dataclass
+class SafewayBrowserSession(BrowserSession):
+    SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+
+    def __enter__(self) -> Self:
+        super().__enter__()
+        self.page.goto("https://www.safeway.com")
+        return self
+
+    def login(self, account: Account) -> None:
+        if not self.is_signed_in():
+            if modal := self.open_sign_in_modal():
+                self.sign_in(account, modal)
+            if not self.is_signed_in(wait=15000):
+                raise Exception("Sign in did not complete")  # noqa: TRY002
+            print("Signed in")  # noqa: T201
+
+    @cached_property
+    def page(self) -> Page:
+        page = super().page
+
+        def log_navigation(frame: Frame) -> None:
+            if self.debug_level >= 1 and frame == self.page.main_frame:
+                print("Navigated:", frame.url)  # noqa: T201
+
+        page.on("framenavigated", log_navigation)
+
+        def dismiss_cookie_banner(banner: Locator) -> None:
+            print("Dismissing cookie banner")  # noqa: T201
+            # The site reloads the page after cookie consent is chosen
+            with (
+                suppress(PlaywrightTimeoutError),
+                self.page.expect_navigation(timeout=5000),
+            ):
+                banner.get_by_role(
+                    "button", name=re.compile("necessary only", re.IGNORECASE)
+                ).click()
+
+        page.add_locator_handler(
+            page.get_by_role("region", name="Cookie banner"),
+            dismiss_cookie_banner,
+        )
+
+        return page
+
+    @property
+    def _account_button(self) -> Locator:
+        return self.page.get_by_role("button", name="Account menu", exact=True)
+
+    def is_signed_in(self, *, wait: int | None = None) -> bool:
+        greeting = self._account_button.locator(".user-greeting")
+        greeting.wait_for()
+        self.page.wait_for_load_state("load")
+        signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
+        if wait is not None:
+            with suppress(PlaywrightTimeoutError):
+                signed_in.wait_for(timeout=wait)
+        with suppress(PlaywrightTimeoutError):
+            if signed_in.count():
+                return bool(signed_in.inner_text(timeout=1000).strip())
+        return False
+
+    def open_sign_in_modal(self) -> Locator | None:
+        if not (panel := self.open_sign_in_panel()):
+            return None
+        panel.get_by_role("button", name="Sign in", exact=True).click()
+        modal = self.page.get_by_role("dialog", name="Sign in modal")
+        modal.wait_for()
+        print("Sign in modal open")  # noqa: T201
+        return modal
+
+    def open_sign_in_panel(self, attempts: int = 3) -> Locator | None:
+        panel = self.page.get_by_role(
+            "dialog", name=re.compile("account menu", re.IGNORECASE)
+        )
+        signed_in_menu = self.page.locator(".myaccount-flyout-wrapper")
+        # Both menus are in the page, but only the open one is visible
+        open_menu = panel.or_(signed_in_menu).filter(visible=True)
+        for attempt in range(1, attempts + 1):
+            # Clicking again while a menu is open would be blocked by it
+            if not open_menu.count():
+                self._account_button.click()
             try:
-                button = driver.find_element(
-                    By.XPATH,
-                    "//button [contains(text(), 'Necessary Only')]",
+                open_menu.first.wait_for(timeout=5000)
+            except PlaywrightTimeoutError:
+                if self.debug_level >= 1:
+                    print(f"Sign in panel not open after attempt {attempt}")  # noqa: T201
+                continue
+            if signed_in_menu.is_visible():
+                if self.debug_level >= 1:
+                    print("Account menu shows a signed in user")  # noqa: T201
+                return None
+            if self.debug_level >= 1:
+                print(f"Sign in panel open after attempt {attempt}")  # noqa: T201
+            return panel
+        msg = f"Sign in panel did not open after {attempts} attempts"
+        raise RuntimeError(msg)
+
+    def sign_in(self, account: Account, modal: Locator) -> None:
+
+        def _log_auth_response(response: Response) -> None:
+            if response.request.resource_type not in {"xhr", "fetch"}:
+                return
+            url = urllib.parse.urlsplit(response.url)
+            if not re.search(r"safeway\.com|albertsons|okta|ciam", url.netloc):
+                return
+            if self.debug_level >= 1:
+                print(  # noqa: T201
+                    f"Response: {response.status} {response.request.method}"
+                    f" {url.netloc}{url.path}"
                 )
-                if button:
-                    print("Decline cookie prompt")  # noqa: T201
-                    button.click()
-                    print(  # noqa: T201
-                        "Return to safeway.com after declining cookie prompt"
-                    )
-                    driver.get(url)  # ty: ignore[invalid-argument-type, missing-argument]
-            except NoSuchElementException:
-                print("Skipping cookie prompt which is not present")  # noqa: T201
-            print("Open Sign In sidebar")  # noqa: T201
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//span [contains(text(), 'Sign In')]")
-                )
-            ).click()
-            print("Open Sign In form")  # noqa: T201
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//button [contains(text(), 'Sign in')]")
-                )
-            ).click()
-            time.sleep(2)
-            print("Populate Sign In form username")  # noqa: T201
-            driver.find_element(By.ID, "enterUsername").send_keys(
-                account.username
+
+        def continue_with_password(email: str) -> None:
+            modal.get_by_role("textbox", name="Email or mobile number").fill(
+                email
             )
-            time.sleep(0.5)
-            print("Click Sign in with password button")  # noqa: T201
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign in with password")]'
-            ).click()
-            time.sleep(2)
-            driver.find_element(By.ID, "password").send_keys(account.password)
-            time.sleep(0.5)
-            print("Click Sign In button")  # noqa: T201
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign In")]'
-            ).click()
-            time.sleep(0.5)
-            print("Wait for signed in landing page to load")  # noqa: T201
-            wait.until(self._sign_in_success)
+            modal.get_by_role("button", name="Sign in with password").click()
+            print("Clicked Sign in with password")  # noqa: T201
+            self.page.wait_for_timeout(5000)
+
+        if account.username:
+            self.page.on("response", _log_auth_response)
+            continue_with_password(account.username)
+            if account.password:
+                self.submit_password(modal, account.password)
+
+    def submit_password(self, modal: Locator, password: str) -> None:
+        modal.get_by_role("textbox", name="Password").fill(password)
+        with self.page.expect_response(
+            lambda r: urllib.parse.urlsplit(r.url).path.endswith(
+                "/csms/authn/factors/password/verify"
+            )
+        ) as verify:
+            modal.get_by_role("button", name="Sign in", exact=True).click()
+        print("Clicked Sign in")  # noqa: T201
+        if (destination := self._verification_required(verify.value)) is None:
+            return
+        print(f"Safeway requires device verification ({destination})")  # noqa: T201
+        if self.headless:
+            raise Exception(  # noqa: TRY002
+                f"Device verification required ({destination}),"
+                " which isn't supported in headless mode"
+            )
+        input(
+            "Complete device verification in the browser window,"
+            " then press Enter here to continue: "
+        )
+        if not self.is_signed_in(wait=15000):
+            raise Exception(  # noqa: TRY002
+                f"Device verification ({destination}) was not completed"
+            )
+
+    @staticmethod
+    def _verification_required(response: Response) -> str | None:
+        try:
+            body = response.json()
+        except Exception:  # noqa: BLE001
+            # A successful sign in can reload the page before this is read
+            return None
+        if body.get("status") != "MFA_REQUIRED":
+            return None
+        return ", ".join(
+            f.get("profile", {}).get("email") or f.get("factorType", "?")
+            for f in body.get("factors", [])
+        )
+
+
+@dataclass
+class LoginSession:
+    account: Account
+    debug_dir: Path | None = None
+    access_token: str | None = field(default=None, init=False)
+    store_id: str | None = field(default=None, init=False)
+    user_agent: str | None = field(default=None, init=False)
+    headless: bool = field(default=True, kw_only=True)
+    debug_level: int = field(default=0, kw_only=True)
+
+    def __post_init__(self) -> None:
+        try:
+            self._login()
+        except ExceptionWithAttachmentsError as e:
+            raise AuthenticationFailure(
+                e, self.account, attachments=e.attachments
+            ) from e
+        except Exception as e:
+            raise AuthenticationFailure(e, self.account) from e
+
+    def _login(self) -> None:
+        with SafewayBrowserSession(
+            headless=self.headless,
+            debug_dir=self.debug_dir,
+            debug_level=self.debug_level,
+        ) as browser:
+            self.user_agent = browser.user_agent
+            if self.debug_level >= 1:
+                print(f"User Agent: {self.user_agent}")  # noqa: T201
+
+            browser.login(self.account)
+
             print("Retrieve session information")  # noqa: T201
-            session_cookie = self._parse_cookie(
-                driver.get_cookie("SWY_SHARED_SESSION")
-            )
-            session_info_cookie = self._parse_cookie(
-                driver.get_cookie("SWY_SHARED_SESSION_INFO")
-            )
+            session_cookie = browser.cookie_json("SWY_SHARED_SESSION")
             self.access_token = session_cookie["accessToken"]
-            try:
-                self.store_id = session_info_cookie["info"]["J4U"]["storeId"]
-            except Exception as e:
-                raise Exception("Unable to retrieve store ID") from e  # noqa: TRY002
+            session_info = browser.cookie_json("SWY_SHARED_SESSION_INFO")
+            device_id = (
+                session_info.get("info", {}).get("COMMON", {}).get("deviceId")
+            )
+            if self.debug_level >= 1:
+                print(f"Device ID: {device_id}")  # noqa: T201
+            if not (store_id := session_info["info"]["J4U"]["storeId"]):
+                raise Exception("Unable to retrieve store ID")  # noqa: TRY002
+            self.store_id = store_id
 
-    def _parse_cookie(self, value: dict[Any, Any] | None) -> Any:
-        if value is None:
-            raise ValueError("No cookie value retrieved")
-        return json.loads(urllib.parse.unquote(value["value"]))
+            if not self.headless:
+                browser.page.wait_for_timeout(1000)
+                input(
+                    "Complete any interaction in the browser window,"
+                    " then press Enter here to continue: "
+                )

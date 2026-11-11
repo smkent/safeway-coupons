@@ -51,7 +51,5 @@ COPY docker/entrypoint /
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-RUN safeway-coupons-init-chromedriver
-
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]
