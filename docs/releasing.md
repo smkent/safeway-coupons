@@ -36,6 +36,7 @@ git push --tags
   the [GitHub Container Registry (GHCR)][ghcr-docs].
 
 [bump-my-version]: https://callowayproject.github.io/bump-my-version/
+[ghcr-docs]: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 [ghcr-project]: https://github.com/smkent/safeway-coupons/pkgs/container/safeway-coupons
 [github-release-badge]: https://img.shields.io/github/v/release/smkent/safeway-coupons
 [github-release-latest]: https://github.com/smkent/safeway-coupons/releases/latest
