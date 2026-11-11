@@ -5,8 +5,9 @@ import shutil
 from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
-from typer import Context, Option, Typer
+from typer import Context, Exit, Option, Typer
 
+from . import version as package_version
 from .app import main as app_main
 
 cli = Typer(
@@ -21,6 +22,9 @@ cli = Typer(
 def setup(
     ctx: Context,
     *,
+    version_option: Annotated[
+        bool, Option("-V", "--version", hidden=True)
+    ] = False,
     accounts_config: Annotated[
         Path | None,
         Option(
@@ -119,6 +123,9 @@ def setup(
         ),
     ] = None,
 ) -> None:
+    if version_option:
+        version()
+        raise Exit
     if ctx.invoked_subcommand:
         return
     app_main(
@@ -133,6 +140,11 @@ def setup(
         headless=headless,
         state_dir=state_dir,
     )
+
+
+@cli.command(help=f"Show version ({package_version}) and exit.")
+def version() -> None:
+    print(package_version)  # noqa: T201
 
 
 def setup_env() -> None:
