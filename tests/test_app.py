@@ -1,22 +1,21 @@
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any
+from unittest.mock import patch
 
 import pytest
-import pytest_mock
 
 from safeway_coupons import app
 from safeway_coupons.app import main
 
-if TYPE_CHECKING:
-    from unittest import mock
 
-
-def test_no_accounts(mocker: pytest_mock.MockerFixture) -> None:
-    mocker.patch.object(sys, "argv", ["safeway-coupons"])
-    mocker.patch.object(os, "environ", {})
-    with pytest.raises(SystemExit):
+def test_no_accounts() -> None:
+    with (
+        patch.object(sys, "argv", ["safeway-coupons"]),
+        patch.object(os, "environ", {}),
+        pytest.raises(SystemExit),
+    ):
         main()
 
 
@@ -29,27 +28,27 @@ def test_no_accounts(mocker: pytest_mock.MockerFixture) -> None:
     ],
 )
 def test_app_error(
-    mocker: pytest_mock.MockerFixture,
-    debug_level: int,
-    expected_exception: type[Exception],
+    debug_level: int, expected_exception: type[Exception]
 ) -> None:
-    mocker.patch.object(app, "SafewayCoupons")
-    mocker.patch.object(
-        sys, "argv", ["safeway-coupons"] + (["-d"] * debug_level)
-    )
-    mocker.patch.object(
-        os,
-        "environ",
-        {
-            "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
-            "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
-        },
-    )
-    cast(
-        "mock.MagicMock", app.SafewayCoupons
-    ).return_value.clip_for_account.side_effect = Exception("Test error")
-    with pytest.raises(expected_exception):
-        main()
+    with (
+        patch.object(app, "SafewayCoupons") as mock_app,
+        patch.object(
+            sys, "argv", ["safeway-coupons"] + (["-d"] * debug_level)
+        ),
+        patch.object(
+            os,
+            "environ",
+            {
+                "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
+                "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
+            },
+        ),
+    ):
+        mock_app.return_value.clip_for_account.side_effect = Exception(
+            "Test error"
+        )
+        with pytest.raises(expected_exception):
+            main()
 
 
 @pytest.mark.parametrize(
@@ -145,22 +144,18 @@ def test_app_error(
         ),
     ],
 )
-def test_args(
-    mocker: pytest_mock.MockerFixture,
-    argv: list[str],
-    expected_args: dict[str, Any],
-) -> None:
-    mocker.patch.object(app, "SafewayCoupons")
-    mocker.patch.object(sys, "argv", ["safeway-coupons", *argv])
-    mocker.patch.object(
-        os,
-        "environ",
-        {
-            "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
-            "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
-        },
-    )
-    main()
-    cast("mock.MagicMock", app.SafewayCoupons).assert_called_once_with(
-        **expected_args
-    )
+def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
+    with (
+        patch.object(app, "SafewayCoupons") as mock_app,
+        patch.object(sys, "argv", ["safeway-coupons", *argv]),
+        patch.object(
+            os,
+            "environ",
+            {
+                "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
+                "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
+            },
+        ),
+    ):
+        main()
+    mock_app.assert_called_once_with(**expected_args)
