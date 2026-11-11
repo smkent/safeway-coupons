@@ -141,6 +141,19 @@ def test_app_error(
             },
             id="Dry run and max clip count",
         ),
+        pytest.param(
+            ["-H"],
+            {
+                "send_email": True,
+                "sendmail": ["/usr/sbin/sendmail"],
+                "debug_level": 0,
+                "sleep_level": 0,
+                "dry_run": False,
+                "max_clip_count": 0,
+                "headless": False,
+            },
+            id="No headless",
+        ),
     ],
 )
 def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
