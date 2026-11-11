@@ -27,7 +27,7 @@ fi
 
 mkdir -vp /etc/cron.d /var/spool/cron/crontabs
 (
-    echo "${CRON_SCHEDULE?} safeway-coupons ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
+    echo "${CRON_SCHEDULE?} safeway-coupons --state-dir=/state ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
 ) > /var/spool/cron/crontabs/root
 
 busybox crontab -l

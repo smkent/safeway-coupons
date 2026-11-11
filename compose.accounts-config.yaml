@@ -8,3 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
+      - state:/state:rw
+
+volumes:
+  state:
