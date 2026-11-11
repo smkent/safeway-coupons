@@ -50,7 +50,6 @@ dev = [
   "pysentry-rs>=0.5",
   "pytest>=9,<9.2",
   "pytest-cov>=7",
-  "pytest-mock",
   "pytest-sugar>=1",
   "pytest-xdist>=3",
   "responses",

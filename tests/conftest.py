@@ -2,11 +2,9 @@ import json
 import time
 import urllib.parse
 from collections.abc import Iterator, Mapping
-from typing import cast
 from unittest import mock
 
 import pytest
-import pytest_mock
 import requests
 import responses
 import undetected_chromedriver as uc
@@ -116,6 +114,6 @@ def available_offers(http_responses: responses.RequestsMock) -> list[Offer]:
 
 
 @pytest.fixture
-def mock_sleep(mocker: pytest_mock.MockerFixture) -> Iterator[mock.MagicMock]:
-    mocker.patch.object(time, "sleep")
-    return cast("mock.MagicMock", time.sleep)
+def mock_sleep() -> Iterator[mock.MagicMock]:
+    with mock.patch.object(time, "sleep") as obj:
+        yield obj
