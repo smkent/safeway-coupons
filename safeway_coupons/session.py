@@ -46,7 +46,6 @@ class BrowserSession(ExitStack, ABC):
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
-    debug_dir: Path | None = field(default=None, kw_only=True)
     debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
@@ -79,6 +78,10 @@ class BrowserSession(ExitStack, ABC):
     @cached_property
     def profile_dir(self) -> Path:
         return self.data_dir / "profile"
+
+    @cached_property
+    def debug_dir(self) -> Path:
+        return self.data_dir / "debug"
 
     @cached_property
     def configured_profile_dir(self) -> Path:
@@ -130,6 +133,7 @@ class BrowserSession(ExitStack, ABC):
                         screenshot_path = self.debug_dir / "screenshot.png"
                         with suppress(Exception):
                             page.screenshot(path=screenshot_path)
+                            print(f"Screenshot saved: {screenshot_path}")  # noqa: T201
                         if screenshot_path.is_file():
                             attachments.append(screenshot_path)
                     raise ExceptionWithAttachmentsError(
@@ -417,7 +421,6 @@ class SafewayBrowserSession(BrowserSession):
 @dataclass
 class LoginSession:
     account: Account
-    debug_dir: Path | None = None
     access_token: str | None = field(default=None, init=False)
     store_id: str | None = field(default=None, init=False)
     user_agent: str | None = field(default=None, init=False)
@@ -438,7 +441,6 @@ class LoginSession:
         with SafewayBrowserSession(
             account=self.account,
             headless=self.headless,
-            debug_dir=self.debug_dir,
             debug_level=self.debug_level,
         ) as browser:
             self.user_agent = browser.user_agent
