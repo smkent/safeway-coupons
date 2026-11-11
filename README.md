@@ -132,6 +132,11 @@ services:
       SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
       # EXTRA_ARGS: --debug  # Optional
     restart: unless-stopped
+    volumes:
+      - state:/state:rw
+
+volumes:
+  state:
 ```
 
 Example `compose.yaml` with configuration via accounts file:
@@ -149,6 +154,10 @@ services:
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
+      - state:/state:rw
+
+volumes:
+  state:
 ```
 
 Start the container by running:

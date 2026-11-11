@@ -48,6 +48,8 @@ COPY --from=builder /app/.venv /app/.venv
 
 COPY docker/entrypoint /
 
+VOLUME /state
+
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 

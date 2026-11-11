@@ -9,3 +9,8 @@ services:
       SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
       SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
     restart: unless-stopped
+    volumes:
+      - state:/state:rw
+
+volumes:
+  state:

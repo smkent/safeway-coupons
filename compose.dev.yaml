@@ -1,7 +1,11 @@
 services:
   safeway-coupons:
     build: .
-    command: safeway-coupons -c /accounts -n -d -m 1
+    command: safeway-coupons --state-dir=/state -c /accounts -n -d -m 1
     restart: no
     volumes:
       - ./accounts:/accounts:ro
+      - state:/state:rw
+
+volumes:
+  state:
