@@ -30,6 +30,7 @@ dependencies = [
   "patchright>=1.62",
   "platformdirs>=4.14",
   "requests",
+  "typer>=0.27",
 ]
 
 [project.scripts]

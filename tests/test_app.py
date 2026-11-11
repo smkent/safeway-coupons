@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -13,14 +14,14 @@ if TYPE_CHECKING:
 
 
 def test_no_accounts(main_runner: MainRunner) -> None:
-    with patch.object(os, "environ", {}), pytest.raises(SystemExit):
-        main_runner()
+    with patch.object(os, "environ", {}):
+        main_runner(match=1)
 
 
 @pytest.mark.parametrize(
     ("debug_level", "expected_exception"),
     [
-        (0, SystemExit),
+        (0, None),
         (1, Exception),
         (2, Exception),
     ],
@@ -28,7 +29,7 @@ def test_no_accounts(main_runner: MainRunner) -> None:
 def test_app_error(
     main_runner: MainRunner,
     debug_level: int,
-    expected_exception: type[Exception],
+    expected_exception: type[Exception] | None,
 ) -> None:
     with (
         patch.object(app, "SafewayCoupons") as mock_app,
@@ -44,8 +45,12 @@ def test_app_error(
         mock_app.return_value.clip_for_account.side_effect = Exception(
             "Test error"
         )
-        with pytest.raises(expected_exception):
-            main_runner(*(["-d"] * debug_level))
+        with (
+            pytest.raises(expected_exception)
+            if expected_exception
+            else nullcontext()
+        ):
+            main_runner(*(["-d"] * debug_level), match=1)
 
 
 @pytest.mark.parametrize(

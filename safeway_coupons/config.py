@@ -31,8 +31,8 @@ class Config:
         return self.state_dir_path
 
     @state_dir.setter
-    def state_dir(self, value: Path | str) -> None:
-        if (new_dir := Path(value).resolve()) != self.state_dir_path.resolve():
+    def state_dir(self, path: Path) -> None:
+        if (new_dir := path.resolve()) != self.state_dir_path.resolve():
             self.state_dir_path = new_dir
 
     def account_dir(self, account: Account) -> Path:
@@ -41,7 +41,7 @@ class Config:
         return path
 
     @classmethod
-    def load_accounts(cls, config_file: str | None = None) -> list[Account]:
+    def load_accounts(cls, config_file: Path | None = None) -> list[Account]:
         account = cls.load_account_from_env()
         if account:
             return [account]
@@ -67,9 +67,9 @@ class Config:
         return None
 
     @classmethod
-    def load_accounts_from_config(cls, config_file: str) -> list[Account]:
+    def load_accounts_from_config(cls, config_file: Path) -> list[Account]:
         config = configparser.ConfigParser()
-        with Path(config_file).open() as f:
+        with config_file.open() as f:
             config.read_file(itertools.chain(["[_no_section]"], f))
         accounts: list[Account] = []
         mail_from = None

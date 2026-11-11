@@ -30,9 +30,10 @@ from safeway_coupons.__main__ import main
 class MainRunner:
     monkeypatch: pytest.MonkeyPatch
 
-    def __call__(self, *cmd: str) -> None:
+    def __call__(self, *cmd: str, match: int = 0) -> None:
         self.monkeypatch.setattr(sys, "argv", ["safeway-coupons", *cmd])
-        main()
+        with pytest.raises(SystemExit, match=str(match)):
+            main()
 
 
 @pytest.fixture
