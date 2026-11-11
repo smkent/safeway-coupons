@@ -11,20 +11,15 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 
-from patchright.sync_api import (
-    Frame,
-    Locator,
-    Page,
-    Playwright,
-    Response,
-    sync_playwright,
-)
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
+from patchright.sync_api import sync_playwright
 
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from patchright.sync_api import Frame, Locator, Page, Playwright, Response
 
     from .accounts import Account
 
