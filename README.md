@@ -96,11 +96,15 @@ Multiple Safeway accounts can be provided in an ini-style config file, with a
 section for each account. For example:
 
 ```ini
-email_sender = sender@example.com   ; optional
+; optional
+email_sender = sender@example.com
 
-[safeway.account@example.com]       ; required
-password = 12345                    ; required
-notify = your.email@example.com     ; optional
+; required
+[safeway.account@example.com]
+; required
+password = 12345
+; optional
+notify = your.email@example.com
 ```
 
 Provide the path to your config file using the `-c` or `--accounts-config`
