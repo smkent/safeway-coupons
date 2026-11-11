@@ -184,8 +184,7 @@ class SafewayBrowserSession(BrowserSession):
 
     def login(self, account: Account) -> None:
         if not self.is_signed_in():
-            if modal := self.open_sign_in_modal():
-                self.sign_in(account, modal)
+            self.sign_in(account)
             if not self.is_signed_in(wait=15000):
                 raise Exception("Sign in did not complete")  # noqa: TRY002
             print("Signed in")  # noqa: T201
@@ -285,7 +284,9 @@ class SafewayBrowserSession(BrowserSession):
         msg = f"Sign in panel did not open after {attempts} attempts"
         raise RuntimeError(msg)
 
-    def sign_in(self, account: Account, modal: Locator) -> None:
+    def sign_in(self, account: Account) -> None:
+        if not (modal := self.open_sign_in_modal()):
+            return
 
         def _log_auth_response(response: Response) -> None:
             if response.request.resource_type not in {"xhr", "fetch"}:
