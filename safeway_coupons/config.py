@@ -3,6 +3,8 @@ from __future__ import annotations
 import configparser
 import itertools
 import os
+from contextlib import suppress
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import platformdirs
@@ -10,18 +12,31 @@ import platformdirs
 from .accounts import Account
 
 
+@dataclass
 class Config:
-    @classmethod
-    def state_dir(cls) -> Path:
-        path = platformdirs.user_state_path(
-            appname="safeway-coupons", appauthor="smkent"
+    state_dir_path: Path = field(
+        default_factory=lambda: Path(
+            platformdirs.user_state_dir(
+                appname="safeway-coupons", appauthor="smkent"
+            )
         )
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+    )
 
-    @classmethod
-    def account_dir(cls, account: Account) -> Path:
-        path = cls.state_dir() / "accounts" / account.username
+    @property
+    def state_dir(self) -> Path:
+        self.state_dir_path.mkdir(parents=True, exist_ok=True)
+        if os.name == "posix":
+            with suppress(PermissionError):
+                self.state_dir_path.chmod(mode=0o700)
+        return self.state_dir_path
+
+    @state_dir.setter
+    def state_dir(self, value: Path | str) -> None:
+        if (new_dir := Path(value).resolve()) != self.state_dir_path.resolve():
+            self.state_dir_path = new_dir
+
+    def account_dir(self, account: Account) -> Path:
+        path = self.state_dir / "accounts" / account.username.lower()
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -78,3 +93,6 @@ class Config:
                 )
             )
         return accounts
+
+
+config = Config()

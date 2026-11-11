@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Self
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
-from .config import Config
+from .config import config
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
@@ -189,7 +189,7 @@ class SafewayBrowserSession(BrowserSession):
     @cached_property
     def data_dir(self) -> Path:
         return (
-            Config.account_dir(self.account)
+            config.account_dir(self.account)
             / f"browser-{self.channel.lower()}"
         )
 

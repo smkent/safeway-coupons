@@ -7,7 +7,7 @@ import traceback
 from http.client import HTTPConnection
 from pathlib import Path
 
-from .config import Config
+from .config import config
 from .errors import Error
 from .safeway import SafewayCoupons
 
@@ -107,12 +107,25 @@ def _parse_args() -> argparse.Namespace:
         action="store_false",
         help="Run with browser visible (disable headless mode)",
     )
+    arg_parser.add_argument(
+        "-s",
+        "--state-dir",
+        dest="state_dir",
+        metavar="directory",
+        default=config.state_dir_path,
+        help=(
+            "Directory for persistent state such as browser profiles"
+            " (default: %(default)s)"
+        ),
+    )
+
     return arg_parser.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
-    accounts = Config.load_accounts(config_file=args.accounts_config)
+    config.state_dir = args.state_dir
+    accounts = config.load_accounts(config_file=args.accounts_config)
     if not accounts:
         print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
         sys.exit(1)
