@@ -2,22 +2,23 @@ from __future__ import annotations
 
 import json
 import re
-import tempfile
 import urllib
 import urllib.parse
+from abc import ABC, abstractmethod
 from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from dataclasses import dataclass, field
 from functools import cached_property
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
+from .config import Config
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from pathlib import Path
 
     from patchright.sync_api import Frame, Locator, Page, Playwright, Response
 
@@ -33,11 +34,11 @@ class ExceptionWithAttachmentsError(Exception):
 
 
 @dataclass
-class BrowserSession(ExitStack):
+class BrowserSession(ExitStack, ABC):
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
-    debug_dir: Path | None = None
+    debug_dir: Path | None = field(default=None, kw_only=True)
     debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
@@ -60,12 +61,18 @@ class BrowserSession(ExitStack):
     def page(self) -> Page:
         return self.enter_context(self._new_page())
 
+    @property
+    @abstractmethod
+    def data_dir(self) -> Path: ...
+
+    @cached_property
+    def profile_dir(self) -> Path:
+        return self.data_dir / "profile"
+
     @cached_property
     def configured_profile_dir(self) -> Path:
-        tempdir_factory = tempfile.TemporaryDirectory(
-            prefix="safeway-coupons."
-        )
-        dd = Path(self.enter_context(tempdir_factory)) / "browser-profile"
+        dd = self.profile_dir
+        dd.mkdir(parents=True, exist_ok=True)
         prefs_path = dd / "Default" / "Preferences"
         prefs_path.parent.mkdir(parents=True, exist_ok=True)
         prefs = (
@@ -167,6 +174,8 @@ class BrowserSession(ExitStack):
 
 @dataclass
 class SafewayBrowserSession(BrowserSession):
+    account: Account
+
     SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
 
     def __post_init__(self) -> None:
@@ -177,9 +186,16 @@ class SafewayBrowserSession(BrowserSession):
         self.page.goto("https://www.safeway.com")
         return self
 
-    def login(self, account: Account) -> None:
+    @cached_property
+    def data_dir(self) -> Path:
+        return (
+            Config.account_dir(self.account)
+            / f"browser-{self.channel.lower()}"
+        )
+
+    def login(self) -> None:
         if not self.is_signed_in():
-            self.sign_in(account)
+            self.sign_in()
             if not self.is_signed_in(wait=15000):
                 raise Exception("Sign in did not complete")  # noqa: TRY002
             print("Signed in")  # noqa: T201
@@ -279,7 +295,7 @@ class SafewayBrowserSession(BrowserSession):
         msg = f"Sign in panel did not open after {attempts} attempts"
         raise RuntimeError(msg)
 
-    def sign_in(self, account: Account) -> None:
+    def sign_in(self) -> None:
         if not (modal := self.open_sign_in_modal()):
             return
 
@@ -303,11 +319,11 @@ class SafewayBrowserSession(BrowserSession):
             print("Clicked Sign in with password")  # noqa: T201
             self.page.wait_for_timeout(5000)
 
-        if account.username:
+        if self.account.username:
             self.page.on("response", _log_auth_response)
-            continue_with_password(account.username)
-            if account.password:
-                self.submit_password(modal, account.password)
+            continue_with_password(self.account.username)
+            if self.account.password:
+                self.submit_password(modal, self.account.password)
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
@@ -372,6 +388,7 @@ class LoginSession:
 
     def _login(self) -> None:
         with SafewayBrowserSession(
+            account=self.account,
             headless=self.headless,
             debug_dir=self.debug_dir,
             debug_level=self.debug_level,
@@ -380,7 +397,7 @@ class LoginSession:
             if self.debug_level >= 1:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
-            browser.login(self.account)
+            browser.login()
 
             print("Retrieve session information")  # noqa: T201
             session_cookie = browser.cookie_json("SWY_SHARED_SESSION")

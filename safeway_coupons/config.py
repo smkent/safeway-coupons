@@ -5,10 +5,26 @@ import itertools
 import os
 from pathlib import Path
 
+import platformdirs
+
 from .accounts import Account
 
 
 class Config:
+    @classmethod
+    def state_dir(cls) -> Path:
+        path = platformdirs.user_state_path(
+            appname="safeway-coupons", appauthor="smkent"
+        )
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @classmethod
+    def account_dir(cls, account: Account) -> Path:
+        path = cls.state_dir() / "accounts" / account.username
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     @classmethod
     def load_accounts(cls, config_file: str | None = None) -> list[Account]:
         account = cls.load_account_from_env()
