@@ -1,6 +1,5 @@
 import os
 import sys
-from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
@@ -60,7 +59,6 @@ def test_app_error(
                 "send_email": True,
                 "sendmail": ["/usr/sbin/sendmail"],
                 "debug_level": 0,
-                "debug_dir": Path(),
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
@@ -74,7 +72,6 @@ def test_app_error(
                 "send_email": True,
                 "sendmail": ["/usr/sbin/sendmail"],
                 "debug_level": 2,
-                "debug_dir": Path(),
                 "sleep_level": 2,
                 "dry_run": False,
                 "max_clip_count": 0,
@@ -88,7 +85,6 @@ def test_app_error(
                 "send_email": True,
                 "sendmail": ["/my/special/sendmail"],
                 "debug_level": 0,
-                "debug_dir": Path(),
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
@@ -112,7 +108,6 @@ def test_app_error(
                     "with an argument value with spaces",
                 ],
                 "debug_level": 0,
-                "debug_dir": Path(),
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
@@ -126,7 +121,6 @@ def test_app_error(
                 "send_email": False,
                 "sendmail": ["/usr/sbin/sendmail"],
                 "debug_level": 0,
-                "debug_dir": Path(),
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
@@ -140,7 +134,6 @@ def test_app_error(
                 "send_email": True,
                 "sendmail": ["/usr/sbin/sendmail"],
                 "debug_level": 0,
-                "debug_dir": Path(),
                 "sleep_level": 0,
                 "dry_run": True,
                 "max_clip_count": 42,

@@ -14,8 +14,6 @@ from .models import Offer, OfferMap
 from .session import LoginSession
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from .accounts import Account
 
 
@@ -26,16 +24,12 @@ class ClipResponseError(Exception):
 @dataclass
 class SafewayClient:
     account: Account
-    debug_dir: Path | None = None
     headless: bool = field(default=True, kw_only=True)
     debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
         self.session = LoginSession(
-            self.account,
-            self.debug_dir,
-            headless=self.headless,
-            debug_level=self.debug_level,
+            self.account, headless=self.headless, debug_level=self.debug_level
         )
         self.session_requests.headers["Authorization"] = (
             f"Bearer {self.session.access_token}"

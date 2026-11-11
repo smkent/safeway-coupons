@@ -9,8 +9,6 @@ from .models import Offer, OfferStatus
 from .utils import yield_delay
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from .accounts import Account
 
 CLIP_ERROR_MAX = 5
@@ -21,7 +19,6 @@ class SafewayCoupons:
         self,
         sendmail: list[str] | None = None,
         debug_level: int = 0,
-        debug_dir: Path | None = None,
         sleep_level: int = 0,
         max_clip_count: int = 0,
         max_clip_errors: int = CLIP_ERROR_MAX,
@@ -33,7 +30,6 @@ class SafewayCoupons:
         self.send_email = send_email
         self.sendmail = sendmail or ["/usr/sbin/sendmail"]
         self.debug_level = debug_level
-        self.debug_dir = debug_dir
         self.sleep_level = sleep_level
         self.dry_run = dry_run
         self.max_clip_count = max_clip_count
@@ -44,10 +40,7 @@ class SafewayCoupons:
         print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
         try:
             swy = SafewayClient(
-                account,
-                self.debug_dir,
-                headless=self.headless,
-                debug_level=self.debug_level,
+                account, headless=self.headless, debug_level=self.debug_level
             )
             clipped_offers: list[Offer] = []
             clip_errors: list[ClipError] = []
