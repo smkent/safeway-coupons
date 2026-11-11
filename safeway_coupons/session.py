@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import json
 import re
+import tempfile
 import urllib
 import urllib.parse
 from abc import ABC, abstractmethod
 from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Self
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
@@ -17,10 +19,16 @@ from .config import config
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-    from pathlib import Path
+    from collections.abc import Generator, Mapping
 
-    from patchright.sync_api import Frame, Locator, Page, Playwright, Response
+    from patchright.sync_api import (
+        Cookie,
+        Frame,
+        Locator,
+        Page,
+        Playwright,
+        Response,
+    )
 
     from .accounts import Account
 
@@ -49,13 +57,16 @@ class BrowserSession(ExitStack, ABC):
         return self.page.evaluate("navigator.userAgent")
 
     @property
-    def cookies(self) -> dict[str, str]:
-        return {c["name"]: c["value"] for c in self.page.context.cookies()}
+    def cookies(self) -> Mapping[str, Cookie]:
+        return {c["name"]: c for c in self.page.context.cookies()}
 
-    def cookie_json(self, name: str) -> dict[str, Any]:
-        if not (value := self.cookies.get(name)):
-            raise ValueError(f'Unable to retrieve cookie "{name}"')
-        return json.loads(urllib.parse.unquote(value))
+    def cookie_to_json(self, cookie: Cookie) -> dict[str, Any]:
+        return json.loads(urllib.parse.unquote(cookie["value"]))
+
+    def cookie_from_json(self, cookie: Cookie, value: dict[str, Any]) -> None:
+        cookie["value"] = urllib.parse.quote(
+            json.dumps(value, separators=(",", ":")), safe="!~*'()"
+        )
 
     @cached_property
     def page(self) -> Page:
@@ -176,6 +187,7 @@ class BrowserSession(ExitStack, ABC):
 class SafewayBrowserSession(BrowserSession):
     account: Account
 
+    STATE_FILE_BASE: ClassVar[dict[str, Any]] = {"_version": 1}
     SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
 
     def __post_init__(self) -> None:
@@ -192,6 +204,27 @@ class SafewayBrowserSession(BrowserSession):
             config.account_dir(self.account)
             / f"browser-{self.channel.lower()}"
         )
+
+    @cached_property
+    def state_file(self) -> Path:
+        return self.data_dir / "state.json"
+
+    @property
+    def state(self) -> dict[str, Any]:
+        if not self.state_file.is_file():
+            return self.STATE_FILE_BASE.copy()
+        return json.loads(self.state_file.read_text())
+
+    @state.setter
+    def state(self, value: dict[str, Any]) -> None:
+        new_value = self.STATE_FILE_BASE | value
+        with tempfile.TemporaryDirectory(dir=self.state_file.parent) as td:
+            tf = Path(td) / self.state_file.name
+            with tf.open("w") as file:
+                json.dump(new_value, fp=file, indent=4)
+            tf.replace(self.state_file)
+        if self.debug_level >= 1:
+            print("Wrote state file:", self.state_file)  # noqa: T201
 
     def login(self) -> None:
         if not self.is_signed_in():
@@ -295,7 +328,22 @@ class SafewayBrowserSession(BrowserSession):
         msg = f"Sign in panel did not open after {attempts} attempts"
         raise RuntimeError(msg)
 
+    def restore_saved_device_id(self) -> None:
+        try:
+            cookie = self.cookies["SWY_SHARED_SESSION_INFO"]
+            session_info = self.cookie_to_json(cookie)
+        except (KeyError, ValueError):
+            return
+        if not (device_id := self.state.get("device_id")):
+            return
+        session_info.setdefault("info", {}).setdefault("COMMON", {})[
+            "deviceId"
+        ] = device_id
+        self.cookie_from_json(cookie, session_info)
+        self.page.context.add_cookies([{**cookie}])
+
     def sign_in(self) -> None:
+        self.restore_saved_device_id()
         if not (modal := self.open_sign_in_modal()):
             return
 
@@ -400,14 +448,20 @@ class LoginSession:
             browser.login()
 
             print("Retrieve session information")  # noqa: T201
-            session_cookie = browser.cookie_json("SWY_SHARED_SESSION")
+            session_cookie = browser.cookie_to_json(
+                browser.cookies["SWY_SHARED_SESSION"]
+            )
             self.access_token = session_cookie["accessToken"]
-            session_info = browser.cookie_json("SWY_SHARED_SESSION_INFO")
+            session_info = browser.cookie_to_json(
+                browser.cookies["SWY_SHARED_SESSION_INFO"]
+            )
             device_id = (
                 session_info.get("info", {}).get("COMMON", {}).get("deviceId")
             )
             if self.debug_level >= 1:
                 print(f"Device ID: {device_id}")  # noqa: T201
+            if device_id and not browser.state.get("device_id"):
+                browser.state |= {"device_id": device_id}
             if not (store_id := session_info["info"]["J4U"]["storeId"]):
                 raise Exception("Unable to retrieve store ID")  # noqa: TRY002
             self.store_id = store_id
