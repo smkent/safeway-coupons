@@ -4,7 +4,7 @@ import pytest
 
 from safeway_coupons import SafewayCoupons
 from safeway_coupons.errors import TooManyClipErrors
-from safeway_coupons.models import Offer
+from safeway_coupons.models import OfferMap
 
 from .utils import ClipsTestConfig, create_account, create_offer
 
@@ -12,9 +12,9 @@ from .utils import ClipsTestConfig, create_account, create_offer
 @pytest.mark.usefixtures("http_responses")
 @pytest.mark.usefixtures("login_success")
 def test_safeway_coupons(
-    available_offers: list[Offer], clips: ClipsTestConfig
+    available_offers: OfferMap, clips: ClipsTestConfig
 ) -> None:
-    available_offers.append(create_offer("1138"))
+    available_offers.offers |= {"1138": create_offer("1138")}
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
     app.clip_for_account(create_account())
     assert set(clips.clipped_offer_ids) == {"1138"}
@@ -24,9 +24,9 @@ def test_safeway_coupons(
 @pytest.mark.usefixtures("http_responses")
 @pytest.mark.usefixtures("login_success")
 def test_safeway_coupons_few_clip_errors(
-    available_offers: list[Offer], clips: ClipsTestConfig
+    available_offers: OfferMap, clips: ClipsTestConfig
 ) -> None:
-    available_offers += [create_offer(str(i)) for i in range(5)]
+    available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     clips.fail_response_offer_ids.add("1")
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=5)
     app.clip_for_account(create_account())
@@ -40,9 +40,9 @@ def test_safeway_coupons_few_clip_errors(
     "clip_fail_type", ["fail_http_offer_ids", "fail_response_offer_ids"]
 )
 def test_safeway_coupons_too_many_clip_errors(
-    available_offers: list[Offer], clips: ClipsTestConfig, clip_fail_type: str
+    available_offers: OfferMap, clips: ClipsTestConfig, clip_fail_type: str
 ) -> None:
-    available_offers += [create_offer(str(i)) for i in range(5)]
+    available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     for i in range(1, 4):
         getattr(clips, clip_fail_type).add(str(i))
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=2)
@@ -58,14 +58,16 @@ def test_safeway_coupons_too_many_clip_errors(
     ("sleep_level", "max_sleep"), [(0, 25.0), (1, 1.0), (2, 0.0)]
 )
 def test_safeway_coupons_sleep_time(
-    available_offers: list[Offer],
+    available_offers: OfferMap,
     clips: ClipsTestConfig,
     mock_sleep: mock.MagicMock,
     sleep_level: int,
     max_sleep: float,
 ) -> None:
     offers_count = 100
-    available_offers += [create_offer(str(i)) for i in range(offers_count)]
+    available_offers.offers |= {
+        str(i): create_offer(str(i)) for i in range(offers_count)
+    }
     app = SafewayCoupons(
         send_email=False, sleep_level=sleep_level, max_clip_errors=1
     )

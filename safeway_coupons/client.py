@@ -8,7 +8,7 @@ import requests
 
 from .errors import ClipError, HTTPError
 from .methods import ClipRequest, ClipResponse
-from .models import Offer, OfferList
+from .models import Offer, OfferMap
 from .session import BaseSession, LoginSession
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ class SafewayClient(BaseSession):
             }
         )
 
-    def get_offers(self) -> list[Offer]:
+    def get_offers(self) -> OfferMap:
         try:
             response = self.session_requests.get(
                 "https://www.safeway.com/abs/pub/xapi"
@@ -42,7 +42,7 @@ class SafewayClient(BaseSession):
                 f"&rand={random.randrange(100000, 999999)}"  # noqa: S311
             )
             response.raise_for_status()
-            return OfferList.from_dict(response.json()).offers
+            return OfferMap.from_dict(response.json())
         except requests.exceptions.HTTPError as e:
             raise HTTPError(e, response) from e
 
