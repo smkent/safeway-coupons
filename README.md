@@ -10,7 +10,7 @@ Automatic coupon clipper for Safeway's online "Safeway for U" coupons
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 [![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)](https://github.com/smkent/safeway-coupons)
 
-**safeway-coupons** is a script that will log in to an account on safeway.com,
+**safeway-coupons** is a tool that will log in to an account on safeway.com,
 and attempt to select all of the "Safeway for U" electronic coupons on the site
 so they don't have to each be clicked manually.
 
