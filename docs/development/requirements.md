@@ -5,6 +5,7 @@ icon: lucide/bookmark-check
 
 # Prerequisites
 
+- [x] [**Google Chrome**][google-chrome]
 - [x] [**git** for version control][git]
 - [x] [**mise**][mise] tool manager: `curl https://mise.run | sh` or
   [alternate installation method][mise-installation]
@@ -17,6 +18,7 @@ icon: lucide/bookmark-check
         * [Astral's **uv** Python project manager][uv]
 
 [git]: https://git-scm.com
+[google-chrome]: https://www.google.com/chrome/
 [mise-installation]: https://mise.jdx.dev/installing-mise.html
 [mise]: https://mise.jdx.dev
 [python-versions]: https://devguide.python.org/versions/

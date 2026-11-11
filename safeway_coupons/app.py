@@ -100,6 +100,13 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Continue clipping coupons for the next account on error",
     )
+    arg_parser.add_argument(
+        "-H",
+        "--no-headless",
+        dest="headless",
+        action="store_false",
+        help="Run with browser visible (disable headless mode)",
+    )
     return arg_parser.parse_args()
 
 
@@ -119,6 +126,7 @@ def main() -> None:
         sleep_level=args.sleep_level,
         dry_run=args.dry_run,
         max_clip_count=args.max_clip_count,
+        headless=args.headless,
     )
     errors = 0
     try:

@@ -28,6 +28,7 @@ class SafewayCoupons:
         *,
         send_email: bool = True,
         dry_run: bool = False,
+        headless: bool = True,
     ) -> None:
         self.send_email = send_email
         self.sendmail = sendmail or ["/usr/sbin/sendmail"]
@@ -37,11 +38,17 @@ class SafewayCoupons:
         self.dry_run = dry_run
         self.max_clip_count = max_clip_count
         self.max_clip_errors = max_clip_errors
+        self.headless = headless
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
         try:
-            swy = SafewayClient(account, self.debug_dir)
+            swy = SafewayClient(
+                account,
+                self.debug_dir,
+                headless=self.headless,
+                debug_level=self.debug_level,
+            )
             clipped_offers: list[Offer] = []
             clip_errors: list[ClipError] = []
             offers = swy.get_offers()

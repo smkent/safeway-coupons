@@ -1,18 +1,29 @@
+from __future__ import annotations
+
 import json
 import time
-import urllib.parse
-from collections.abc import Iterator, Mapping
-from unittest import mock
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import pytest
-import requests
 import responses
-import undetected_chromedriver as uc
-from selenium.webdriver.support.wait import WebDriverWait
 
+from safeway_coupons import session
 from safeway_coupons.models import OfferMap
 
 from .utils import ClipsTestConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+    from unittest import mock
+
+    import requests
+
+
+@pytest.fixture
+def mock_sleep() -> Iterator[mock.MagicMock]:
+    with patch.object(time, "sleep") as obj:
+        yield obj
 
 
 @pytest.fixture
@@ -22,36 +33,21 @@ def http_responses() -> Iterator[responses.RequestsMock]:
 
 
 @pytest.fixture(autouse=True)
-def mock_undetected_chromedriver(
-    mock_web_driver_wait: mock.MagicMock,
-    mock_sleep: mock.MagicMock,
-) -> Iterator[mock.MagicMock]:
-    with mock.patch.object(uc, "Chrome") as mock_uc:
-        mock_driver = mock_uc.return_value
-        mock_driver.quit.side_effect = lambda *a, **kw: mock_sleep.reset_mock()
-        yield mock_driver
-
-
-@pytest.fixture(autouse=True)
-def mock_web_driver_wait() -> Iterator[mock.MagicMock]:
-    with mock.patch.object(WebDriverWait, "until") as mock_wdw:
-        yield mock_wdw
+def mock_browser_driver(mock_sleep: MagicMock) -> Iterator[MagicMock]:
+    with patch.object(session, "SafewayBrowserSession", autospec=True) as obj:
+        instance = obj.return_value.__enter__.return_value
+        instance.user_agent = "UnitTestUserAgent/1.0"
+        yield obj
 
 
 @pytest.fixture
-def login_success(mock_undetected_chromedriver: mock.MagicMock) -> None:
+def login_success(mock_browser_driver: MagicMock) -> None:
     cookies = {
         "SWY_SHARED_SESSION": {"accessToken": "test_token"},
         "SWY_SHARED_SESSION_INFO": {"info": {"J4U": {"storeId": 42}}},
     }
 
-    def _get_cookie(name: str) -> dict[str, str | None]:
-        value = cookies.get(name)
-        return {
-            "value": urllib.parse.quote(json.dumps(value)) if value else None
-        }
-
-    mock_undetected_chromedriver.get_cookie.side_effect = _get_cookie
+    mock_browser_driver.cookies = cookies
     return
 
 
@@ -109,9 +105,3 @@ def available_offers(http_responses: responses.RequestsMock) -> OfferMap:
         ),
     )
     return offer_map
-
-
-@pytest.fixture
-def mock_sleep() -> Iterator[mock.MagicMock]:
-    with mock.patch.object(time, "sleep") as obj:
-        yield obj

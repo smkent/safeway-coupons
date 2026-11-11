@@ -19,73 +19,38 @@ so they don't have to each be clicked manually.
 Safeway's sign in page is protected by a web application firewall (WAF).
 safeway-coupons performs authentication using a headless instance of Google
 Chrome. Authentication may fail based on your IP's reputation, either by
-presenting a CAPTCHA or denying sign in attempts altogether. safeway-coupons
-currently does not have support for prompting the user to solve CAPTCHAs.
+presenting an interactive challenge or denying sign in attempts altogether.
+
+safeway-coupons currently does not have support for prompting the user to solve
+interactive challenges.
+
+Safeway's sign in page may also require an email verification code. Support for
+email verification codes is being evaluated.
 
 Once a signed in session is established, coupon clipping is performed using HTTP
 requests via [requests][requests].
 
-## Installation and usage with Docker
-
-A Docker container is provided which runs safeway-coupons with cron. The cron
-schedule and your Safeway account details may be configured using environment
-variables, or with an accounts file.
-
-Example `compose.yaml` with configuration via environment variables:
-
-```yaml
-services:
-  safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
-    environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
-      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: very_secret
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
-      # EXTRA_ARGS: --debug  # Optional
-    restart: unless-stopped
-```
-
-Example `compose.yaml` with configuration via accounts file:
-
-```yaml
-services:
-  safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
-    environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
-      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNTS_FILE: /accounts_file
-      # EXTRA_ARGS: --debug  # Optional
-    restart: unless-stopped
-    volumes:
-      - path/to/safeway_accounts_file:/accounts_file:ro
-```
-
-Start the container by running:
-
-```sh
-docker compose up -d
-```
-
-Debugging information can be viewed in the container log:
-
-```sh
-docker compose logs -f
-```
-
-## Installation from PyPI
+## Installation and usage
 
 ### Prerequisites
 
-* Google Chrome (for authentication performed via Selenium).
+* [Google Chrome][google-chrome]
+  (for authentication performed via [patchright][patchright]).
 * Optional: `sendmail` (for email support)
 
 ### Installation
+
+Installation with [`uv`][uv-tool] or [`pipx`][pipx] is recommended:
+
+```sh
+uv tool install safeway-coupons
+```
+
+```sh
+pipx install safeway-coupons
+```
+
+Installation with `pip` is also available:
 
 ```sh
 pip install safeway-coupons
@@ -142,6 +107,59 @@ option:
 safeway-coupons -c path/to/config/file
 ```
 
+## Installation and usage with Docker Compose
+
+A Docker container is provided which runs safeway-coupons with cron. The cron
+schedule and your Safeway account details may be configured using environment
+variables, or with an accounts file.
+
+Example `compose.yaml` with configuration via environment variables:
+
+```yaml
+services:
+  safeway-coupons:
+    image: ghcr.io/smkent/safeway-coupons:latest
+    environment:
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
+      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
+      SMTPHOST: your.smtp.host
+      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
+      SAFEWAY_ACCOUNT_PASSWORD: very_secret
+      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
+      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      # EXTRA_ARGS: --debug  # Optional
+    restart: unless-stopped
+```
+
+Example `compose.yaml` with configuration via accounts file:
+
+```yaml
+services:
+  safeway-coupons:
+    image: ghcr.io/smkent/safeway-coupons:latest
+    environment:
+      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
+      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
+      SMTPHOST: your.smtp.host
+      SAFEWAY_ACCOUNTS_FILE: /accounts_file
+      # EXTRA_ARGS: --debug  # Optional
+    restart: unless-stopped
+    volumes:
+      - path/to/safeway_accounts_file:/accounts_file:ro
+```
+
+Start the container by running:
+
+```sh
+docker compose up -d
+```
+
+Debugging information can be viewed in the container log:
+
+```sh
+docker compose logs -f
+```
+
 ## Development
 
 ### Invocation with `docker compose`
@@ -182,4 +200,8 @@ Licensed under the GNU General Public License v3.0 or later
 This project is based on and maintained with [copier-project][copier-project].
 
 [copier-project]: https://smkent.github.io/copier-project
+[google-chrome]: https://www.google.com/chrome/
+[patchright]: https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python
+[pipx]: https://pipx.pypa.io
 [requests]: https://requests.readthedocs.io/en/latest/
+[uv-tool]: https://docs.astral.sh/uv/guides/tools/
