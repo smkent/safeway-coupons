@@ -12,6 +12,8 @@ nav = [
     "index.md",
     "license.md",
     "contributing.md",
+  ] },
+  { "Development" = [
     { "Development" = [
       "development/requirements.md",
       "development/workflow.md",
@@ -22,7 +24,6 @@ nav = [
       "releasing.md",
     ] },
   ] },
-  { "API Reference" = "api.md" },
 ]
 
 # ----------------------------------------------------------------------------
