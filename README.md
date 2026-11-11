@@ -17,15 +17,18 @@ so they don't have to each be clicked manually.
 ## Design notes
 
 Safeway's sign in page is protected by a web application firewall (WAF).
-safeway-coupons performs authentication using a headless instance of Google
-Chrome. Authentication may fail based on your IP's reputation, either by
-presenting an interactive challenge or denying sign in attempts altogether.
+safeway-coupons performs authentication using Google Chrome. Authentication may
+fail based on your IP's reputation, either by presenting an interactive
+challenge or denying sign in attempts altogether.
 
 safeway-coupons currently does not have support for prompting the user to solve
 interactive challenges.
 
 Safeway's sign in page may also require an email verification code. Support for
-email verification codes is being evaluated.
+email verification codes is being evaluated. To reduce the frequency of MFA
+challenges, a persistent Google Chrome profile directory is created for each
+account and reused for logins with the same account. These are stored within the
+[User state directory (see `user_state_dir`)][platformdirs-docs].
 
 Once a signed in session is established, coupon clipping is performed using HTTP
 requests via [requests][requests].
@@ -203,5 +206,6 @@ This project is based on and maintained with [copier-project][copier-project].
 [google-chrome]: https://www.google.com/chrome/
 [patchright]: https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python
 [pipx]: https://pipx.pypa.io
+[platformdirs-docs]: https://platformdirs.readthedocs.io/en/stable/platforms.html
 [requests]: https://requests.readthedocs.io/en/latest/
 [uv-tool]: https://docs.astral.sh/uv/guides/tools/

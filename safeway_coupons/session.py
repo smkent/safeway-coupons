@@ -5,21 +5,30 @@ import re
 import tempfile
 import urllib
 import urllib.parse
+from abc import ABC, abstractmethod
 from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
+from .config import config
 from .errors import AuthenticationFailure
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Mapping
 
-    from patchright.sync_api import Frame, Locator, Page, Playwright, Response
+    from patchright.sync_api import (
+        Cookie,
+        Frame,
+        Locator,
+        Page,
+        Playwright,
+        Response,
+    )
 
     from .accounts import Account
 
@@ -33,11 +42,11 @@ class ExceptionWithAttachmentsError(Exception):
 
 
 @dataclass
-class BrowserSession(ExitStack):
+class BrowserSession(ExitStack, ABC):
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
-    debug_dir: Path | None = None
+    debug_dir: Path | None = field(default=None, kw_only=True)
     debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
@@ -48,24 +57,33 @@ class BrowserSession(ExitStack):
         return self.page.evaluate("navigator.userAgent")
 
     @property
-    def cookies(self) -> dict[str, str]:
-        return {c["name"]: c["value"] for c in self.page.context.cookies()}
+    def cookies(self) -> Mapping[str, Cookie]:
+        return {c["name"]: c for c in self.page.context.cookies()}
 
-    def cookie_json(self, name: str) -> dict[str, Any]:
-        if not (value := self.cookies.get(name)):
-            raise ValueError(f'Unable to retrieve cookie "{name}"')
-        return json.loads(urllib.parse.unquote(value))
+    def cookie_to_json(self, cookie: Cookie) -> dict[str, Any]:
+        return json.loads(urllib.parse.unquote(cookie["value"]))
+
+    def cookie_from_json(self, cookie: Cookie, value: dict[str, Any]) -> None:
+        cookie["value"] = urllib.parse.quote(
+            json.dumps(value, separators=(",", ":")), safe="!~*'()"
+        )
 
     @cached_property
     def page(self) -> Page:
         return self.enter_context(self._new_page())
 
+    @property
+    @abstractmethod
+    def data_dir(self) -> Path: ...
+
+    @cached_property
+    def profile_dir(self) -> Path:
+        return self.data_dir / "profile"
+
     @cached_property
     def configured_profile_dir(self) -> Path:
-        tempdir_factory = tempfile.TemporaryDirectory(
-            prefix="safeway-coupons."
-        )
-        dd = Path(self.enter_context(tempdir_factory)) / "browser-profile"
+        dd = self.profile_dir
+        dd.mkdir(parents=True, exist_ok=True)
         prefs_path = dd / "Default" / "Preferences"
         prefs_path.parent.mkdir(parents=True, exist_ok=True)
         prefs = (
@@ -167,6 +185,9 @@ class BrowserSession(ExitStack):
 
 @dataclass
 class SafewayBrowserSession(BrowserSession):
+    account: Account
+
+    STATE_FILE_BASE: ClassVar[dict[str, Any]] = {"_version": 1}
     SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
 
     def __post_init__(self) -> None:
@@ -177,9 +198,37 @@ class SafewayBrowserSession(BrowserSession):
         self.page.goto("https://www.safeway.com")
         return self
 
-    def login(self, account: Account) -> None:
+    @cached_property
+    def data_dir(self) -> Path:
+        return (
+            config.account_dir(self.account)
+            / f"browser-{self.channel.lower()}"
+        )
+
+    @cached_property
+    def state_file(self) -> Path:
+        return self.data_dir / "state.json"
+
+    @property
+    def state(self) -> dict[str, Any]:
+        if not self.state_file.is_file():
+            return self.STATE_FILE_BASE.copy()
+        return json.loads(self.state_file.read_text())
+
+    @state.setter
+    def state(self, value: dict[str, Any]) -> None:
+        new_value = self.STATE_FILE_BASE | value
+        with tempfile.TemporaryDirectory(dir=self.state_file.parent) as td:
+            tf = Path(td) / self.state_file.name
+            with tf.open("w") as file:
+                json.dump(new_value, fp=file, indent=4)
+            tf.replace(self.state_file)
+        if self.debug_level >= 1:
+            print("Wrote state file:", self.state_file)  # noqa: T201
+
+    def login(self) -> None:
         if not self.is_signed_in():
-            self.sign_in(account)
+            self.sign_in()
             if not self.is_signed_in(wait=15000):
                 raise Exception("Sign in did not complete")  # noqa: TRY002
             print("Signed in")  # noqa: T201
@@ -279,7 +328,22 @@ class SafewayBrowserSession(BrowserSession):
         msg = f"Sign in panel did not open after {attempts} attempts"
         raise RuntimeError(msg)
 
-    def sign_in(self, account: Account) -> None:
+    def restore_saved_device_id(self) -> None:
+        try:
+            cookie = self.cookies["SWY_SHARED_SESSION_INFO"]
+            session_info = self.cookie_to_json(cookie)
+        except (KeyError, ValueError):
+            return
+        if not (device_id := self.state.get("device_id")):
+            return
+        session_info.setdefault("info", {}).setdefault("COMMON", {})[
+            "deviceId"
+        ] = device_id
+        self.cookie_from_json(cookie, session_info)
+        self.page.context.add_cookies([{**cookie}])
+
+    def sign_in(self) -> None:
+        self.restore_saved_device_id()
         if not (modal := self.open_sign_in_modal()):
             return
 
@@ -303,11 +367,11 @@ class SafewayBrowserSession(BrowserSession):
             print("Clicked Sign in with password")  # noqa: T201
             self.page.wait_for_timeout(5000)
 
-        if account.username:
+        if self.account.username:
             self.page.on("response", _log_auth_response)
-            continue_with_password(account.username)
-            if account.password:
-                self.submit_password(modal, account.password)
+            continue_with_password(self.account.username)
+            if self.account.password:
+                self.submit_password(modal, self.account.password)
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
@@ -372,6 +436,7 @@ class LoginSession:
 
     def _login(self) -> None:
         with SafewayBrowserSession(
+            account=self.account,
             headless=self.headless,
             debug_dir=self.debug_dir,
             debug_level=self.debug_level,
@@ -380,17 +445,23 @@ class LoginSession:
             if self.debug_level >= 1:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
-            browser.login(self.account)
+            browser.login()
 
             print("Retrieve session information")  # noqa: T201
-            session_cookie = browser.cookie_json("SWY_SHARED_SESSION")
+            session_cookie = browser.cookie_to_json(
+                browser.cookies["SWY_SHARED_SESSION"]
+            )
             self.access_token = session_cookie["accessToken"]
-            session_info = browser.cookie_json("SWY_SHARED_SESSION_INFO")
+            session_info = browser.cookie_to_json(
+                browser.cookies["SWY_SHARED_SESSION_INFO"]
+            )
             device_id = (
                 session_info.get("info", {}).get("COMMON", {}).get("deviceId")
             )
             if self.debug_level >= 1:
                 print(f"Device ID: {device_id}")  # noqa: T201
+            if device_id and not browser.state.get("device_id"):
+                browser.state |= {"device_id": device_id}
             if not (store_id := session_info["info"]["J4U"]["storeId"]):
                 raise Exception("Unable to retrieve store ID")  # noqa: TRY002
             self.store_id = store_id

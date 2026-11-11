@@ -1405,6 +1405,7 @@ default-groups = ["dev", "docs"]
 dependencies = [
     { name = "dataclasses-json" },
     { name = "patchright" },
+    { name = "platformdirs" },
     { name = "requests" },
 ]
 
@@ -1432,6 +1433,7 @@ docs = [
 requires-dist = [
     { name = "dataclasses-json" },
     { name = "patchright", specifier = ">=1.62" },
+    { name = "platformdirs", specifier = ">=4.14" },
     { name = "requests" },
 ]
 

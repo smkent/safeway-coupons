@@ -25,7 +25,12 @@ classifiers = [
   "Typing :: Typed",
 ]
 keywords = []
-dependencies = ["dataclasses-json", "patchright>=1.62", "requests"]
+dependencies = [
+  "dataclasses-json",
+  "patchright>=1.62",
+  "platformdirs>=4.14",
+  "requests",
+]
 
 [project.scripts]
 "safeway-coupons" = "safeway_coupons.__main__:main"

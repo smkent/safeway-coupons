@@ -9,15 +9,22 @@ import pytest
 import responses
 
 from safeway_coupons import session
+from safeway_coupons.config import config
 from safeway_coupons.models import OfferMap
 
 from .utils import ClipsTestConfig
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from pathlib import Path
     from unittest import mock
 
     import requests
+
+
+@pytest.fixture(autouse=True)
+def mock_state_dir(tmp_path: Path) -> None:
+    config.state_dir = tmp_path
 
 
 @pytest.fixture
