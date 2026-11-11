@@ -216,6 +216,20 @@ class SafewayBrowserSession(BrowserSession):
             dismiss_cookie_banner,
         )
 
+        def dismiss_info_modal(modal: Locator) -> None:
+            print("Dismissing personal info confirmation modal")  # noqa: T201
+            # The site reloads the page after the modal is closed
+            with (
+                suppress(PlaywrightTimeoutError),
+                self.page.expect_navigation(timeout=5000),
+            ):
+                modal.get_by_role("button", name="Close", exact=True).click()
+
+        page.add_locator_handler(
+            page.get_by_role("dialog", name="Verify 180 Days Modal"),
+            dismiss_info_modal,
+        )
+
         return page
 
     @property
