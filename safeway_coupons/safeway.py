@@ -46,7 +46,9 @@ class SafewayCoupons:
             clip_errors: list[ClipError] = []
             offers = swy.get_offers()
             unclipped_offers = [
-                o for o in offers if o.status == OfferStatus.Unclipped
+                o
+                for o in offers.offers.values()
+                if o.status == OfferStatus.Unclipped
             ]
             if not unclipped_offers:
                 print("Nothing to do")  # noqa: T201

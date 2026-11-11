@@ -10,7 +10,7 @@ import responses
 import undetected_chromedriver as uc
 from selenium.webdriver.support.wait import WebDriverWait
 
-from safeway_coupons.models import Offer, OfferList
+from safeway_coupons.models import OfferMap
 
 from .utils import ClipsTestConfig
 
@@ -95,8 +95,8 @@ def clips(
 
 
 @pytest.fixture
-def available_offers(http_responses: responses.RequestsMock) -> list[Offer]:
-    offers_list: list[Offer] = []
+def available_offers(http_responses: responses.RequestsMock) -> OfferMap:
+    offer_map: OfferMap = OfferMap(offers={})
     http_responses.add_callback(
         method=responses.GET,
         url=(
@@ -105,12 +105,10 @@ def available_offers(http_responses: responses.RequestsMock) -> list[Offer]:
         callback=lambda request: (
             200,
             {"Content-Type": "application/json"},
-            json.dumps(
-                OfferList(offers=offers_list).to_dict(encode_json=True)
-            ),
+            json.dumps(offer_map.to_dict(encode_json=True)),
         ),
     )
-    return offers_list
+    return offer_map
 
 
 @pytest.fixture
