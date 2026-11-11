@@ -53,7 +53,7 @@ def _send_email(
             subtype=sub,
         )
     p = subprocess.Popen(  # noqa: S603
-        [*sendmail, "-f", account.mail_to, "-t"],
+        [*sendmail, "-f", account.mail_from, "-t"],
         stdin=subprocess.PIPE,
     )
     p.communicate(bytes(msg.as_string(), "UTF-8"))

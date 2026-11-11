@@ -56,7 +56,7 @@ class Config:
         username = os.environ.get("SAFEWAY_ACCOUNT_USERNAME")
         password = os.environ.get("SAFEWAY_ACCOUNT_PASSWORD")
         mail_to = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
-        mail_from = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
+        mail_from = os.environ.get("SAFEWAY_ACCOUNT_MAIL_FROM")
         if username and password:
             return Account(
                 username=username,
