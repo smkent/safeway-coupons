@@ -1,7 +1,6 @@
 services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
-    init: true
     environment:
       CRON_SCHEDULE: 0 2 * * *
       SMTPHOST: your.smtp.host

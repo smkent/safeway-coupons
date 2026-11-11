@@ -2,7 +2,6 @@ services:
   safeway-coupons:
     build: .
     command: safeway-coupons -c /accounts -n -d -m 1
-    init: true
     environment:
       PYTHONUNBUFFERED: 1
     restart: no
