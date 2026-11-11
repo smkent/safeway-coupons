@@ -1,39 +1,38 @@
+from __future__ import annotations
+
 import os
-import sys
-from typing import Any
+from contextlib import nullcontext
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
 
 from safeway_coupons import app
-from safeway_coupons.app import main
+
+if TYPE_CHECKING:
+    from .conftest import MainRunner
 
 
-def test_no_accounts() -> None:
-    with (
-        patch.object(sys, "argv", ["safeway-coupons"]),
-        patch.object(os, "environ", {}),
-        pytest.raises(SystemExit),
-    ):
-        main()
+def test_no_accounts(main_runner: MainRunner) -> None:
+    with patch.object(os, "environ", {}):
+        main_runner(match=1)
 
 
 @pytest.mark.parametrize(
     ("debug_level", "expected_exception"),
     [
-        (0, SystemExit),
+        (0, None),
         (1, Exception),
         (2, Exception),
     ],
 )
 def test_app_error(
-    debug_level: int, expected_exception: type[Exception]
+    main_runner: MainRunner,
+    debug_level: int,
+    expected_exception: type[Exception] | None,
 ) -> None:
     with (
         patch.object(app, "SafewayCoupons") as mock_app,
-        patch.object(
-            sys, "argv", ["safeway-coupons"] + (["-d"] * debug_level)
-        ),
         patch.object(
             os,
             "environ",
@@ -46,8 +45,12 @@ def test_app_error(
         mock_app.return_value.clip_for_account.side_effect = Exception(
             "Test error"
         )
-        with pytest.raises(expected_exception):
-            main()
+        with (
+            pytest.raises(expected_exception)
+            if expected_exception
+            else nullcontext()
+        ):
+            main_runner(*(["-d"] * debug_level), match=1)
 
 
 @pytest.mark.parametrize(
@@ -141,12 +144,26 @@ def test_app_error(
             },
             id="Dry run and max clip count",
         ),
+        pytest.param(
+            ["-H"],
+            {
+                "send_email": True,
+                "sendmail": ["/usr/sbin/sendmail"],
+                "debug_level": 0,
+                "sleep_level": 0,
+                "dry_run": False,
+                "max_clip_count": 0,
+                "headless": False,
+            },
+            id="No headless",
+        ),
     ],
 )
-def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
+def test_args(
+    main_runner: MainRunner, argv: list[str], expected_args: dict[str, Any]
+) -> None:
     with (
         patch.object(app, "SafewayCoupons") as mock_app,
-        patch.object(sys, "argv", ["safeway-coupons", *argv]),
         patch.object(
             os,
             "environ",
@@ -156,5 +173,5 @@ def test_args(argv: list[str], expected_args: dict[str, Any]) -> None:
             },
         ),
     ):
-        main()
+        main_runner(*argv)
     mock_app.assert_called_once_with(**expected_args)
