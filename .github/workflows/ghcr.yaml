@@ -12,26 +12,43 @@ permissions:
   contents: read
 
 concurrency:
-  group: ghcr-cleanup
+  group: ghcr-cleanup-${{ github.event.pull_request.number || 'scheduled' }}
   cancel-in-progress: false
 
 jobs:
-  cleanup:
-    name: Clean up images
+  cleanup-pr:
+    name: Clean up closed pull request image
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       packages: write
     steps:
-      - name: 🧹 Clean up old container images
+      - name: 🧹 Clean up pull request image
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          keep-n-tagged: 5
-          keep-n-untagged: 2
+          delete-tags: pr-${{ github.event.pull_request.number }}
+
+  cleanup:
+    name: Clean up images
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      packages: write
+    steps:
+      - name: 🧹 Delete stray stale images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          keep-n-tagged: 0
+          use-regex: true
+          exclude-tags: ^(\d+|\d+\.\d+|\d+\.\d+\.\d+|latest|edge|${{ github.event.repository.default_branch }})$
+          older-than: 30 days
+
+      - name: 🧹 Delete untagged container images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           delete-untagged: true
-          exclude-tags: |
-            ^\d+(\.\d+){0,2}$
-            ^edge$
-            ^latest$
-            ^main$
