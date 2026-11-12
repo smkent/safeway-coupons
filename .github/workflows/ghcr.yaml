@@ -65,7 +65,7 @@ jobs:
           delete-untagged: true
           older-than: 1 hour
 
-      - name: 🧹 Remove untagged container images
+      - name: 🧹 Remove orphaned container images
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
