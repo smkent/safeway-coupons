@@ -130,6 +130,7 @@ class BrowserSession(ExitStack, ABC):
                 except Exception as e:
                     attachments = []
                     if self.debug_dir:
+                        self.debug_dir.mkdir(parents=True, exist_ok=True)
                         screenshot_path = self.debug_dir / "screenshot.png"
                         with suppress(Exception):
                             page.screenshot(path=screenshot_path)
