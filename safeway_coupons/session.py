@@ -96,6 +96,9 @@ class BrowserSession(ExitStack, ABC):
         # Don't offer to restore crashed sessions
         prefs.setdefault("profile", {})["exit_type"] = "Normal"
         prefs_path.write_text(json.dumps(prefs))
+        # Remove any stale lock files
+        for name in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
+            (dd / name).unlink(missing_ok=True)
         print(f"Browser profile dir (user_data_dir): {dd}")  # noqa: T201
         return dd
 
