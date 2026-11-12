@@ -35,6 +35,7 @@ jobs:
           pip install --quiet uv
           version="$(uvx uv-dynamic-versioning)"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "::notice title=Project version::${version}"
           echo "Project version: \"${version}\"" >> "${GITHUB_STEP_SUMMARY}"
 
   image:
