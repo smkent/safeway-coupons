@@ -3,22 +3,42 @@ from __future__ import annotations
 import configparser
 import itertools
 import os
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Self
 
+from filelock import FileLock, Timeout
+
 from .config import config
+from .errors import AccountLockedError
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 @dataclass
-class Account:
+class Account(ExitStack):
     username: str
     password: str = field(repr=False)
     mail_to: str
     mail_from: str
+
+    def __post_init__(self) -> None:
+        super().__init__()
+
+    def __enter__(self) -> Self:
+        try:
+            self.enter_context(
+                FileLock(self.lock_file, mode=0o600, blocking=False)
+            )
+        except Timeout as e:
+            raise AccountLockedError(e, self) from e
+        return self
+
+    @cached_property
+    def lock_file(self) -> Path:
+        return self.state_dir / "lock"
 
     @cached_property
     def state_dir(self) -> Path:

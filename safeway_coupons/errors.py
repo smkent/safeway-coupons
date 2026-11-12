@@ -18,6 +18,14 @@ class Error(Exception):
 
 
 @dataclass
+class AccountLockedError(Error):
+    account: Account
+
+    def __str__(self) -> str:
+        return f"Account {self.account.username} is in use by another process"
+
+
+@dataclass
 class AuthenticationFailure(Error):  # noqa: N818
     account: Account
     attachments: list[Path] | None = None

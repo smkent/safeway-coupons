@@ -27,6 +27,7 @@ classifiers = [
 keywords = []
 dependencies = [
   "dataclasses-json",
+  "filelock>=4",
   "patchright>=1.62",
   "platformdirs>=4.14",
   "requests",

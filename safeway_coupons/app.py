@@ -49,7 +49,8 @@ def main(
     try:
         for account in accounts:
             try:
-                sc.clip_for_account(account)
+                with account:
+                    sc.clip_for_account(account)
             except Error:
                 if not continue_on_error:
                     raise
