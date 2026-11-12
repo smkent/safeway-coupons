@@ -6,6 +6,7 @@ import traceback
 from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
+from .accounts import Account
 from .config import config
 from .errors import Error
 from .safeway import SafewayCoupons
@@ -29,7 +30,7 @@ def main(
 ) -> None:
     if state_dir:
         config.state_dir = state_dir
-    accounts = config.load_accounts(config_file=accounts_config)
+    accounts = Account.load_all(config_file=accounts_config)
     if not accounts:
         print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
         sys.exit(1)
