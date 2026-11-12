@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   cleanup-pr:
-    name: Remove image for closed pull request ${{ github.event.pull_request.number }}
+    name: Remove pull request image
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -63,4 +63,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           delete-untagged: true
+          older-than: 1 hour
+
+      - name: 🧹 Remove untagged container images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           delete-orphaned-images: true
