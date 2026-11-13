@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 import requests
 import requests.adapters
 
-from .errors import ClipError, HTTPError
-from .methods import ClipRequest, ClipResponse
-from .models import Offer, OfferMap
+from safeway_coupons.errors import ClipError, HTTPError
+from safeway_coupons.models.methods import ClipRequest, ClipResponse
+from safeway_coupons.models.safeway import Offer, OfferMap
+
 from .session import LoginSession
 
 if TYPE_CHECKING:
-    from .accounts import Account
+    from safeway_coupons.account import Account
 
 
 class ClipResponseError(Exception):

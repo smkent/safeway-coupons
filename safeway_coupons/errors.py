@@ -8,8 +8,8 @@ if TYPE_CHECKING:
 
     import requests
 
-    from .accounts import Account
-    from .models import Offer
+    from .account import Account
+    from .models.safeway import Offer
 
 
 @dataclass

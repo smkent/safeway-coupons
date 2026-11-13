@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from safeway_coupons.accounts import Account
-from safeway_coupons.models import Offer, OfferStatus, OfferType
+from safeway_coupons.account import Account
+from safeway_coupons.models.safeway import Offer, OfferStatus, OfferType
 
 
 @dataclass

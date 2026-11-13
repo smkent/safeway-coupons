@@ -8,17 +8,18 @@ from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
 from .errors import Error, TooManyClipErrors
-from .models import OfferType
+from .models.safeway import OfferType
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
-    from .accounts import Account
-    from .models import Offer
+    from .account import Account
+    from .models.safeway import Offer
 
 
 def _send_email(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     subject: str,
     mail_message: list[str],
@@ -61,7 +62,7 @@ def _send_email(
 
 
 def email_clip_results(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     offers: list[Offer],
     debug_level: int,
@@ -95,7 +96,7 @@ def email_clip_results(
 
 
 def email_error(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     error: Error,
     debug_level: int,

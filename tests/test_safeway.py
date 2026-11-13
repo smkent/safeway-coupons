@@ -6,7 +6,7 @@ import pytest
 
 from safeway_coupons import SafewayCoupons
 from safeway_coupons.errors import TooManyClipErrors
-from safeway_coupons.models import Offer, OfferMap
+from safeway_coupons.models.safeway import Offer, OfferMap
 
 from .utils import ClipsTestConfig, create_account, create_offer
 
