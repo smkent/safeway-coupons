@@ -6,7 +6,7 @@ import traceback
 from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
-from .accounts import Account
+from .account import Account
 from .config import config
 from .errors import Error
 from .safeway import SafewayCoupons

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
         Response,
     )
 
-    from safeway_coupons.accounts import Account
+    from safeway_coupons.account import Account
 
 
 class ExceptionWithAttachmentsError(Exception):

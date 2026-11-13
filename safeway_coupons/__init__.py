@@ -3,7 +3,7 @@
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as import_version
 
-from .accounts import Account
+from .account import Account
 from .safeway import SafewayCoupons
 
 try:

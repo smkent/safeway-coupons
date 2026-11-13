@@ -10,7 +10,7 @@ from safeway_coupons.errors import AccountLockedError
 from .utils import create_account
 
 if TYPE_CHECKING:
-    from safeway_coupons.accounts import Account
+    from safeway_coupons.account import Account
 
 
 @pytest.fixture

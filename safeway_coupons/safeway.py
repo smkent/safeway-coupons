@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
     from typing import TypeVar
 
-    from .accounts import Account
+    from .account import Account
 
     T = TypeVar("T")
 

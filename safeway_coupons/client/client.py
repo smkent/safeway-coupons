@@ -14,7 +14,7 @@ from safeway_coupons.models.safeway import Offer, OfferMap
 from .session import LoginSession
 
 if TYPE_CHECKING:
-    from safeway_coupons.accounts import Account
+    from safeway_coupons.account import Account
 
 
 class ClipResponseError(Exception):

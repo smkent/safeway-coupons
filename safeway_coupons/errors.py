@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
     import requests
 
-    from .accounts import Account
+    from .account import Account
     from .models.safeway import Offer
 
 

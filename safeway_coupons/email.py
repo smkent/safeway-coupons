@@ -13,7 +13,7 @@ from .models.safeway import OfferType
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from .accounts import Account
+    from .account import Account
     from .models.safeway import Offer
 
 
