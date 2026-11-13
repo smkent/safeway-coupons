@@ -127,7 +127,11 @@ def available_offers(http_responses: responses.RequestsMock) -> OfferMap:
         callback=lambda request: (
             200,
             {"Content-Type": "application/json"},
-            json.dumps(offer_map.to_dict(encode_json=True)),
+            json.dumps(
+                offer_map.model_dump(
+                    mode="json", by_alias=True, exclude_none=True
+                )
+            ),
         ),
     )
     return offer_map
