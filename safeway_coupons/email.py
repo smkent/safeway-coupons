@@ -8,6 +8,7 @@ from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
 from .errors import Error, TooManyClipErrors
+from .models import OfferType
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -69,7 +70,11 @@ def email_clip_results(
 ) -> None:
     offers_by_type = collections.defaultdict(list)
     for offer in offers:
-        offers_by_type[offer.offer_pgm].append(offer)
+        offers_by_type[
+            offer.offer_pgm.name
+            if isinstance(offer.offer_pgm, OfferType)
+            else offer.offer_pgm
+        ].append(offer)
     mail_subject = f"Safeway coupons: {len(offers)} clipped"
     mail_message: list[str] = [
         f"Safeway account: {account.username}",
@@ -77,7 +82,7 @@ def email_clip_results(
     ]
     for offer_type, offers_this_type in offers_by_type.items():
         mail_message.append(
-            f"    {offer_type.name}: {len(offers_this_type)} coupons"
+            f"    {offer_type}: {len(offers_this_type)} coupons"
         )
     _send_email(
         sendmail,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -63,7 +62,7 @@ class SafewayClient:
                 f"&rand={random.randrange(100000, 999999)}"  # noqa: S311
             )
             response.raise_for_status()
-            return OfferMap.from_dict(response.json())
+            return OfferMap.model_validate(response.json())
         except requests.exceptions.HTTPError as e:
             raise HTTPError(e, response) from e
 
@@ -74,11 +73,11 @@ class SafewayClient:
             response = self.session_requests.post(
                 "https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"
                 f"?storeId={self.session.store_id}",
-                data=json.dumps(request.to_dict(encode_json=True)),
+                data=request.model_dump_json(by_alias=True, exclude_none=True),
                 headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
-            clip_response = ClipResponse.from_dict(response.json())
+            clip_response = ClipResponse.model_validate(response.json())
         except Exception as e:
             raise ClipError(e, response, offer) from e
         if not clip_response.success:

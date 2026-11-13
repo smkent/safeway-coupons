@@ -1,12 +1,17 @@
-from unittest import mock
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
 from safeway_coupons import SafewayCoupons
 from safeway_coupons.errors import TooManyClipErrors
-from safeway_coupons.models import OfferMap
+from safeway_coupons.models import Offer, OfferMap
 
 from .utils import ClipsTestConfig, create_account, create_offer
+
+if TYPE_CHECKING:
+    from unittest import mock
 
 
 @pytest.mark.usefixtures("http_responses")
@@ -50,6 +55,24 @@ def test_safeway_coupons_too_many_clip_errors(
         app.clip_for_account(create_account())
     assert set(clips.clipped_offer_ids) == {"0"}
     assert set(clips.failed_offer_ids) == {"1", "2"}
+
+
+@pytest.mark.usefixtures("http_responses")
+@pytest.mark.usefixtures("login_success")
+def test_safeway_coupons_invalid_offer_type(
+    available_offers: OfferMap, clips: ClipsTestConfig
+) -> None:
+    offer_with_unknown_type = Offer.model_validate(
+        create_offer("2187").model_dump(mode="json") | {"offer_pgm": "XX"}
+    )
+    available_offers.offers |= {
+        "1138": create_offer("1138"),
+        offer_with_unknown_type.offer_id: offer_with_unknown_type,
+    }
+    app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
+    app.clip_for_account(create_account())
+    assert set(clips.clipped_offer_ids) == {"1138"}
+    assert clips.failed_offer_ids == []
 
 
 @pytest.mark.usefixtures("http_responses")

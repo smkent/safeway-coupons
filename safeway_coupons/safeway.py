@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from .client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
-from .models import Offer, OfferStatus
+from .models import Offer, OfferStatus, OfferType
 from .utils import yield_delay
 
 if TYPE_CHECKING:
@@ -45,11 +45,22 @@ class SafewayCoupons:
             clipped_offers: list[Offer] = []
             clip_errors: list[ClipError] = []
             offers = swy.get_offers()
-            unclipped_offers = [
+            all_unclipped_offers = [
                 o
                 for o in offers.offers.values()
                 if o.status == OfferStatus.Unclipped
             ]
+            unclipped_offers = [
+                o
+                for o in all_unclipped_offers
+                if isinstance(o.offer_pgm, OfferType)
+            ]
+            if unknown_count := (
+                len(all_unclipped_offers) - len(unclipped_offers)
+            ):
+                print(  # noqa: T201
+                    f"Skipping {unknown_count} offers with unknown offer types"
+                )
             if not unclipped_offers:
                 print("Nothing to do")  # noqa: T201
                 return
