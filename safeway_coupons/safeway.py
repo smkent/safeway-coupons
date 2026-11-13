@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import random
+import time
 from typing import TYPE_CHECKING
 
 from .client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway import Offer, OfferStatus, OfferType
-from .utils import yield_delay
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+    from typing import TypeVar
+
     from .accounts import Account
+
+    T = TypeVar("T")
 
 CLIP_ERROR_MAX = 5
 
@@ -66,7 +72,7 @@ class SafewayCoupons:
                 return
             rjust_size = len(str(len(unclipped_offers)))
             for i, offer in enumerate(
-                yield_delay(
+                self.yield_delay(
                     unclipped_offers, self.sleep_level, self.debug_level
                 )
             ):
@@ -118,3 +124,24 @@ class SafewayCoupons:
                 send_email=self.send_email and not self.dry_run,
             )
             raise
+
+    @staticmethod
+    def yield_delay(
+        iterable: Iterable[T], sleep_level: int, debug_level: int
+    ) -> Generator[T, None, None]:
+        for count, item in enumerate(iterable):
+            delay_time = 0.0
+            if sleep_level < 2:
+                if sleep_level < 1 and count and count % 12 == 0:
+                    if count % 48 == 0:
+                        delay_time = random.uniform(15.0, 25.0)  # noqa: S311
+                    else:
+                        delay_time = random.uniform(4.0, 8.0)  # noqa: S311
+                    delay_time = round(delay_time, 2)
+                else:
+                    delay_time = random.uniform(0.3, 0.8)  # noqa: S311
+            if delay_time:
+                if debug_level >= 1 and delay_time >= 1:
+                    print(f"Waiting {delay_time} seconds")  # noqa: T201
+                time.sleep(delay_time)
+            yield item
