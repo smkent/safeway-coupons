@@ -140,6 +140,7 @@ cache-keys = [
   { git = { commit = true, tags = true } },
 ]
 default-groups = ["dev", "docs"]
+exclude-newer = "P1W"
 
 [tool.uv-dynamic-versioning]
 pattern = "default-unprefixed"

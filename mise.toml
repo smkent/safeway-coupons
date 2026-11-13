@@ -1,5 +1,8 @@
 min_version = "2026.10.3"
 
+[settings]
+minimum_release_age = "P1W"
+
 [hooks]
 postinstall = [
   "uv sync",

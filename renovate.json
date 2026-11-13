@@ -5,6 +5,7 @@
   "vulnerabilityAlerts": {
     "schedule": ["at any time"]
   },
+  "minimumReleaseAge": "1 week",
   "packageRules": [
     {
       "matchManagers": ["github-actions", "mise", "pep621", "pre-commit"],
