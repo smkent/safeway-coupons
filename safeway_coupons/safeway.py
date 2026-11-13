@@ -42,7 +42,7 @@ class SafewayCoupons:
     accounts: Sequence[Account] = field(default=(), kw_only=True, init=False)
 
     def __post_init__(
-        self, state_dir: Path | None, accounts_config: Path | None
+        self, accounts_config: Path | None, state_dir: Path | None
     ) -> None:
         if state_dir:
             config.state_dir = state_dir

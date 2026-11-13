@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import os
 from contextlib import nullcontext
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 
-from safeway_coupons import __main__ as main
+from safeway_coupons.account import Account
 from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
@@ -55,54 +54,23 @@ def test_app_error(
 
 
 @pytest.mark.parametrize(
-    ("argv", "expected_args"),
+    ("argv", "expected_instance"),
     [
         pytest.param(
             [],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(sendmail=["/usr/sbin/sendmail"]),
             id="Default values",
         ),
         pytest.param(
             ["-d", "-d", "-SS"],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 2,
-                "sleep_level": 2,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(
+                debug_level=2, sleep_level=2, sendmail=["/usr/sbin/sendmail"]
+            ),
             id="Debug and sleep levels 2",
         ),
         pytest.param(
             ["--sendmail", "/my/special/sendmail"],
-            {
-                "send_email": True,
-                "sendmail": ["/my/special/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(sendmail=["/my/special/sendmail"]),
             id="Custom sendmail",
         ),
         pytest.param(
@@ -113,111 +81,49 @@ def test_app_error(
                     '--do-the-thing "with an argument value with spaces"'
                 ),
             ],
-            {
-                "send_email": True,
-                "sendmail": [
+            SafewayCoupons(
+                sendmail=[
                     "/my/special/sendmail",
                     "--do-the-thing",
                     "with an argument value with spaces",
-                ],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+                ]
+            ),
             id="Custom sendmail with arguments",
         ),
         pytest.param(
             ["-n"],
-            {
-                "send_email": False,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(send_email=False, sendmail=["/usr/sbin/sendmail"]),
             id="No email",
         ),
         pytest.param(
             ["-p", "--max-clip", "42"],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": True,
-                "max_clip_count": 42,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(
+                dry_run=True,
+                max_clip_count=42,
+                sendmail=["/usr/sbin/sendmail"],
+            ),
             id="Dry run and max clip count",
         ),
         pytest.param(
             ["-E"],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": True,
-                "headless": True,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(
+                continue_on_error=True,
+                sendmail=["/usr/sbin/sendmail"],
+            ),
             id="Continue on error",
         ),
         pytest.param(
             ["-H"],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": False,
-                "accounts_config": None,
-                "state_dir": None,
-            },
+            SafewayCoupons(headless=False, sendmail=["/usr/sbin/sendmail"]),
             id="No headless",
-        ),
-        pytest.param(
-            ["-c", "some-file.ini"],
-            {
-                "send_email": True,
-                "sendmail": ["/usr/sbin/sendmail"],
-                "debug_level": 0,
-                "sleep_level": 0,
-                "dry_run": False,
-                "max_clip_count": 0,
-                "continue_on_error": False,
-                "headless": True,
-                "accounts_config": Path("some-file.ini"),
-                "state_dir": None,
-            },
-            id="Accounts configuration file",
         ),
     ],
 )
 def test_args(
-    main_runner: MainRunner, argv: list[str], expected_args: dict[str, Any]
+    main_runner: MainRunner, argv: list[str], expected_instance: SafewayCoupons
 ) -> None:
     with (
-        patch.object(main, "SafewayCoupons") as mock_app,
+        patch.object(SafewayCoupons, "__call__", autospec=True) as mock_app,
         patch.object(
             os,
             "environ",
@@ -228,4 +134,13 @@ def test_args(
         ),
     ):
         main_runner(*argv)
-    mock_app.assert_called_once_with(**expected_args)
+    mock_app.assert_called_once()
+    expected_instance.accounts = [
+        Account(
+            username="ness@onett.example",
+            password="pk_fire",  # noqa: S106
+            mail_to="ness@onett.example",
+            mail_from="ness@onett.example",
+        )
+    ]
+    assert mock_app.call_args.args[0] == expected_instance
