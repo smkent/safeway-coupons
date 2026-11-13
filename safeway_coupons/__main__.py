@@ -8,7 +8,7 @@ from typing import Annotated
 from typer import Context, Exit, Option, Typer
 
 from . import version as package_version
-from .app import main as app_main
+from .cli.app import app
 
 cli = Typer(
     help='Automatic coupon clipper for "Safeway for U" coupons',
@@ -128,7 +128,7 @@ def setup(
         raise Exit
     if ctx.invoked_subcommand:
         return
-    app_main(
+    app(
         accounts_config=accounts_config,
         debug_level=debug_level,
         max_clip_count=max_clip_count,

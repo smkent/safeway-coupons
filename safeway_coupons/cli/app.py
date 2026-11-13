@@ -6,16 +6,16 @@ import traceback
 from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
-from .account import Account
-from .config import config
-from .errors import Error
-from .safeway import SafewayCoupons
+from safeway_coupons.account import Account
+from safeway_coupons.config import config
+from safeway_coupons.errors import Error
+from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-def main(
+def app(
     *,
     accounts_config: Path | None = None,
     debug_level: int = 0,

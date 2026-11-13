@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
-from safeway_coupons import app
+from safeway_coupons.cli import app
 
 if TYPE_CHECKING:
-    from .conftest import MainRunner
+    from tests.conftest import MainRunner
 
 
 def test_no_accounts(main_runner: MainRunner) -> None:
