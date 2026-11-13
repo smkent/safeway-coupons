@@ -19,6 +19,10 @@ cli = Typer(
 )
 
 
+class HelpPanel:
+    ADVANCED = "Advanced options"
+
+
 @cli.callback()
 def setup(
     ctx: Context,
@@ -57,16 +61,6 @@ def setup(
             help="Maximum number of coupons to clip (default 0 means all).",
         ),
     ] = 0,
-    sendmail: Annotated[
-        str,
-        Option(
-            "--sendmail",
-            help=(
-                "Path to sendmail and any additional arguments to use when "
-                "sending email."
-            ),
-        ),
-    ] = "/usr/sbin/sendmail",
     send_email: Annotated[
         bool,
         Option(
@@ -115,12 +109,24 @@ def setup(
             help="Run with browser visible (disable headless mode)",
         ),
     ] = True,
+    sendmail: Annotated[
+        str,
+        Option(
+            "--sendmail",
+            help=(
+                "Path to sendmail and any additional arguments to use when "
+                "sending email."
+            ),
+            rich_help_panel=HelpPanel.ADVANCED,
+        ),
+    ] = "/usr/sbin/sendmail",
     state_dir: Annotated[
         Path | None,
         Option(
             "-s",
             "--state-dir",
             help="Directory for persistent state such as browser profiles.",
+            rich_help_panel=HelpPanel.ADVANCED,
         ),
     ] = None,
 ) -> None:
