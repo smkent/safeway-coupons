@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import random
 import time
+from dataclasses import dataclass, field
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 from .client.client import SafewayClient
@@ -10,7 +12,7 @@ from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway import Offer, OfferStatus, OfferType
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable
+    from collections.abc import Generator, Iterable, Sequence
     from typing import TypeVar
 
     from .account import Account
@@ -20,27 +22,20 @@ if TYPE_CHECKING:
 CLIP_ERROR_MAX = 5
 
 
+@dataclass
 class SafewayCoupons:
-    def __init__(
-        self,
-        sendmail: list[str] | None = None,
-        debug_level: int = 0,
-        sleep_level: int = 0,
-        max_clip_count: int = 0,
-        max_clip_errors: int = CLIP_ERROR_MAX,
-        *,
-        send_email: bool = True,
-        dry_run: bool = False,
-        headless: bool = True,
-    ) -> None:
-        self.send_email = send_email
-        self.sendmail = sendmail or ["/usr/sbin/sendmail"]
-        self.debug_level = debug_level
-        self.sleep_level = sleep_level
-        self.dry_run = dry_run
-        self.max_clip_count = max_clip_count
-        self.max_clip_errors = max_clip_errors
-        self.headless = headless
+    debug_level: int = field(default=0, kw_only=True)
+    sleep_level: int = field(default=0, kw_only=True)
+    max_clip_count: int = field(default=0, kw_only=True)
+    max_clip_errors: int = field(default=CLIP_ERROR_MAX, kw_only=True)
+    send_email: bool = field(default=True, kw_only=True)
+    dry_run: bool = field(default=False, kw_only=True)
+    headless: bool = field(default=True, kw_only=True)
+    sendmail: Sequence[str] | None = field(default=None, kw_only=True)
+
+    @cached_property
+    def sendmail_path(self) -> Sequence[str]:
+        return self.sendmail or ["/usr/sbin/sendmail"]
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
@@ -109,7 +104,7 @@ class SafewayCoupons:
 
             print(f"Clipped {len(clipped_offers)} coupons")  # noqa: T201
             email_clip_results(
-                self.sendmail,
+                self.sendmail_path,
                 account,
                 clipped_offers,
                 debug_level=self.debug_level,
@@ -117,7 +112,7 @@ class SafewayCoupons:
             )
         except Error as e:
             email_error(
-                self.sendmail,
+                self.sendmail_path,
                 account,
                 error=e,
                 debug_level=self.debug_level,

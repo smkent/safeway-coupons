@@ -11,6 +11,7 @@ from .errors import Error, TooManyClipErrors
 from .models.safeway import OfferType
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from .account import Account
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def _send_email(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     subject: str,
     mail_message: list[str],
@@ -61,7 +62,7 @@ def _send_email(
 
 
 def email_clip_results(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     offers: list[Offer],
     debug_level: int,
@@ -95,7 +96,7 @@ def email_clip_results(
 
 
 def email_error(
-    sendmail: list[str],
+    sendmail: Sequence[str],
     account: Account,
     error: Error,
     debug_level: int,
