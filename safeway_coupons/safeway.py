@@ -62,7 +62,7 @@ class SafewayCoupons:
         try:
             for account in self.accounts:
                 try:
-                    with account:
+                    with account.lock:
                         self.clip_for_account(account)
                 except Error:
                     if not self.continue_on_error:

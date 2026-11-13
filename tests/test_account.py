@@ -21,13 +21,13 @@ def account() -> Account:
 
 
 def test_account_lock_nested(account: Account) -> None:
-    with account, pytest.raises(AccountLockedError), account:
+    with account.lock, pytest.raises(AccountLockedError), account.lock:
         pass
 
 
 def test_account_lock_stale_lock_file(account: Account) -> None:
     account.lock_file.touch()
-    with account:
+    with account.lock:
         pass
 
 
@@ -35,12 +35,12 @@ def test_account_lock_locked(account: Account) -> None:
     with (
         FileLock(account.lock_file),
         pytest.raises(AccountLockedError),
-        account,
+        account.lock,
     ):
         pass
 
 
 def test_account_lock_released(account: Account) -> None:
     for _ in range(2):
-        with account:
+        with account.lock:
             pass
