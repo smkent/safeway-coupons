@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 from contextlib import nullcontext
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
 
 from safeway_coupons.cli import app
+from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
     from tests.conftest import MainRunner
@@ -32,7 +34,11 @@ def test_app_error(
     expected_exception: type[Exception] | None,
 ) -> None:
     with (
-        patch.object(app, "SafewayCoupons") as mock_app,
+        patch.object(
+            SafewayCoupons,
+            "clip_for_account",
+            side_effect=Exception("Test error"),
+        ),
         patch.object(
             os,
             "environ",
@@ -41,16 +47,11 @@ def test_app_error(
                 "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
             },
         ),
+        pytest.raises(expected_exception)
+        if expected_exception
+        else nullcontext(),
     ):
-        mock_app.return_value.clip_for_account.side_effect = Exception(
-            "Test error"
-        )
-        with (
-            pytest.raises(expected_exception)
-            if expected_exception
-            else nullcontext()
-        ):
-            main_runner(*(["-d"] * debug_level), match=1)
+        main_runner(*(["-d"] * debug_level), match=1)
 
 
 @pytest.mark.parametrize(
@@ -65,7 +66,10 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="Default values",
         ),
@@ -78,7 +82,10 @@ def test_app_error(
                 "sleep_level": 2,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="Debug and sleep levels 2",
         ),
@@ -91,7 +98,10 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="Custom sendmail",
         ),
@@ -114,7 +124,10 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="Custom sendmail with arguments",
         ),
@@ -127,7 +140,10 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="No email",
         ),
@@ -140,9 +156,28 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": True,
                 "max_clip_count": 42,
+                "continue_on_error": False,
                 "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="Dry run and max clip count",
+        ),
+        pytest.param(
+            ["-E"],
+            {
+                "send_email": True,
+                "sendmail": ["/usr/sbin/sendmail"],
+                "debug_level": 0,
+                "sleep_level": 0,
+                "dry_run": False,
+                "max_clip_count": 0,
+                "continue_on_error": True,
+                "headless": True,
+                "accounts_config": None,
+                "state_dir": None,
+            },
+            id="Continue on error",
         ),
         pytest.param(
             ["-H"],
@@ -153,9 +188,28 @@ def test_app_error(
                 "sleep_level": 0,
                 "dry_run": False,
                 "max_clip_count": 0,
+                "continue_on_error": False,
                 "headless": False,
+                "accounts_config": None,
+                "state_dir": None,
             },
             id="No headless",
+        ),
+        pytest.param(
+            ["-c", "some-file.ini"],
+            {
+                "send_email": True,
+                "sendmail": ["/usr/sbin/sendmail"],
+                "debug_level": 0,
+                "sleep_level": 0,
+                "dry_run": False,
+                "max_clip_count": 0,
+                "continue_on_error": False,
+                "headless": True,
+                "accounts_config": Path("some-file.ini"),
+                "state_dir": None,
+            },
+            id="Accounts configuration file",
         ),
     ],
 )

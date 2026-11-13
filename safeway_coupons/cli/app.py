@@ -1,14 +1,8 @@
 from __future__ import annotations
 
 import shlex
-import sys
-import traceback
-from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
-from safeway_coupons.account import Account
-from safeway_coupons.config import config
-from safeway_coupons.errors import Error
 from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
@@ -28,39 +22,15 @@ def app(
     headless: bool = True,
     state_dir: Path | None = None,
 ) -> None:
-    if state_dir:
-        config.state_dir = state_dir
-    accounts = Account.load_all(config_file=accounts_config)
-    if not accounts:
-        print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
-        sys.exit(1)
-    if debug_level >= 2:
-        HTTPConnection.debuglevel = 1
-    sc = SafewayCoupons(
+    SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,
         debug_level=debug_level,
         sleep_level=sleep_level,
         dry_run=dry_run,
         max_clip_count=max_clip_count,
+        continue_on_error=continue_on_error,
         headless=headless,
-    )
-    errors = 0
-    try:
-        for account in accounts:
-            try:
-                with account:
-                    sc.clip_for_account(account)
-            except Error:
-                if not continue_on_error:
-                    raise
-                traceback.print_exc()
-                errors += 1
-        if errors:
-            print(f"Error clipping coupons for {errors} account(s)")  # noqa: T201
-            sys.exit(1)
-    except Exception as e:
-        if debug_level:
-            raise
-        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
-        sys.exit(1)
+        accounts_config=accounts_config,
+        state_dir=state_dir,
+    )()

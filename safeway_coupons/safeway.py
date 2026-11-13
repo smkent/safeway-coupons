@@ -1,21 +1,25 @@
 from __future__ import annotations
 
 import random
+import sys
 import time
-from dataclasses import dataclass, field
+import traceback
+from dataclasses import InitVar, dataclass, field
 from functools import cached_property
+from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
+from .account import Account
 from .client.client import SafewayClient
+from .config import config
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway import Offer, OfferStatus, OfferType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
+    from pathlib import Path
     from typing import TypeVar
-
-    from .account import Account
 
     T = TypeVar("T")
 
@@ -28,14 +32,51 @@ class SafewayCoupons:
     sleep_level: int = field(default=0, kw_only=True)
     max_clip_count: int = field(default=0, kw_only=True)
     max_clip_errors: int = field(default=CLIP_ERROR_MAX, kw_only=True)
+    continue_on_error: bool = field(default=False, kw_only=True)
     send_email: bool = field(default=True, kw_only=True)
     dry_run: bool = field(default=False, kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     sendmail: Sequence[str] | None = field(default=None, kw_only=True)
+    accounts_config: InitVar[Path | None] = field(default=None, kw_only=True)
+    state_dir: InitVar[Path | None] = field(default=None, kw_only=True)
+    accounts: Sequence[Account] = field(default=(), kw_only=True, init=False)
+
+    def __post_init__(
+        self, state_dir: Path | None, accounts_config: Path | None
+    ) -> None:
+        if state_dir:
+            config.state_dir = state_dir
+        self.accounts = Account.load_all(config_file=accounts_config)
 
     @cached_property
     def sendmail_path(self) -> Sequence[str]:
         return self.sendmail or ["/usr/sbin/sendmail"]
+
+    def __call__(self) -> None:
+        if not self.accounts:
+            print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
+            sys.exit(1)
+        if self.debug_level >= 2:
+            HTTPConnection.debuglevel = 1
+        errors = 0
+        try:
+            for account in self.accounts:
+                try:
+                    with account:
+                        self.clip_for_account(account)
+                except Error:
+                    if not self.continue_on_error:
+                        raise
+                    traceback.print_exc()
+                    errors += 1
+            if errors:
+                print(f"Error clipping coupons for {errors} account(s)")  # noqa: T201
+                sys.exit(1)
+        except Exception as e:
+            if self.debug_level:
+                raise
+            print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+            sys.exit(1)
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
