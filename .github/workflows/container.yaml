@@ -33,7 +33,7 @@ jobs:
         id: version
         run: |
           pip install --quiet uv
-          version="$(uvx uv-dynamic-versioning)"
+          version="$(uvx --exclude-newer=P1W uv-dynamic-versioning)"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "::notice title=Project version::${version}"
 
