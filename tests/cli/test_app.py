@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from safeway_coupons.cli import app
+from safeway_coupons import __main__ as main
 from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
@@ -217,7 +217,7 @@ def test_args(
     main_runner: MainRunner, argv: list[str], expected_args: dict[str, Any]
 ) -> None:
     with (
-        patch.object(app, "SafewayCoupons") as mock_app,
+        patch.object(main, "SafewayCoupons") as mock_app,
         patch.object(
             os,
             "environ",

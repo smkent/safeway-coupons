@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 from pathlib import Path  # noqa: TC003
 from typing import Annotated
@@ -8,7 +9,7 @@ from typing import Annotated
 from typer import Context, Exit, Option, Typer
 
 from . import version as package_version
-from .cli.app import app
+from .safeway import SafewayCoupons
 
 cli = Typer(
     help='Automatic coupon clipper for "Safeway for U" coupons',
@@ -128,18 +129,18 @@ def setup(
         raise Exit
     if ctx.invoked_subcommand:
         return
-    app(
-        accounts_config=accounts_config,
-        debug_level=debug_level,
-        max_clip_count=max_clip_count,
-        sendmail=sendmail,
+    SafewayCoupons(
         send_email=send_email,
-        dry_run=dry_run,
+        sendmail=shlex.split(sendmail) if sendmail else None,
+        debug_level=debug_level,
         sleep_level=sleep_level,
+        dry_run=dry_run,
+        max_clip_count=max_clip_count,
         continue_on_error=continue_on_error,
         headless=headless,
+        accounts_config=accounts_config,
         state_dir=state_dir,
-    )
+    )()
 
 
 @cli.command(help=f"Show version ({package_version}) and exit.")
