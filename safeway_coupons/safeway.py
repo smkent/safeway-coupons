@@ -4,7 +4,7 @@ import random
 import time
 from typing import TYPE_CHECKING
 
-from .client import SafewayClient
+from .client.client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway import Offer, OfferStatus, OfferType

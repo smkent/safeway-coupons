@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import responses
 
-from safeway_coupons import session
+from safeway_coupons.client import session
 from safeway_coupons.config import config
 from safeway_coupons.models.safeway import OfferMap
 

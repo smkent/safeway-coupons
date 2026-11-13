@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
-from .errors import AuthenticationFailure
+from safeway_coupons.errors import AuthenticationFailure
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
         Response,
     )
 
-    from .accounts import Account
+    from safeway_coupons.accounts import Account
 
 
 class ExceptionWithAttachmentsError(Exception):
