@@ -8,13 +8,13 @@ from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
 from .errors import Error, TooManyClipErrors
-from .models import OfferType
+from .models.safeway import OfferType
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from .accounts import Account
-    from .models import Offer
+    from .models.safeway import Offer
 
 
 def _send_email(

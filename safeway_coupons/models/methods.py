@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from .models import Model, Offer, OfferType
+from .base import Model
+from .safeway import Offer, OfferType  # noqa: TC001
 
 
 class ClipRequestItem(Model):

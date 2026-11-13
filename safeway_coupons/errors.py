@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     import requests
 
     from .accounts import Account
-    from .models import Offer
+    from .models.safeway import Offer
 
 
 @dataclass

@@ -8,8 +8,8 @@ import requests
 import requests.adapters
 
 from .errors import ClipError, HTTPError
-from .methods import ClipRequest, ClipResponse
-from .models import Offer, OfferMap
+from .models.methods import ClipRequest, ClipResponse
+from .models.safeway import Offer, OfferMap
 from .session import LoginSession
 
 if TYPE_CHECKING:

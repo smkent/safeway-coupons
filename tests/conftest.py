@@ -12,7 +12,7 @@ import responses
 
 from safeway_coupons import session
 from safeway_coupons.config import config
-from safeway_coupons.models import OfferMap
+from safeway_coupons.models.safeway import OfferMap
 
 from .utils import ClipsTestConfig
 

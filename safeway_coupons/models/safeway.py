@@ -4,14 +4,9 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import (
-    BaseModel,
-    BeforeValidator,
-    ConfigDict,
-    Field,
-    PlainSerializer,
-)
-from pydantic.alias_generators import to_camel
+from pydantic import BeforeValidator, Field, PlainSerializer
+
+from .base import Model
 
 
 def datetime_encode(dt: datetime) -> str:
@@ -24,12 +19,6 @@ def datetime_decode(value: str | datetime | None) -> datetime | None:
     if isinstance(value, datetime):
         return value
     return datetime.fromtimestamp(int(value) / 1000, UTC)
-
-
-class Model(BaseModel):
-    model_config = ConfigDict(
-        alias_generator=to_camel, populate_by_name=True, extra="ignore"
-    )
 
 
 MillisDateTime = Annotated[

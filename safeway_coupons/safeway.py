@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from .client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
-from .models import Offer, OfferStatus, OfferType
+from .models.safeway import Offer, OfferStatus, OfferType
 from .utils import yield_delay
 
 if TYPE_CHECKING:
