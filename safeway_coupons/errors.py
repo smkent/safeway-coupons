@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class Error(Exception):
-    exception: Exception
+    attachments: list[Path] | None = field(default=None, kw_only=True)
 
 
 @dataclass
@@ -28,10 +28,14 @@ class AccountLockedError(Error):
 @dataclass
 class AuthenticationFailure(Error):  # noqa: N818
     account: Account
-    attachments: list[Path] | None = None
 
     def __str__(self) -> str:
-        return f"Authentication Failure ({self.exception})"
+        return f"Authentication Failure ({self.__cause__})"
+
+
+@dataclass
+class BrowserSessionError(Error):
+    pass
 
 
 @dataclass
@@ -39,16 +43,18 @@ class HTTPError(Error):
     response: requests.Response
 
     def __str__(self) -> str:
-        return str(self.exception)
+        return str(self.__cause__)
 
 
 @dataclass
 class ClipError(Error):
-    response: requests.Response | None
     offer: Offer
+    message: str | None = field(default=None, kw_only=True)
+    response: requests.Response | None = field(default=None, kw_only=True)
 
     def __str__(self) -> str:
-        return f"Clip Error for {self.offer} ({self.exception})"
+        info = str(self.message or self.__cause__)
+        return f"Clip error for {self.offer}" + (f" ({info})" if info else "")
 
 
 @dataclass
@@ -59,5 +65,5 @@ class TooManyClipErrors(Error):  # noqa: N818
     def __str__(self) -> str:
         return (
             f"Exited after {len(self.errors)} clip errors "
-            f"(Last: {self.exception})"
+            f"(Last: {self.__cause__})"
         )

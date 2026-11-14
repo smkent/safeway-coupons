@@ -134,7 +134,6 @@ class SafewayCoupons:
                         and len(clip_errors) >= self.max_clip_errors
                     ):
                         raise TooManyClipErrors(
-                            e,
                             clipped_offers=clipped_offers,
                             errors=clip_errors,
                         ) from e

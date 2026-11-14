@@ -21,7 +21,8 @@ def test_safeway_coupons(
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
-    app.clip_for_account(create_account())
+    app.accounts = [create_account()]
+    app()
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert not clips.failed_offer_ids
 
@@ -34,7 +35,8 @@ def test_safeway_coupons_few_clip_errors(
     available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     clips.fail_response_offer_ids.add("1")
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=5)
-    app.clip_for_account(create_account())
+    app.accounts = [create_account()]
+    app()
     assert set(clips.clipped_offer_ids) == {"0", "2", "3", "4"}
     assert set(clips.failed_offer_ids) == {"1"}
 
@@ -50,9 +52,12 @@ def test_safeway_coupons_too_many_clip_errors(
     available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     for i in range(1, 4):
         getattr(clips, clip_fail_type).add(str(i))
-    app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=2)
+    app = SafewayCoupons(
+        send_email=False, debug_level=1, sleep_level=2, max_clip_errors=2
+    )
+    app.accounts = [create_account()]
     with pytest.raises(TooManyClipErrors):
-        app.clip_for_account(create_account())
+        app()
     assert set(clips.clipped_offer_ids) == {"0"}
     assert set(clips.failed_offer_ids) == {"1", "2"}
 
@@ -70,7 +75,8 @@ def test_safeway_coupons_invalid_offer_type(
         offer_with_unknown_type.offer_id: offer_with_unknown_type,
     }
     app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
-    app.clip_for_account(create_account())
+    app.accounts = [create_account()]
+    app()
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert clips.failed_offer_ids == []
 
@@ -94,7 +100,8 @@ def test_safeway_coupons_sleep_time(
     app = SafewayCoupons(
         send_email=False, sleep_level=sleep_level, max_clip_errors=1
     )
-    app.clip_for_account(create_account())
+    app.accounts = [create_account()]
+    app()
     if max_sleep:
         assert mock_sleep.call_count == offers_count
         assert max(i.args[0] for i in mock_sleep.call_args_list) <= max_sleep

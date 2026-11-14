@@ -21,10 +21,6 @@ if TYPE_CHECKING:
     from safeway_coupons.account import Account
 
 
-class ClipResponseError(Exception):
-    pass
-
-
 @dataclass
 class SafewayClient:
     account: Account
@@ -69,7 +65,7 @@ class SafewayClient:
             response.raise_for_status()
             return OfferMap.model_validate(response.json())
         except requests.exceptions.HTTPError as e:
-            raise HTTPError(e, response) from e
+            raise HTTPError(response) from e
 
     def clip(self, offer: Offer) -> None:
         request = ClipRequest.from_offer(offer)
@@ -84,12 +80,8 @@ class SafewayClient:
             response.raise_for_status()
             clip_response = ClipResponse.model_validate(response.json())
         except Exception as e:
-            raise ClipError(e, response, offer) from e
+            raise ClipError(offer, response=response) from e
         if not clip_response.success:
             raise ClipError(
-                ClipResponseError(
-                    f"Unsuccessful clip response for coupon {offer}"
-                ),
-                response,
-                offer,
+                offer, message="Unsuccessful clip status in response content"
             )
