@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,11 +44,13 @@ class HTTPError(Error):
 
 @dataclass
 class ClipError(Error):
-    response: requests.Response | None
     offer: Offer
+    message: str | None = field(default=None, kw_only=True)
+    response: requests.Response | None = field(default=None, kw_only=True)
 
     def __str__(self) -> str:
-        return f"Clip Error for {self.offer} ({self.__cause__})"
+        info = str(self.message or self.__cause__)
+        return f"Clip error for {self.offer}" + (f" ({info})" if info else "")
 
 
 @dataclass
