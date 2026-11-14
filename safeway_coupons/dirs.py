@@ -37,7 +37,7 @@ class DirsMixin:
     def state_subdir(self) -> Path:
         return Path()
 
-    @property  # Not cached, so it follows changes to `dirs.state`
+    @property
     def state_dir(self) -> Path:
         return dirs.state_path(self.state_subdir)
 
