@@ -37,16 +37,16 @@ class SafewayCoupons:
     dry_run: bool = field(default=False, kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     sendmail: Sequence[str] | None = field(default=None, kw_only=True)
-    accounts_config: InitVar[Path | None] = field(default=None, kw_only=True)
+    accounts_config: Path | None = field(default=None, kw_only=True)
     state_dir: InitVar[Path | None] = field(default=None, kw_only=True)
-    accounts: Sequence[Account] = field(default=(), kw_only=True, init=False)
 
-    def __post_init__(
-        self, accounts_config: Path | None, state_dir: Path | None
-    ) -> None:
+    def __post_init__(self, state_dir: Path | None) -> None:
         if state_dir:
             config.state_dir = state_dir
-        self.accounts = Account.load_all(config_file=accounts_config)
+
+    @cached_property
+    def accounts(self) -> Sequence[Account]:
+        return Account.load_all(config_file=self.accounts_config)
 
     @cached_property
     def sendmail_path(self) -> Sequence[str]:
