@@ -5,13 +5,14 @@ import sys
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import responses
 
+from safeway_coupons.__main__ import main
 from safeway_coupons.client import session
-from safeway_coupons.config import config
+from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway import OfferMap
 
 from .utils import ClipsTestConfig
@@ -19,11 +20,9 @@ from .utils import ClipsTestConfig
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from pathlib import Path
-    from unittest import mock
+    from unittest.mock import MagicMock
 
     import requests
-
-from safeway_coupons.__main__ import main
 
 
 @dataclass
@@ -42,12 +41,12 @@ def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
 
 
 @pytest.fixture(autouse=True)
-def mock_state_dir(tmp_path: Path) -> None:
-    config.state_dir = tmp_path
+def mock_config_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(dirs, "state", tmp_path / "state")
 
 
 @pytest.fixture
-def mock_sleep() -> Iterator[mock.MagicMock]:
+def mock_sleep() -> Iterator[MagicMock]:
     with patch.object(time, "sleep") as obj:
         yield obj
 

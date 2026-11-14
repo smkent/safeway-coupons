@@ -8,16 +8,22 @@ from unittest.mock import patch
 import pytest
 
 from safeway_coupons.account import Account
+from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
 from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from tests.conftest import MainRunner
 
 
-def test_no_accounts(main_runner: MainRunner) -> None:
-    with patch.object(os, "environ", {}):
-        main_runner(match=1)
+def test_no_accounts(
+    main_runner: MainRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    main_runner(match=1)
 
 
 @pytest.mark.parametrize(
@@ -136,3 +142,17 @@ def test_args(
         )
     ]
     assert mock_app.call_args.args[0] == expected_instance
+
+
+def test_args_state_dir(
+    main_runner: MainRunner, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("SAFEWAY_ACCOUNT_USERNAME", "Ness@onett.example")
+    monkeypatch.setenv("SAFEWAY_ACCOUNT_PASSWORD", "pk_fire")
+    state_dir = tmp_path / "custom-state"
+    with patch.object(SafewayCoupons, "clip_for_account") as mock_clip:
+        main_runner("-s", str(state_dir))
+    mock_clip.assert_called_once()
+    lock_file = state_dir / "accounts" / "ness@onett.example" / "lock"
+    assert lock_file.is_file()
+    assert dirs.state == state_dir.resolve()

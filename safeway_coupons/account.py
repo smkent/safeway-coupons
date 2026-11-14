@@ -6,24 +6,32 @@ import os
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import cached_property
+from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
 from filelock import FileLock, Timeout
 
-from .config import config
+from .dirs import DirsMixin
 from .errors import AccountLockedError
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from pathlib import Path
 
 
 @dataclass
-class Account:
+class Account(DirsMixin):
     username: str
     password: str = field(repr=False)
     mail_to: str
     mail_from: str
+
+    @cached_property
+    def state_subdir(self) -> Path:
+        return Path("accounts") / self.username.lower()
+
+    @cached_property
+    def lock_file(self) -> Path:
+        return self.place_state_file("lock")
 
     @property
     @contextmanager
@@ -33,16 +41,6 @@ class Account:
                 yield
         except Timeout as e:
             raise AccountLockedError(self) from e
-
-    @cached_property
-    def lock_file(self) -> Path:
-        return self.state_dir / "lock"
-
-    @cached_property
-    def state_dir(self) -> Path:
-        path = config.state_dir / "accounts" / self.username.lower()
-        path.mkdir(parents=True, exist_ok=True)
-        return path
 
     @classmethod
     def load_from_env(cls) -> Self | None:
