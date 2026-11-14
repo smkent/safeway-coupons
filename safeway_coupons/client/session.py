@@ -216,7 +216,7 @@ class SafewayBrowserSession(BrowserSession):
         if not self.is_signed_in():
             self.sign_in()
             if not self.is_signed_in(wait=15000):
-                raise Exception("Sign in did not complete")  # noqa: TRY002
+                raise RuntimeError("Sign in did not complete")
             print("Signed in")  # noqa: T201
 
     @cached_property
@@ -372,7 +372,7 @@ class SafewayBrowserSession(BrowserSession):
             return
         print(f"Safeway requires device verification ({destination})")  # noqa: T201
         if self.headless:
-            raise Exception(  # noqa: TRY002
+            raise RuntimeError(
                 f"Device verification required ({destination}),"
                 " which isn't supported in headless mode"
             )
@@ -381,7 +381,7 @@ class SafewayBrowserSession(BrowserSession):
             " then press Enter here to continue: "
         )
         if not self.is_signed_in(wait=15000):
-            raise Exception(  # noqa: TRY002
+            raise RuntimeError(
                 f"Device verification ({destination}) was not completed"
             )
 
@@ -447,7 +447,7 @@ class LoginSession:
             if device_id and not browser.state.get("device_id"):
                 browser.state |= {"device_id": device_id}
             if not (store_id := session_info["info"]["J4U"]["storeId"]):
-                raise Exception("Unable to retrieve store ID")  # noqa: TRY002
+                raise ValueError("Unable to retrieve store ID")
             self.store_id = store_id
 
             if not self.headless:
