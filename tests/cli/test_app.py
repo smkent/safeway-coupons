@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from safeway_coupons.account import Account
+from safeway_coupons.errors import Error
 from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
@@ -20,12 +21,7 @@ def test_no_accounts(main_runner: MainRunner) -> None:
 
 
 @pytest.mark.parametrize(
-    ("debug_level", "expected_exception"),
-    [
-        (0, None),
-        (1, Exception),
-        (2, Exception),
-    ],
+    ("debug_level", "expected_exception"), [(0, None), (1, Error), (2, Error)]
 )
 def test_app_error(
     main_runner: MainRunner,
@@ -33,11 +29,7 @@ def test_app_error(
     expected_exception: type[Exception] | None,
 ) -> None:
     with (
-        patch.object(
-            SafewayCoupons,
-            "clip_for_account",
-            side_effect=Exception("Test error"),
-        ),
+        patch.object(SafewayCoupons, "clip_for_account", side_effect=Error()),
         patch.object(
             os,
             "environ",
