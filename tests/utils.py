@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from safeway_coupons.account import Account
 from safeway_coupons.models.safeway import Offer, OfferStatus, OfferType
 
 
@@ -27,13 +26,4 @@ def create_offer(offer_id: str) -> Offer:
         offer_pgm=OfferType.PersonalizedDeal,
         category_type="Unit Test foods",
         image="https://i.imgur.com/oWSZ8YM.jpg",
-    )
-
-
-def create_account() -> Account:
-    return Account(
-        username="ness@onett.example",
-        password="pk_fire",  # noqa: S106
-        mail_from="ness@onett.example",
-        mail_to="ness@onett.example",
     )

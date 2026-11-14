@@ -11,6 +11,7 @@ import pytest
 import responses
 
 from safeway_coupons.__main__ import main
+from safeway_coupons.account import Account
 from safeway_coupons.client import session
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway import OfferMap
@@ -63,6 +64,16 @@ def mock_browser_driver(mock_sleep: MagicMock) -> Iterator[MagicMock]:
         instance = obj.return_value.__enter__.return_value
         instance.user_agent = "UnitTestUserAgent/1.0"
         yield obj
+
+
+@pytest.fixture
+def account() -> Account:
+    return Account(
+        username="ness@onett.example",
+        password="pk_fire",  # noqa: S106
+        mail_from="ness@onett.example",
+        mail_to="ness@onett.example",
+    )
 
 
 @pytest.fixture
