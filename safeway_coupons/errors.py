@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class Error(Exception):
-    exception: Exception
+    pass
 
 
 @dataclass
@@ -31,7 +31,7 @@ class AuthenticationFailure(Error):  # noqa: N818
     attachments: list[Path] | None = None
 
     def __str__(self) -> str:
-        return f"Authentication Failure ({self.exception})"
+        return f"Authentication Failure ({self.__cause__})"
 
 
 @dataclass
@@ -39,7 +39,7 @@ class HTTPError(Error):
     response: requests.Response
 
     def __str__(self) -> str:
-        return str(self.exception)
+        return str(self.__cause__)
 
 
 @dataclass
@@ -48,7 +48,7 @@ class ClipError(Error):
     offer: Offer
 
     def __str__(self) -> str:
-        return f"Clip Error for {self.offer} ({self.exception})"
+        return f"Clip Error for {self.offer} ({self.__cause__})"
 
 
 @dataclass
@@ -59,5 +59,5 @@ class TooManyClipErrors(Error):  # noqa: N818
     def __str__(self) -> str:
         return (
             f"Exited after {len(self.errors)} clip errors "
-            f"(Last: {self.exception})"
+            f"(Last: {self.__cause__})"
         )

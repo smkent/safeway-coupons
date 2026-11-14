@@ -140,7 +140,7 @@ class BrowserSession(ExitStack, ABC):
                         if screenshot_path.is_file():
                             attachments.append(screenshot_path)
                     raise ExceptionWithAttachmentsError(
-                        e, attachments=attachments
+                        attachments=attachments
                     ) from e
 
     def _user_agent_override(self, p: Playwright) -> str | None:
@@ -432,10 +432,10 @@ class LoginSession:
             self._login()
         except ExceptionWithAttachmentsError as e:
             raise AuthenticationFailure(
-                e, self.account, attachments=e.attachments
+                self.account, attachments=e.attachments
             ) from e
         except Exception as e:
-            raise AuthenticationFailure(e, self.account) from e
+            raise AuthenticationFailure(self.account) from e
 
     def _login(self) -> None:
         with SafewayBrowserSession(

@@ -32,7 +32,7 @@ class Account:
             with FileLock(self.lock_file, mode=0o600, blocking=False):
                 yield
         except Timeout as e:
-            raise AccountLockedError(e, self) from e
+            raise AccountLockedError(self) from e
 
     @cached_property
     def lock_file(self) -> Path:
