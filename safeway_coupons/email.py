@@ -111,7 +111,7 @@ def email_error(
     if isinstance(error, TooManyClipErrors) and error.clipped_offers:
         mail_message += ["Clipped coupons:", ""]
         for offer in error.clipped_offers:
-            mail_message += str(offer)
+            mail_message.append(str(offer))
     _send_email(
         sendmail,
         account,
