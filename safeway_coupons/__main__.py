@@ -9,6 +9,7 @@ from typing import Annotated
 from typer import Context, Exit, Option, Typer
 
 from . import version as package_version
+from .dirs import dirs
 from .safeway import SafewayCoupons
 
 cli = Typer(
@@ -135,6 +136,8 @@ def setup(
         raise Exit
     if ctx.invoked_subcommand:
         return
+    if state_dir:
+        dirs.state = state_dir.resolve()
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,
@@ -145,7 +148,6 @@ def setup(
         continue_on_error=continue_on_error,
         headless=headless,
         accounts_config=accounts_config,
-        state_dir=state_dir,
     )()
 
 

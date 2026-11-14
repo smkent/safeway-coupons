@@ -4,14 +4,13 @@ import random
 import sys
 import time
 import traceback
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from functools import cached_property
 from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
 from .account import Account
 from .client.client import SafewayClient
-from .config import config
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway import Offer, OfferStatus, OfferType
@@ -38,11 +37,6 @@ class SafewayCoupons:
     headless: bool = field(default=True, kw_only=True)
     sendmail: Sequence[str] | None = field(default=None, kw_only=True)
     accounts_config: Path | None = field(default=None, kw_only=True)
-    state_dir: InitVar[Path | None] = field(default=None, kw_only=True)
-
-    def __post_init__(self, state_dir: Path | None) -> None:
-        if state_dir:
-            config.state_dir = state_dir
 
     @cached_property
     def accounts(self) -> Sequence[Account]:

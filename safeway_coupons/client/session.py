@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
+from safeway_coupons.dirs import DirsMixin
 from safeway_coupons.errors import AuthenticationFailure, BrowserSessionError
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class BrowserSession(ExitStack, ABC):
+class BrowserSession(ExitStack, DirsMixin, ABC):
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
@@ -64,22 +65,15 @@ class BrowserSession(ExitStack, ABC):
 
     @property
     @abstractmethod
-    def data_dir(self) -> Path: ...
-
-    @cached_property
-    def profile_dir(self) -> Path:
-        return self.data_dir / "profile"
-
-    @cached_property
-    def debug_dir(self) -> Path:
-        return self.data_dir / "debug"
+    def state_subdir(self) -> Path: ...
 
     @cached_property
     def configured_profile_dir(self) -> Path:
-        dd = self.profile_dir
-        dd.mkdir(parents=True, exist_ok=True)
-        prefs_path = dd / "Default" / "Preferences"
-        prefs_path.parent.mkdir(parents=True, exist_ok=True)
+        profile_subdir = Path("profile")
+        dd = self.place_state_file(profile_subdir)
+        prefs_path = self.place_state_file(
+            profile_subdir / Path("Default") / "Preferences"
+        )
         prefs = (
             json.loads(prefs_path.read_text()) if prefs_path.is_file() else {}
         )
@@ -123,14 +117,14 @@ class BrowserSession(ExitStack, ABC):
                     yield page
                 except Exception as e:
                     attachments = []
-                    if self.debug_dir:
-                        self.debug_dir.mkdir(parents=True, exist_ok=True)
-                        screenshot_path = self.debug_dir / "screenshot.png"
-                        with suppress(Exception):
-                            page.screenshot(path=screenshot_path)
-                            print(f"Screenshot saved: {screenshot_path}")  # noqa: T201
-                        if screenshot_path.is_file():
-                            attachments.append(screenshot_path)
+                    screenshot_path = self.place_state_file(
+                        Path("debug") / "screenshot.png"
+                    )
+                    with suppress(Exception):
+                        page.screenshot(path=screenshot_path)
+                        print(f"Screenshot saved: {screenshot_path}")  # noqa: T201
+                    if screenshot_path.is_file():
+                        attachments.append(screenshot_path)
                     raise BrowserSessionError(attachments=attachments) from e
 
     def _user_agent_override(self, p: Playwright) -> str | None:
@@ -196,29 +190,27 @@ class SafewayBrowserSession(BrowserSession):
         return self
 
     @cached_property
-    def data_dir(self) -> Path:
-        return self.account.state_dir / f"browser-{self.channel.lower()}"
-
-    @cached_property
-    def state_file(self) -> Path:
-        return self.data_dir / "state.json"
+    def state_subdir(self) -> Path:
+        return self.account.state_subdir / f"browser-{self.channel.lower()}"
 
     @property
     def state(self) -> dict[str, Any]:
-        if not self.state_file.is_file():
+        state_file = self.state_dir / "state.json"
+        if not state_file.is_file():
             return self.STATE_FILE_BASE.copy()
-        return json.loads(self.state_file.read_text())
+        return json.loads(state_file.read_text())
 
     @state.setter
     def state(self, value: dict[str, Any]) -> None:
         new_value = self.STATE_FILE_BASE | value
-        with tempfile.TemporaryDirectory(dir=self.state_file.parent) as td:
-            tf = Path(td) / self.state_file.name
+        state_file = self.place_state_file("state.json")
+        with tempfile.TemporaryDirectory(dir=state_file.parent) as td:
+            tf = Path(td) / state_file.name
             with tf.open("w") as file:
                 json.dump(new_value, fp=file, indent=4)
-            tf.replace(self.state_file)
+            tf.replace(state_file)
         if self.debug_level >= 1:
-            print("Wrote state file:", self.state_file)  # noqa: T201
+            print("Wrote state file:", state_file)  # noqa: T201
 
     def login(self) -> None:
         if not self.is_signed_in():
