@@ -8,8 +8,12 @@ import requests
 import requests.adapters
 
 from safeway_coupons.errors import ClipError, HTTPError
-from safeway_coupons.models.methods import ClipRequest, ClipResponse
-from safeway_coupons.models.safeway import Offer, OfferMap
+from safeway_coupons.models.safeway import (
+    ClipRequest,
+    ClipResponse,
+    Offer,
+    OfferMap,
+)
 
 from .session import LoginSession
 
