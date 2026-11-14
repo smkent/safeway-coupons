@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class Error(Exception):
-    pass
+    attachments: list[Path] | None = field(default=None, kw_only=True)
 
 
 @dataclass
@@ -28,10 +28,14 @@ class AccountLockedError(Error):
 @dataclass
 class AuthenticationFailure(Error):  # noqa: N818
     account: Account
-    attachments: list[Path] | None = None
 
     def __str__(self) -> str:
         return f"Authentication Failure ({self.__cause__})"
+
+
+@dataclass
+class BrowserSessionError(Error):
+    pass
 
 
 @dataclass

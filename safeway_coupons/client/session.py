@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
-from safeway_coupons.errors import AuthenticationFailure
+from safeway_coupons.errors import AuthenticationFailure, BrowserSessionError
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
@@ -30,14 +30,6 @@ if TYPE_CHECKING:
     )
 
     from safeway_coupons.account import Account
-
-
-class ExceptionWithAttachmentsError(Exception):
-    def __init__(
-        self, *args: object, attachments: list[Path] | None = None
-    ) -> None:
-        super().__init__(*args)
-        self.attachments = attachments
 
 
 @dataclass
@@ -139,9 +131,7 @@ class BrowserSession(ExitStack, ABC):
                             print(f"Screenshot saved: {screenshot_path}")  # noqa: T201
                         if screenshot_path.is_file():
                             attachments.append(screenshot_path)
-                    raise ExceptionWithAttachmentsError(
-                        attachments=attachments
-                    ) from e
+                    raise BrowserSessionError(attachments=attachments) from e
 
     def _user_agent_override(self, p: Playwright) -> str | None:
         if not self.headless:
@@ -430,7 +420,7 @@ class LoginSession:
     def __post_init__(self) -> None:
         try:
             self._login()
-        except ExceptionWithAttachmentsError as e:
+        except BrowserSessionError as e:
             raise AuthenticationFailure(
                 self.account, attachments=e.attachments
             ) from e

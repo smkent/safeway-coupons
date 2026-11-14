@@ -24,7 +24,7 @@ def _send_email(
     subject: str,
     mail_message: list[str],
     debug_level: int,
-    attachments: list[Path] | None = None,
+    attachments: Sequence[Path] | None = None,
     *,
     send_email: bool,
 ) -> None:
@@ -119,5 +119,5 @@ def email_error(
         mail_message,
         debug_level,
         send_email=send_email,
-        attachments=getattr(error, "attachments", None),
+        attachments=error.attachments,
     )
