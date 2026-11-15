@@ -77,17 +77,6 @@ def account() -> Account:
 
 
 @pytest.fixture
-def login_success(mock_browser_driver: MagicMock) -> None:
-    cookies = {
-        "SWY_SHARED_SESSION": {"accessToken": "test_token"},
-        "SWY_SHARED_SESSION_INFO": {"info": {"J4U": {"storeId": 42}}},
-    }
-
-    mock_browser_driver.cookies = cookies
-    return
-
-
-@pytest.fixture
 def clips(
     http_responses: responses.RequestsMock,
 ) -> ClipsTestConfig:

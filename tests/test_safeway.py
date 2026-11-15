@@ -17,7 +17,6 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.usefixtures("http_responses")
-@pytest.mark.usefixtures("login_success")
 def test_safeway_coupons(
     account: Account, available_offers: OfferMap, clips: ClipsTestConfig
 ) -> None:
@@ -30,7 +29,6 @@ def test_safeway_coupons(
 
 
 @pytest.mark.usefixtures("http_responses")
-@pytest.mark.usefixtures("login_success")
 def test_safeway_coupons_few_clip_errors(
     account: Account, available_offers: OfferMap, clips: ClipsTestConfig
 ) -> None:
@@ -44,7 +42,6 @@ def test_safeway_coupons_few_clip_errors(
 
 
 @pytest.mark.usefixtures("http_responses")
-@pytest.mark.usefixtures("login_success")
 @pytest.mark.parametrize(
     "clip_fail_type", ["fail_http_offer_ids", "fail_response_offer_ids"]
 )
@@ -68,7 +65,6 @@ def test_safeway_coupons_too_many_clip_errors(
 
 
 @pytest.mark.usefixtures("http_responses")
-@pytest.mark.usefixtures("login_success")
 def test_safeway_coupons_invalid_offer_type(
     account: Account, available_offers: OfferMap, clips: ClipsTestConfig
 ) -> None:
@@ -87,7 +83,6 @@ def test_safeway_coupons_invalid_offer_type(
 
 
 @pytest.mark.usefixtures("http_responses")
-@pytest.mark.usefixtures("login_success")
 @pytest.mark.parametrize(
     ("sleep_level", "max_sleep"), [(0, 25.0), (1, 1.0), (2, 0.0)]
 )
