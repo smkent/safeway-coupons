@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from .account import Account
 from .client.client import SafewayClient
+from .client.session import LoginSession
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway.offers import Offer, OfferStatus, OfferType
@@ -37,6 +38,7 @@ class SafewayCoupons:
     headless: bool = field(default=True, kw_only=True)
     sendmail: Sequence[str] | None = field(default=None, kw_only=True)
     accounts_config: Path | None = field(default=None, kw_only=True)
+    login_only: bool = field(default=False, kw_only=True)
 
     @cached_property
     def accounts(self) -> Sequence[Account]:
@@ -52,25 +54,46 @@ class SafewayCoupons:
             sys.exit(1)
         if self.debug_level >= 2:
             HTTPConnection.debuglevel = 1
-        errors = 0
         try:
-            for account in self.accounts:
-                try:
-                    with account.lock:
-                        self.clip_for_account(account)
-                except Error:
-                    if not self.continue_on_error:
-                        raise
-                    traceback.print_exc()
-                    errors += 1
+            errors = sum(not self.run_for_account(a) for a in self.accounts)
             if errors:
-                print(f"Error clipping coupons for {errors} account(s)")  # noqa: T201
+                action = (
+                    "signing in" if self.login_only else "clipping coupons"
+                )
+                print(f"Error {action} for {errors} account(s)")  # noqa: T201
                 sys.exit(1)
         except Exception as e:
             if self.debug_level:
                 raise
             print(f"Error: {e}", file=sys.stderr)  # noqa: T201
             sys.exit(1)
+
+    def run_for_account(self, account: Account) -> bool:
+        try:
+            with account.lock:
+                if self.login_only:
+                    self.login_for_account(account)
+                else:
+                    self.clip_for_account(account)
+        except Error as e:
+            if not (self.continue_on_error or self.login_only):
+                raise
+            if self.login_only and not self.debug_level:
+                print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+            else:
+                traceback.print_exc()
+            return False
+        return True
+
+    def login_for_account(self, account: Account) -> None:
+        action = "Checking sign in" if self.dry_run else "Signing in"
+        print(f"{action} for Safeway account {account.username}")  # noqa: T201
+        LoginSession(
+            account,
+            headless=self.headless,
+            debug_level=self.debug_level,
+            dry_run=self.dry_run,
+        )
 
     def clip_for_account(self, account: Account) -> None:
         print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201

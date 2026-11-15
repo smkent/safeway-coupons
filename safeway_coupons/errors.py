@@ -34,8 +34,24 @@ class AuthenticationFailure(Error):  # noqa: N818
 
 
 @dataclass
+class MultiFactorAuthenticationRequired(AuthenticationFailure):
+    def __str__(self) -> str:
+        return (
+            f"{self.account.username} needs an MFA verification code to"
+            " sign in. Sign in with --login-only from a terminal."
+        )
+
+
+@dataclass
+class NotSignedIn(AuthenticationFailure):
+    def __str__(self) -> str:
+        return f"Account {self.account.username} is not signed in"
+
+
+@dataclass
 class BrowserSessionError(Error):
-    pass
+    def __str__(self) -> str:
+        return str(self.__cause__ or "Browser session error")
 
 
 @dataclass

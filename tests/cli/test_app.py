@@ -115,6 +115,15 @@ def test_app_error(
             SafewayCoupons(headless=False, sendmail=["/usr/sbin/sendmail"]),
             id="No headless",
         ),
+        pytest.param(
+            ["--login-only", "-p"],
+            SafewayCoupons(
+                login_only=True,
+                dry_run=True,
+                sendmail=["/usr/sbin/sendmail"],
+            ),
+            id="Login only dry run",
+        ),
     ],
 )
 def test_args(

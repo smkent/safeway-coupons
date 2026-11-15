@@ -1,11 +1,14 @@
 #!/bin/sh
 
-set -ex
+set -e
 
-args=${EXTRA_ARGS-}
+run_once="${#}"
+
+# shellcheck disable=SC2086,SC2090
+set -- --state-dir=/state ${EXTRA_ARGS-} "${@}"
 if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
     echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
-    args="${args} --accounts-config \"${SAFEWAY_ACCOUNTS_FILE}\""
+    set -- "${@}" --accounts-config "${SAFEWAY_ACCOUNTS_FILE}"
 else
     echo "Using environment variables for configuration"
     if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
@@ -15,13 +18,27 @@ else
     if [ -n "${SAFEWAY_ACCOUNT_MAIL_FROM}" ]; then
         export MAILFROM="${SAFEWAY_ACCOUNT_MAIL_FROM}"
     fi
-    env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST='
+    env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST=' || true
 fi
 
-mkdir -vp /etc/cron.d /var/spool/cron/crontabs
+if [ "${run_once}" -gt 0 ]; then
+    (
+        set -x
+        safeway-coupons "${@}";
+    )
+    exit 0;
+fi
+
+mkdir -p /etc/cron.d /var/spool/cron/crontabs
 (
-    echo "${CRON_SCHEDULE?} safeway-coupons --state-dir=/state ${args} >/proc/1/fd/1 2>/proc/1/fd/2"
+    printf "%s safeway-coupons" "${CRON_SCHEDULE?}"
+    for arg in "${@}"; do
+        printf " '%s'" "$(printf '%s' "${arg}" | sed "s/'/'\\\\''/g")"
+    done
+    printf " >/proc/1/fd/1 2>/proc/1/fd/2\n"
 ) > /var/spool/cron/crontabs/root
+
+set -x
 
 busybox crontab -l
 
