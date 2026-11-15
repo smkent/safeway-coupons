@@ -261,7 +261,9 @@ class SafewayBrowserSession(BrowserSession):
                 suppress(PlaywrightTimeoutError),
                 self.page.expect_navigation(timeout=5000),
             ):
-                modal.get_by_role("button", name="Close", exact=True).click()
+                modal.get_by_role(
+                    "button", name=re.compile(r"^close$", re.IGNORECASE)
+                ).click()
 
         page.add_locator_handler(
             page.get_by_role("dialog", name="Verify 180 Days Modal"),
@@ -272,7 +274,9 @@ class SafewayBrowserSession(BrowserSession):
 
     @property
     def _account_button(self) -> Locator:
-        return self.page.get_by_role("button", name="Account menu", exact=True)
+        return self.page.get_by_role(
+            "button", name=re.compile(r"^account menu$", re.IGNORECASE)
+        )
 
     def is_signed_in(self, *, wait: int | None = None) -> bool:
         greeting = self._account_button.locator(".user-greeting")
@@ -290,7 +294,9 @@ class SafewayBrowserSession(BrowserSession):
     def open_sign_in_modal(self) -> Locator | None:
         if not (panel := self.open_sign_in_panel()):
             return None
-        panel.get_by_role("button", name="Sign in", exact=True).click()
+        panel.get_by_role(
+            "button", name=re.compile(r"^sign in$", re.IGNORECASE)
+        ).click()
         modal = self.page.get_by_role("dialog", name="Sign in modal")
         modal.wait_for()
         print("Sign in modal open")  # noqa: T201
@@ -375,7 +381,9 @@ class SafewayBrowserSession(BrowserSession):
                 "/csms/authn/factors/password/verify"
             )
         ) as verify:
-            modal.get_by_role("button", name="Sign in", exact=True).click()
+            modal.get_by_role(
+                "button", name=re.compile(r"^sign in$", re.IGNORECASE)
+            ).click()
         print("Clicked Sign in")  # noqa: T201
         if (destination := self.verification_required(verify.value)) is None:
             return
@@ -407,7 +415,9 @@ class SafewayBrowserSession(BrowserSession):
             option.click()
             print(f"Verifying with: {option.inner_text().strip()}")  # noqa: T201
         with self.page.expect_response(_factor_action("send")) as send:
-            modal.get_by_role("button", name="Continue", exact=True).click()
+            modal.get_by_role(
+                "button", name=re.compile(r"^continue$", re.IGNORECASE)
+            ).click()
         if not send.value.ok:
             raise RuntimeError(
                 f"Sending verification code failed ({send.value.status})"
@@ -427,7 +437,9 @@ class SafewayBrowserSession(BrowserSession):
             tries += 1
             code_box.fill(code)
             with self.page.expect_response(_factor_action("verify")) as verify:
-                modal.get_by_role("button", name="Sign in", exact=True).click()
+                modal.get_by_role(
+                    "button", name=re.compile(r"^sign in$", re.IGNORECASE)
+                ).click()
             if verify.value.ok:
                 print("Device verified")  # noqa: T201
                 return
