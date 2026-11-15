@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
 
 from safeway_coupons import SafewayCoupons
 from safeway_coupons.errors import TooManyClipErrors
-from safeway_coupons.models.safeway import Offer, OfferMap
+from safeway_coupons.models.safeway.offers import Offer, OfferMap
 
 from .utils import ClipsTestConfig, create_offer
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from unittest import mock
 
+    import responses
+
     from safeway_coupons.account import Account
+
+    from .conftest import MainRunner
 
 
 @pytest.mark.usefixtures("http_responses")
@@ -112,3 +118,86 @@ def test_safeway_coupons_sleep_time(
         str(i) for i in range(offers_count)
     }
     assert not clips.failed_offer_ids
+
+
+@pytest.fixture
+def mail_log(tmp_path: Path) -> Path:
+    return tmp_path / "mail.log"
+
+
+@pytest.fixture
+def sendmail(tmp_path: Path, mail_log: Path) -> Path:
+    script = tmp_path / "sendmail"
+    script.write_text(f'#!/bin/sh\ncat >> "{mail_log}"\n')
+    script.chmod(0o755)
+    return script
+
+
+@pytest.fixture
+def two_accounts_config(tmp_path: Path) -> Path:
+    config = tmp_path / "two_accounts"
+    config.write_text(
+        os.linesep.join(
+            (
+                "[ness@onett.example]",
+                "password = pk_fire",
+                "",
+                "[paula@twoson.example]",
+                "password = pk_fire",
+            )
+        )
+    )
+    return config
+
+
+def test_dry_run_signs_in(
+    main_runner: MainRunner,
+    accounts_config: Path,
+    sendmail: Path,
+    mail_log: Path,
+    available_offers: OfferMap,
+    http_responses: responses.RequestsMock,
+    mock_browser_driver: mock.MagicMock,
+) -> None:
+    available_offers.offers |= {"1138": create_offer("1138")}
+    main_runner("-c", str(accounts_config), "--sendmail", str(sendmail), "-p")
+    browser = mock_browser_driver.return_value.__enter__.return_value
+    browser.login.assert_called_once()
+    assert [c.request.method for c in http_responses.calls] == ["GET"]
+    assert not mail_log.exists()
+
+
+@pytest.mark.usefixtures("http_responses")
+@pytest.mark.parametrize(
+    ("argv", "login_calls", "status"),
+    [
+        pytest.param([], 2, "Signing in", id="live"),
+        pytest.param(["-p"], 0, "Checking sign in", id="dry_run"),
+    ],
+)
+def test_login_only(
+    main_runner: MainRunner,
+    two_accounts_config: Path,
+    sendmail: Path,
+    mail_log: Path,
+    mock_browser_driver: mock.MagicMock,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    login_calls: int,
+    status: str,
+) -> None:
+    main_runner(
+        "-c",
+        str(two_accounts_config),
+        "--sendmail",
+        str(sendmail),
+        "--login-only",
+        *argv,
+    )
+    browser = mock_browser_driver.return_value.__enter__.return_value
+    assert browser.login.call_count == login_calls
+    out, err = capsys.readouterr()
+    for username in ("ness@onett.example", "paula@twoson.example"):
+        assert f"{status} for Safeway account {username}" in out
+    assert not err
+    assert not mail_log.exists()

@@ -121,6 +121,13 @@ def setup(
             rich_help_panel=HelpPanel.ADVANCED,
         ),
     ] = "/usr/sbin/sendmail",
+    login_only: Annotated[
+        bool,
+        Option(
+            "--login-only",
+            help="Sign in to each account without clipping any coupons.",
+        ),
+    ] = False,
     state_dir: Annotated[
         Path | None,
         Option(
@@ -148,6 +155,7 @@ def setup(
         continue_on_error=continue_on_error,
         headless=headless,
         accounts_config=accounts_config,
+        login_only=login_only,
     )()
 
 

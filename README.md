@@ -24,9 +24,9 @@ challenge or denying sign in attempts altogether.
 safeway-coupons currently does not have support for prompting the user to solve
 interactive challenges.
 
-Safeway's sign in page may also require an email verification code. Support for
-email verification codes is being evaluated. To reduce the frequency of MFA
-challenges, a persistent Google Chrome profile directory is created for each
+Safeway's sign in page may also require verifying a new device with a
+multi-factor authentication (MFA) verification code. To reduce how often this
+happens, a persistent Google Chrome profile directory is created for each
 account and reused for logins with the same account. These are stored within the
 [User state directory (see `user_state_dir`)][platformdirs-docs].
 
@@ -114,6 +114,25 @@ option:
 safeway-coupons -c path/to/config/file
 ```
 
+### Multi-factor authentication (MFA) verification codes
+
+Safeway's sign in page will ask for an MFA code when signing in from a new
+device, and occasionally on other logins.
+
+When run interactively, safeway-coupons can request Safeway's sign in page to
+send an MFA code to the first listed destination for your account (e.g. email or
+text). safeway-coupons will then prompt for the code in the terminal to complete
+sign in. To sign in interactively with an MFA code, run:
+
+```sh
+safeway-coupons -c path/to/config/file --login-only
+```
+
+Scheduled and noninteractive invocations of safeway-coupons cannot obtain or
+enter MFA verification codes. If the sign in page asks for an MFA code,
+safeway-coupons exits with an error message. When this happens, run
+safeway-coupons interactively to refresh your sign in session.
+
 ## Installation and usage with Docker Compose
 
 A Docker container is provided which runs safeway-coupons with cron. The cron
@@ -174,6 +193,13 @@ Debugging information can be viewed in the container log:
 
 ```sh
 docker compose logs -f
+```
+
+To sign in and enter a multi-factor authentication (MFA) verification code, run
+safeway-coupons interactively in the running container:
+
+```sh
+docker compose exec -it safeway-coupons /entrypoint --login-only
 ```
 
 ## Development

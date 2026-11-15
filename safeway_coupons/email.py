@@ -8,14 +8,14 @@ from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
 from .errors import Error, TooManyClipErrors
-from .models.safeway import OfferType
+from .models.safeway.offers import OfferType
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
     from .account import Account
-    from .models.safeway import Offer
+    from .models.safeway.offers import Offer
 
 
 def _send_email(

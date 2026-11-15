@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 import requests
 import requests.adapters
 
 from safeway_coupons.errors import ClipError, HTTPError
-from safeway_coupons.models.safeway import (
+from safeway_coupons.models.safeway.offers import (
     ClipRequest,
     ClipResponse,
     Offer,
@@ -28,31 +29,36 @@ class SafewayClient:
     debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
-        self.session = LoginSession(
-            self.account, headless=self.headless, debug_level=self.debug_level
-        )
         self.session_requests.headers["Authorization"] = (
             f"Bearer {self.session.access_token}"
         )
 
-    @property
+    @cached_property
+    def session(self) -> LoginSession:
+        return LoginSession(
+            self.account,
+            headless=self.headless,
+            debug_level=self.debug_level,
+        )
+
+    @cached_property
     def session_requests(self) -> requests.Session:
-        if not hasattr(self, "_requests"):
-            session = requests.Session()
-            session.mount(
-                "https://", requests.adapters.HTTPAdapter(pool_maxsize=1)
-            )
-            session.headers.update(
-                {
-                    "DNT": "1",
-                    "User-Agent": self.session.user_agent,
-                    "X-SWY_API_KEY": "emjou",
-                    "X-SWY_VERSION": "1.1",
-                    "X-SWY-APPLICATION-TYPE": "web",
-                }
-            )
-            self._requests = session
-        return self._requests
+        session = requests.Session()
+        session.mount(
+            "https://", requests.adapters.HTTPAdapter(pool_maxsize=1)
+        )
+        if not (user_agent := self.session.user_agent):
+            raise ValueError("User agent is not set")
+        session.headers.update(
+            {
+                "DNT": "1",
+                "User-Agent": user_agent,
+                "X-SWY_API_KEY": "emjou",
+                "X-SWY_VERSION": "1.1",
+                "X-SWY-APPLICATION-TYPE": "web",
+            }
+        )
+        return session
 
     def get_offers(self) -> OfferMap:
         try:

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import responses
@@ -14,14 +15,13 @@ from safeway_coupons.__main__ import main
 from safeway_coupons.account import Account
 from safeway_coupons.client import session
 from safeway_coupons.dirs import dirs
-from safeway_coupons.models.safeway import OfferMap
+from safeway_coupons.models.safeway.offers import OfferMap
 
 from .utils import ClipsTestConfig
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from pathlib import Path
-    from unittest.mock import MagicMock
 
     import requests
 
@@ -74,6 +74,24 @@ def account() -> Account:
         mail_from="ness@onett.example",
         mail_to="ness@onett.example",
     )
+
+
+@pytest.fixture
+def accounts_config(tmp_path: Path) -> Path:
+    accounts_file = tmp_path / "test_accounts"
+    accounts_file.write_text(
+        os.linesep.join(
+            (
+                "[_global]",
+                "email_sender = ness@onett.example",
+                "",
+                "[ness@onett.example]",
+                "password = pk_fire",
+                "notify = ness@onett.example",
+            )
+        )
+    )
+    return accounts_file
 
 
 @pytest.fixture

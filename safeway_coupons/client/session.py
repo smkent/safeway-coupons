@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import tempfile
 import urllib
 import urllib.parse
@@ -16,10 +17,16 @@ from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
 from safeway_coupons.dirs import DirsMixin
-from safeway_coupons.errors import AuthenticationFailure, BrowserSessionError
+from safeway_coupons.errors import (
+    AuthenticationFailure,
+    BrowserSessionError,
+    MultiFactorAuthenticationRequired,
+    NotSignedIn,
+)
+from safeway_coupons.models.safeway.auth import AuthErrorResponse, AuthResponse
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Mapping
+    from collections.abc import Callable, Generator, Mapping
 
     from patchright.sync_api import (
         Cookie,
@@ -213,11 +220,13 @@ class SafewayBrowserSession(BrowserSession):
             print("Wrote state file:", state_file)  # noqa: T201
 
     def login(self) -> None:
-        if not self.is_signed_in():
-            self.sign_in()
-            if not self.is_signed_in(wait=15000):
-                raise RuntimeError("Sign in did not complete")
-            print("Signed in")  # noqa: T201
+        if self.is_signed_in():
+            print("Already signed in")  # noqa: T201
+            return
+        self.sign_in()
+        if not self.is_signed_in(wait=15000):
+            raise RuntimeError("Sign in did not complete")
+        print("Signed in")  # noqa: T201
 
     @cached_property
     def page(self) -> Page:
@@ -368,36 +377,89 @@ class SafewayBrowserSession(BrowserSession):
         ) as verify:
             modal.get_by_role("button", name="Sign in", exact=True).click()
         print("Clicked Sign in")  # noqa: T201
-        if (destination := self._verification_required(verify.value)) is None:
+        if (destination := self.verification_required(verify.value)) is None:
             return
         print(f"Safeway requires device verification ({destination})")  # noqa: T201
-        if self.headless:
-            raise RuntimeError(
-                f"Device verification required ({destination}),"
-                " which isn't supported in headless mode"
+        if not self.headless:
+            input(
+                "Complete device verification in the browser window,"
+                " then press Enter here to continue: "
             )
-        input(
-            "Complete device verification in the browser window,"
-            " then press Enter here to continue: "
-        )
-        if not self.is_signed_in(wait=15000):
-            raise RuntimeError(
-                f"Device verification ({destination}) was not completed"
+            if not self.is_signed_in(wait=15000):
+                raise RuntimeError(
+                    f"Device verification ({destination}) was not completed"
+                )
+            return
+        # Check before sending a code that nobody is there to enter
+        if not sys.stdin.isatty():
+            raise MultiFactorAuthenticationRequired(self.account)
+        self.verify_device(modal)
+
+    def verify_device(self, modal: Locator, attempts: int = 3) -> None:
+        def _factor_action(action: str) -> Callable[[Response], bool]:
+            pattern = re.compile(rf"/csms/authn/factors/[^/]+/{action}$")
+            return lambda r: bool(
+                pattern.search(urllib.parse.urlsplit(r.url).path)
             )
 
+        if (radios := modal.get_by_role("radio")).count():
+            option = radios.first.locator("xpath=ancestor::label[1]")
+            option.click()
+            print(f"Verifying with: {option.inner_text().strip()}")  # noqa: T201
+        with self.page.expect_response(_factor_action("send")) as send:
+            modal.get_by_role("button", name="Continue", exact=True).click()
+        if not send.value.ok:
+            raise RuntimeError(
+                f"Sending verification code failed ({send.value.status})"
+            )
+        code_box = modal.get_by_role("textbox", name="Enter Verification Code")
+        code_box.wait_for()
+        tries = 0
+        while tries < attempts:
+            code = input(
+                "Enter the verification code (blank to cancel): "
+            ).strip()
+            if not code:
+                raise RuntimeError("Device verification cancelled")
+            if not re.fullmatch(r"\d{6}", code):
+                print("The verification code is 6 digits")  # noqa: T201
+                continue
+            tries += 1
+            code_box.fill(code)
+            with self.page.expect_response(_factor_action("verify")) as verify:
+                modal.get_by_role("button", name="Sign in", exact=True).click()
+            if verify.value.ok:
+                print("Device verified")  # noqa: T201
+                return
+            print(  # noqa: T201
+                "Verification code not accepted"
+                f" ({self.error_message(verify.value)})"
+            )
+        raise RuntimeError(
+            f"Verification code not accepted after {attempts} attempts"
+        )
+
     @staticmethod
-    def _verification_required(response: Response) -> str | None:
+    def error_message(response: Response) -> str:
         try:
-            body = response.json()
+            body = AuthErrorResponse.model_validate(response.json())
+        except Exception:  # noqa: BLE001
+            body = AuthErrorResponse()
+        return next(
+            (e.message for e in body.errors if e.message),
+            f"HTTP {response.status}",
+        )
+
+    @staticmethod
+    def verification_required(response: Response) -> str | None:
+        try:
+            body = AuthResponse.model_validate(response.json())
         except Exception:  # noqa: BLE001
             # A successful sign in can reload the page before this is read
             return None
-        if body.get("status") != "MFA_REQUIRED":
+        if not body.mfa_required:
             return None
-        return ", ".join(
-            f.get("profile", {}).get("email") or f.get("factorType", "?")
-            for f in body.get("factors", [])
-        )
+        return ", ".join(f.destination for f in body.factors)
 
 
 @dataclass
@@ -408,11 +470,19 @@ class LoginSession:
     user_agent: str | None = field(default=None, init=False)
     headless: bool = field(default=True, kw_only=True)
     debug_level: int = field(default=0, kw_only=True)
+    dry_run: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         try:
             self._login()
+        except AuthenticationFailure:
+            raise
         except BrowserSessionError as e:
+            # Pass on specific failures, such as a verification code being
+            # needed, with the browser session's screenshot
+            if isinstance(e.__cause__, AuthenticationFailure):
+                e.__cause__.attachments = e.attachments
+                raise e.__cause__ from None
             raise AuthenticationFailure(
                 self.account, attachments=e.attachments
             ) from e
@@ -429,7 +499,12 @@ class LoginSession:
             if self.debug_level >= 1:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
-            browser.login()
+            if not self.dry_run:
+                browser.login()
+            elif browser.is_signed_in():
+                print("Already signed in")  # noqa: T201
+            else:
+                raise NotSignedIn(self.account)
 
             print("Retrieve session information")  # noqa: T201
             session_cookie = browser.cookie_to_json(
