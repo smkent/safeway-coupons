@@ -14,7 +14,7 @@ from safeway_coupons.__main__ import main
 from safeway_coupons.account import Account
 from safeway_coupons.client import session
 from safeway_coupons.dirs import dirs
-from safeway_coupons.models.safeway import OfferMap
+from safeway_coupons.models.safeway.offers import OfferMap
 
 from .utils import ClipsTestConfig
 

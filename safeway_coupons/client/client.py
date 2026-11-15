@@ -8,7 +8,7 @@ import requests
 import requests.adapters
 
 from safeway_coupons.errors import ClipError, HTTPError
-from safeway_coupons.models.safeway import (
+from safeway_coupons.models.safeway.offers import (
     ClipRequest,
     ClipResponse,
     Offer,

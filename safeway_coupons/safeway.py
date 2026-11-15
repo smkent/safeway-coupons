@@ -13,7 +13,7 @@ from .account import Account
 from .client.client import SafewayClient
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
-from .models.safeway import Offer, OfferStatus, OfferType
+from .models.safeway.offers import Offer, OfferStatus, OfferType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence

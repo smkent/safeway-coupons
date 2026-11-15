@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from safeway_coupons.models.safeway import Offer, OfferStatus, OfferType
+from safeway_coupons.models.safeway.offers import Offer, OfferStatus, OfferType
 
 
 @dataclass
