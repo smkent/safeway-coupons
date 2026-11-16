@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import itertools
 import json
 import re
 import sys
 import tempfile
+import time
 import urllib
 import urllib.parse
 from abc import ABC, abstractmethod
@@ -193,8 +195,14 @@ class SafewayBrowserSession(BrowserSession):
 
     def __enter__(self) -> Self:
         super().__enter__()
-        self.page.goto("https://www.safeway.com")
+        self.load_site_home()
         return self
+
+    def load_site_home(self) -> None:
+        self.page.goto("https://www.safeway.com", timeout=60000)
+        # Wait out any initial reloads by waiting for the account button
+        self._account_button.wait_for(state="attached", timeout=60000)
+        self.page.wait_for_load_state("load", timeout=60000)
 
     @cached_property
     def state_subdir(self) -> Path:
@@ -302,22 +310,28 @@ class SafewayBrowserSession(BrowserSession):
         print("Sign in modal open")  # noqa: T201
         return modal
 
-    def open_sign_in_panel(self, attempts: int = 3) -> Locator | None:
+    def open_sign_in_panel(self, timeout: float = 120) -> Locator | None:
         panel = self.page.get_by_role(
             "dialog", name=re.compile("account menu", re.IGNORECASE)
         )
         signed_in_menu = self.page.locator(".myaccount-flyout-wrapper")
         # Both menus are in the page, but only the open one is visible
         open_menu = panel.or_(signed_in_menu).filter(visible=True)
-        for attempt in range(1, attempts + 1):
+        deadline = time.monotonic() + timeout
+        for attempt in itertools.count(1):
             # Clicking again while a menu is open would be blocked by it
             if not open_menu.count():
                 self._account_button.click()
             try:
-                open_menu.first.wait_for(timeout=5000)
+                open_menu.first.wait_for(timeout=10000)
             except PlaywrightTimeoutError:
-                if self.debug_level >= 1:
-                    print(f"Sign in panel not open after attempt {attempt}")  # noqa: T201
+                if time.monotonic() >= deadline:
+                    break
+                print(  # noqa: T201
+                    "Sign in panel didn't open, reloading page"
+                    f" (attempt {attempt + 1})"
+                )
+                self.load_site_home()
                 continue
             if signed_in_menu.is_visible():
                 if self.debug_level >= 1:
@@ -326,7 +340,7 @@ class SafewayBrowserSession(BrowserSession):
             if self.debug_level >= 1:
                 print(f"Sign in panel open after attempt {attempt}")  # noqa: T201
             return panel
-        msg = f"Sign in panel did not open after {attempts} attempts"
+        msg = f"Sign in panel did not open after {attempt} attempts"
         raise RuntimeError(msg)
 
     def restore_saved_device_id(self) -> None:
