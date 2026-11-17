@@ -294,6 +294,10 @@ class SafewayBrowserSession(BrowserSession):
         greeting = self._account_button.locator(".user-greeting")
         greeting.wait_for()
         self.page.wait_for_load_state("load")
+        if not wait and "SWY_SHARED_SESSION" not in self.cookies:
+            if self.debug_level >= 1:
+                print("No existing session cookie found")  # noqa: T201
+            return False
         signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
         if wait:
             with suppress(PlaywrightTimeoutError):
