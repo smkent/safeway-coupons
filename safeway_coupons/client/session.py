@@ -236,7 +236,7 @@ class SafewayBrowserSession(BrowserSession):
             print("Already signed in")  # noqa: T201
             return
         self.sign_in()
-        if not self.is_signed_in(wait=15000):
+        if not self.is_signed_in(wait=True):
             raise RuntimeError("Sign in did not complete")
         print("Signed in")  # noqa: T201
 
@@ -290,14 +290,18 @@ class SafewayBrowserSession(BrowserSession):
             "button", name=re.compile(r"^account menu$", re.IGNORECASE)
         )
 
-    def is_signed_in(self, *, wait: int | None = None) -> bool:
+    def is_signed_in(self, *, wait: bool = False) -> bool:
         greeting = self._account_button.locator(".user-greeting")
         greeting.wait_for()
         self.page.wait_for_load_state("load")
+        if not wait and "SWY_SHARED_SESSION" not in self.cookies:
+            if self.debug_level >= 1:
+                print("No existing session cookie found")  # noqa: T201
+            return False
         signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
-        if wait is not None:
+        if wait:
             with suppress(PlaywrightTimeoutError):
-                signed_in.wait_for(timeout=wait)
+                signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
         with suppress(PlaywrightTimeoutError):
             if signed_in.count():
                 return bool(signed_in.inner_text(timeout=1000).strip())
@@ -411,7 +415,7 @@ class SafewayBrowserSession(BrowserSession):
                 "Complete device verification in the browser window,"
                 " then press Enter here to continue: "
             )
-            if not self.is_signed_in(wait=15000):
+            if not self.is_signed_in(wait=True):
                 raise RuntimeError(
                     f"Device verification ({destination}) was not completed"
                 )
