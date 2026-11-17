@@ -44,6 +44,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class BrowserSession(ExitStack, DirsMixin, ABC):
+    DEFAULT_TIMEOUT = 60 * 1000
+
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
@@ -116,6 +118,8 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
                 ) as ctx,
                 nullcontext() if ctx.pages else ctx.new_page(),
             ):
+                # Allow for slow hardware in all actions, waits and navigations
+                ctx.set_default_timeout(self.DEFAULT_TIMEOUT)
                 page, *extra_tabs = ctx.pages
                 for extra_tab in extra_tabs:
                     extra_tab.close()
@@ -199,10 +203,10 @@ class SafewayBrowserSession(BrowserSession):
         return self
 
     def load_site_home(self) -> None:
-        self.page.goto("https://www.safeway.com", timeout=60000)
+        self.page.goto("https://www.safeway.com")
         # Wait out any initial reloads by waiting for the account button
-        self._account_button.wait_for(state="attached", timeout=60000)
-        self.page.wait_for_load_state("load", timeout=60000)
+        self._account_button.wait_for(state="attached")
+        self.page.wait_for_load_state("load")
 
     @cached_property
     def state_subdir(self) -> Path:
