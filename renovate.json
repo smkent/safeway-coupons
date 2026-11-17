@@ -5,6 +5,7 @@
   "vulnerabilityAlerts": {
     "schedule": ["at any time"]
   },
+  "labels": ["dependencies"],
   "minimumReleaseAge": "1 week",
   "packageRules": [
     {

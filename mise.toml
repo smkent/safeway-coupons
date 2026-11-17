@@ -50,10 +50,14 @@ run = "prek run --all-files"
 description = "Run all formatters, static checks, and tests"
 run = [{ task = "lint" }, { task = "test" }]
 
+[tasks.release-notes]
+description = "Preview release notes (requires `gh` from the GitHub API)"
+run = "gh api repos/{owner}/{repo}/releases/generate-notes -f target_commitish=\"$(git rev-parse @)\" -f \"tag_name=(preview)\" -q .body || { echo \"Unable to preview release notes\"; }"
+
 [tasks.release]
 description = "Create and push a release tag (patch/minor/major)"
 raw_args = true
-run = "uv run bump-my-version bump -v"
+run = [{ task = "release-notes" }, "uv run bump-my-version bump -v"]
 
 [tasks.secretscan]
 description = "Scan git history for secrets"

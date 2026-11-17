@@ -11,6 +11,10 @@ on:
     paths:
       - pyproject.toml
       - uv.lock
+  schedule:
+    - cron: 38 11 * * 1
+      timezone: Etc/UTC
+  workflow_dispatch:
 
 permissions:
   contents: read

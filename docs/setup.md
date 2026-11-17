@@ -29,6 +29,14 @@ for the Default branch (`main`):
 - [x] Require a pull request before merging
 - [x] Block force pushes
 
+[Issues → Labels][repo-labels] → Add label:
+
+- Name: **breaking**
+- Description: **Breaking change**
+- Color: **#b60205** (or click the top left red color in the input popup)
+
+!!! tip "Pull requests labeled `breaking` appear first in release notes"
+
 ## Renovate
 
 Ensure the [Renovate app][renovate] is installed on your account, then
@@ -68,6 +76,7 @@ Enable write access for Actions:
 [pypi-publishing-settings]: https://pypi.org/manage/account/publishing/
 [pypi-trusted-publishing]: https://docs.pypi.org/trusted-publishers/
 [renovate]: https://github.com/apps/renovate
+[repo-labels]: https://github.com/smkent/safeway-coupons/labels
 [repo-settings]: https://github.com/smkent/safeway-coupons/settings
 [repo-settings-actions-general]: https://github.com/smkent/safeway-coupons/settings/actions
 [repo-settings-branches]: https://github.com/smkent/safeway-coupons/settings/branches
