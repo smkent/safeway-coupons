@@ -59,7 +59,7 @@ jobs:
           path: dist/
 
       - name: 🏷️ Create GitHub release
-        run: gh release create "${REF_NAME}" dist/* --generate-notes
+        run: gh release create "${REF_NAME}" dist/* --verify-tag --generate-notes
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -64,7 +64,7 @@ commit = false
 tag = true
 tag_name = "v{new_version}"
 tag_message = ""
-push = true
+push_tag = true
 
 [tool.hatch.build.targets.sdist]
 include = ["/safeway_coupons", "/tests", "*.md", "COPYING"]
