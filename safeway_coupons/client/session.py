@@ -230,12 +230,6 @@ class SafewayBrowserSession(BrowserSession):
         if self.debug_level >= 1:
             print("Wrote state file:", state_file)  # noqa: T201
 
-    def login(self) -> None:
-        if self.is_signed_in(check=True):
-            print("Already signed in")  # noqa: T201
-            return
-        self.sign_in()
-
     @cached_property
     def page(self) -> Page:
         page = super().page
@@ -362,10 +356,6 @@ class SafewayBrowserSession(BrowserSession):
         self.page.context.add_cookies([{**cookie}])
 
     def sign_in(self) -> None:
-        self.restore_saved_device_id()
-        if not (modal := self.open_sign_in_modal()):
-            return
-
         def _log_auth_response(response: Response) -> None:
             if response.request.resource_type not in {"xhr", "fetch"}:
                 return
@@ -378,16 +368,17 @@ class SafewayBrowserSession(BrowserSession):
                     f" {url.netloc}{url.path}"
                 )
 
-        def continue_with_password(email: str) -> None:
+        if self.is_signed_in(check=True):
+            print("Already signed in")  # noqa: T201
+            return
+        self.restore_saved_device_id()
+        if modal := self.open_sign_in_modal():
+            self.page.on("response", _log_auth_response)
             modal.get_by_role("textbox", name="Email or mobile number").fill(
-                email
+                self.account.username
             )
             modal.get_by_role("button", name="Sign in with password").click()
             print("Clicked Sign in with password")  # noqa: T201
-
-        if self.account.username:
-            self.page.on("response", _log_auth_response)
-            continue_with_password(self.account.username)
             if self.account.password:
                 self.submit_password(modal, self.account.password)
         if not self.is_signed_in():
@@ -532,7 +523,7 @@ class LoginSession:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
             if not self.dry_run:
-                browser.login()
+                browser.sign_in()
             elif browser.is_signed_in(check=True):
                 print("Already signed in")  # noqa: T201
             else:

@@ -162,7 +162,7 @@ def test_dry_run_signs_in(
     available_offers.offers |= {"1138": create_offer("1138")}
     main_runner("-c", str(accounts_config), "--sendmail", str(sendmail), "-p")
     browser = mock_browser_driver.return_value.__enter__.return_value
-    browser.login.assert_called_once()
+    browser.sign_in.assert_called_once()
     assert [c.request.method for c in http_responses.calls] == ["GET"]
     assert not mail_log.exists()
 
@@ -195,7 +195,7 @@ def test_login_only(
         *argv,
     )
     browser = mock_browser_driver.return_value.__enter__.return_value
-    assert browser.login.call_count == login_calls
+    assert browser.sign_in.call_count == login_calls
     out, err = capsys.readouterr()
     for username in ("ness@onett.example", "paula@twoson.example"):
         assert f"{status} for Safeway account {username}" in out
