@@ -235,9 +235,6 @@ class SafewayBrowserSession(BrowserSession):
             print("Already signed in")  # noqa: T201
             return
         self.sign_in()
-        if not self.is_signed_in(wait=True):
-            raise RuntimeError("Sign in did not complete")
-        print("Signed in")  # noqa: T201
 
     @cached_property
     def page(self) -> Page:
@@ -393,6 +390,9 @@ class SafewayBrowserSession(BrowserSession):
             continue_with_password(self.account.username)
             if self.account.password:
                 self.submit_password(modal, self.account.password)
+        if not self.is_signed_in(wait=True):
+            raise RuntimeError("Sign in did not complete")
+        print("Signed in")  # noqa: T201
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
