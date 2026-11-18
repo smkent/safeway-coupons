@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "schedule:weekly", ":enablePreCommit"],
+  "extends": ["config:recommended", ":enablePreCommit"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "schedule": ["at any time"]
