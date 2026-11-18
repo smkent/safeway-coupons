@@ -243,14 +243,11 @@ class SafewayBrowserSession(BrowserSession):
 
         def dismiss_cookie_banner(banner: Locator) -> None:
             print("Dismissing cookie banner")  # noqa: T201
-            # The site reloads the page after cookie consent is chosen
-            with (
-                suppress(PlaywrightTimeoutError),
-                self.page.expect_navigation(timeout=5000),
-            ):
+            self._click_to_reload(
                 banner.get_by_role(
                     "button", name=re.compile("necessary only", re.IGNORECASE)
-                ).click()
+                )
+            )
 
         page.add_locator_handler(
             page.get_by_role("region", name="Cookie banner"),
@@ -259,14 +256,11 @@ class SafewayBrowserSession(BrowserSession):
 
         def dismiss_info_modal(modal: Locator) -> None:
             print("Dismissing personal info confirmation modal")  # noqa: T201
-            # The site reloads the page after the modal is closed
-            with (
-                suppress(PlaywrightTimeoutError),
-                self.page.expect_navigation(timeout=5000),
-            ):
+            self._click_to_reload(
                 modal.get_by_role(
                     "button", name=re.compile(r"^close$", re.IGNORECASE)
-                ).click()
+                )
+            )
 
         page.add_locator_handler(
             page.get_by_role("dialog", name="Verify 180 Days Modal"),
@@ -274,6 +268,16 @@ class SafewayBrowserSession(BrowserSession):
         )
 
         return page
+
+    def _click_to_reload(self, button: Locator) -> None:
+        with (
+            ExitStack() as stack,
+            self.page.expect_navigation(wait_until="commit", timeout=10000),
+        ):
+            button.click(no_wait_after=True)
+            # Preserve click failures but prevent navigation timeouts from
+            # stopping a triggering handler
+            stack.enter_context(suppress(PlaywrightTimeoutError))
 
     @property
     def _account_button(self) -> Locator:
