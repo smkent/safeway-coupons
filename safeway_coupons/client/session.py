@@ -123,7 +123,6 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
                 page, *extra_tabs = ctx.pages
                 for extra_tab in extra_tabs:
                     extra_tab.close()
-                page.wait_for_timeout(500)
                 self._check_user_agent(page)
                 print("Browser session ready")  # noqa: T201
                 try:
@@ -388,7 +387,6 @@ class SafewayBrowserSession(BrowserSession):
             )
             modal.get_by_role("button", name="Sign in with password").click()
             print("Clicked Sign in with password")  # noqa: T201
-            self.page.wait_for_timeout(5000)
 
         if self.account.username:
             self.page.on("response", _log_auth_response)
@@ -560,7 +558,6 @@ class LoginSession:
             self.store_id = store_id
 
             if not self.headless:
-                browser.page.wait_for_timeout(1000)
                 input(
                     "Complete any interaction in the browser window,"
                     " then press Enter here to continue: "
