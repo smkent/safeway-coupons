@@ -191,7 +191,8 @@ class SafewayBrowserSession(BrowserSession):
     account: Account
 
     STATE_FILE_BASE: ClassVar[dict[str, Any]] = {"_version": 1}
-    SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
+    # Non-blank greeting not starting with "Sign in", ignoring leading symbols
+    SIGNED_IN_GREETING = re.compile(r"^(?!\W*sign in\b)\s*\S", re.IGNORECASE)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -242,14 +243,11 @@ class SafewayBrowserSession(BrowserSession):
 
         def dismiss_cookie_banner(banner: Locator) -> None:
             print("Dismissing cookie banner")  # noqa: T201
-            # The site reloads the page after cookie consent is chosen
-            with (
-                suppress(PlaywrightTimeoutError),
-                self.page.expect_navigation(timeout=5000),
-            ):
+            self._click_to_reload(
                 banner.get_by_role(
                     "button", name=re.compile("necessary only", re.IGNORECASE)
-                ).click()
+                )
+            )
 
         page.add_locator_handler(
             page.get_by_role("region", name="Cookie banner"),
@@ -258,14 +256,11 @@ class SafewayBrowserSession(BrowserSession):
 
         def dismiss_info_modal(modal: Locator) -> None:
             print("Dismissing personal info confirmation modal")  # noqa: T201
-            # The site reloads the page after the modal is closed
-            with (
-                suppress(PlaywrightTimeoutError),
-                self.page.expect_navigation(timeout=5000),
-            ):
+            self._click_to_reload(
                 modal.get_by_role(
                     "button", name=re.compile(r"^close$", re.IGNORECASE)
-                ).click()
+                )
+            )
 
         page.add_locator_handler(
             page.get_by_role("dialog", name="Verify 180 Days Modal"),
@@ -273,6 +268,16 @@ class SafewayBrowserSession(BrowserSession):
         )
 
         return page
+
+    def _click_to_reload(self, button: Locator) -> None:
+        with (
+            ExitStack() as stack,
+            self.page.expect_navigation(wait_until="commit", timeout=10000),
+        ):
+            button.click(no_wait_after=True)
+            # Preserve click failures but prevent navigation timeouts from
+            # stopping a triggering handler
+            stack.enter_context(suppress(PlaywrightTimeoutError))
 
     @property
     def _account_button(self) -> Locator:
@@ -288,14 +293,10 @@ class SafewayBrowserSession(BrowserSession):
             if self.debug_level >= 1:
                 print("No existing session cookie found")  # noqa: T201
             return False
-        signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
-        if not check:
-            with suppress(PlaywrightTimeoutError):
-                signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
+        signed_in = greeting.filter(has_text=self.SIGNED_IN_GREETING)
         with suppress(PlaywrightTimeoutError):
-            if signed_in.count():
-                return bool(signed_in.inner_text(timeout=1000).strip())
-        return False
+            signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
+        return bool(signed_in.count())
 
     def open_sign_in_modal(self) -> Locator | None:
         if not (panel := self.open_sign_in_panel()):
@@ -321,7 +322,9 @@ class SafewayBrowserSession(BrowserSession):
             if not open_menu.count():
                 self._account_button.click()
             try:
-                open_menu.first.wait_for(timeout=10000)
+                open_menu.first.wait_for(
+                    timeout=min(10000 * attempt, timeout / 4)
+                )
             except PlaywrightTimeoutError:
                 if time.monotonic() >= deadline:
                     break
@@ -396,7 +399,7 @@ class SafewayBrowserSession(BrowserSession):
         ) as verify:
             modal.get_by_role(
                 "button", name=re.compile(r"^sign in$", re.IGNORECASE)
-            ).click()
+            ).click(no_wait_after=True)
         print("Clicked Sign in")  # noqa: T201
         if (destination := self.verification_required(verify.value)) is None:
             return
@@ -452,7 +455,7 @@ class SafewayBrowserSession(BrowserSession):
             with self.page.expect_response(_factor_action("verify")) as verify:
                 modal.get_by_role(
                     "button", name=re.compile(r"^sign in$", re.IGNORECASE)
-                ).click()
+                ).click(no_wait_after=True)
             if verify.value.ok:
                 print("Device verified")  # noqa: T201
                 return
