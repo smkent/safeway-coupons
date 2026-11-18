@@ -294,9 +294,8 @@ class SafewayBrowserSession(BrowserSession):
                 print("No existing session cookie found")  # noqa: T201
             return False
         signed_in = greeting.filter(has_text=self.SIGNED_IN_GREETING)
-        if not check:
-            with suppress(PlaywrightTimeoutError):
-                signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
+        with suppress(PlaywrightTimeoutError):
+            signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
         return bool(signed_in.count())
 
     def open_sign_in_modal(self) -> Locator | None:
