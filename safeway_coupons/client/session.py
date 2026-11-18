@@ -230,15 +230,6 @@ class SafewayBrowserSession(BrowserSession):
         if self.debug_level >= 1:
             print("Wrote state file:", state_file)  # noqa: T201
 
-    def login(self) -> None:
-        if self.is_signed_in():
-            print("Already signed in")  # noqa: T201
-            return
-        self.sign_in()
-        if not self.is_signed_in(wait=True):
-            raise RuntimeError("Sign in did not complete")
-        print("Signed in")  # noqa: T201
-
     @cached_property
     def page(self) -> Page:
         page = super().page
@@ -289,16 +280,16 @@ class SafewayBrowserSession(BrowserSession):
             "button", name=re.compile(r"^account menu$", re.IGNORECASE)
         )
 
-    def is_signed_in(self, *, wait: bool = False) -> bool:
+    def is_signed_in(self, *, check: bool = False) -> bool:
         greeting = self._account_button.locator(".user-greeting")
         greeting.wait_for()
         self.page.wait_for_load_state("load")
-        if not wait and "SWY_SHARED_SESSION" not in self.cookies:
+        if check and "SWY_SHARED_SESSION" not in self.cookies:
             if self.debug_level >= 1:
                 print("No existing session cookie found")  # noqa: T201
             return False
         signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
-        if wait:
+        if not check:
             with suppress(PlaywrightTimeoutError):
                 signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
         with suppress(PlaywrightTimeoutError):
@@ -364,11 +355,7 @@ class SafewayBrowserSession(BrowserSession):
         self.cookie_from_json(cookie, session_info)
         self.page.context.add_cookies([{**cookie}])
 
-    def sign_in(self) -> None:
-        self.restore_saved_device_id()
-        if not (modal := self.open_sign_in_modal()):
-            return
-
+    def sign_in(self, *, check: bool = False) -> None:
         def _log_auth_response(response: Response) -> None:
             if response.request.resource_type not in {"xhr", "fetch"}:
                 return
@@ -381,18 +368,24 @@ class SafewayBrowserSession(BrowserSession):
                     f" {url.netloc}{url.path}"
                 )
 
-        def continue_with_password(email: str) -> None:
+        if self.is_signed_in(check=True):
+            print("Already signed in")  # noqa: T201
+            return
+        if check:
+            raise NotSignedIn(self.account)
+        self.restore_saved_device_id()
+        if modal := self.open_sign_in_modal():
+            self.page.on("response", _log_auth_response)
             modal.get_by_role("textbox", name="Email or mobile number").fill(
-                email
+                self.account.username
             )
             modal.get_by_role("button", name="Sign in with password").click()
             print("Clicked Sign in with password")  # noqa: T201
-
-        if self.account.username:
-            self.page.on("response", _log_auth_response)
-            continue_with_password(self.account.username)
             if self.account.password:
                 self.submit_password(modal, self.account.password)
+        if not self.is_signed_in():
+            raise RuntimeError("Sign in did not complete")
+        print("Signed in")  # noqa: T201
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
@@ -413,7 +406,7 @@ class SafewayBrowserSession(BrowserSession):
                 "Complete device verification in the browser window,"
                 " then press Enter here to continue: "
             )
-            if not self.is_signed_in(wait=True):
+            if not self.is_signed_in():
                 raise RuntimeError(
                     f"Device verification ({destination}) was not completed"
                 )
@@ -531,12 +524,7 @@ class LoginSession:
             if self.debug_level >= 1:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
-            if not self.dry_run:
-                browser.login()
-            elif browser.is_signed_in():
-                print("Already signed in")  # noqa: T201
-            else:
-                raise NotSignedIn(self.account)
+            browser.sign_in(check=self.dry_run)
 
             print("Retrieve session information")  # noqa: T201
             session_cookie = browser.cookie_to_json(
