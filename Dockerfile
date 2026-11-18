@@ -1,8 +1,7 @@
 FROM python:3.15-slim AS builder
+WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv /uv /uvx /bin/
-
-WORKDIR /app
 
 # Install dependencies
 COPY pyproject.toml uv.lock .
@@ -16,6 +15,7 @@ ARG UV_DYNAMIC_VERSIONING_BYPASS=0.0.0
 RUN uv sync --locked --no-default-groups --no-editable
 
 FROM python:3.15-slim
+WORKDIR /app
 
 LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 

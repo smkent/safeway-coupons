@@ -1,1 +1,14 @@
-.gitignore
+# Exclude everything except specific files and directories
+*
+
+# License and project information
+!COPYING
+!README.md
+
+# Python project files
+!pyproject.toml
+!uv.lock
+!docker/
+!safeway_coupons/
+**/__pycache__
+**/*.py[cod]

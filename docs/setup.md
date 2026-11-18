@@ -62,13 +62,6 @@ need to be stored as secrets.
    git push --tags
    ```
 
-## Container registry (ghcr.io)
-
-Enable write access for Actions:
-
-[Settings → Actions → General][repo-settings-actions-general]
-→ Workflow permissions → Read and write permissions
-
 ## GitHub Pages
 
 [Settings → Pages][repo-settings-pages] → Source → GitHub Actions
@@ -78,7 +71,6 @@ Enable write access for Actions:
 [renovate]: https://github.com/apps/renovate
 [repo-labels]: https://github.com/smkent/safeway-coupons/labels
 [repo-settings]: https://github.com/smkent/safeway-coupons/settings
-[repo-settings-actions-general]: https://github.com/smkent/safeway-coupons/settings/actions
 [repo-settings-branches]: https://github.com/smkent/safeway-coupons/settings/branches
 [repo-settings-envs]: https://github.com/smkent/safeway-coupons/settings/environments
 [repo-settings-pages]: https://github.com/smkent/safeway-coupons/settings/pages
