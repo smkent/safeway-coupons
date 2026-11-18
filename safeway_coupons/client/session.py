@@ -231,7 +231,7 @@ class SafewayBrowserSession(BrowserSession):
             print("Wrote state file:", state_file)  # noqa: T201
 
     def login(self) -> None:
-        if self.is_signed_in():
+        if self.is_signed_in(check=True):
             print("Already signed in")  # noqa: T201
             return
         self.sign_in()
@@ -286,16 +286,16 @@ class SafewayBrowserSession(BrowserSession):
             "button", name=re.compile(r"^account menu$", re.IGNORECASE)
         )
 
-    def is_signed_in(self, *, wait: bool = False) -> bool:
+    def is_signed_in(self, *, check: bool = False) -> bool:
         greeting = self._account_button.locator(".user-greeting")
         greeting.wait_for()
         self.page.wait_for_load_state("load")
-        if not wait and "SWY_SHARED_SESSION" not in self.cookies:
+        if check and "SWY_SHARED_SESSION" not in self.cookies:
             if self.debug_level >= 1:
                 print("No existing session cookie found")  # noqa: T201
             return False
         signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
-        if wait:
+        if not check:
             with suppress(PlaywrightTimeoutError):
                 signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
         with suppress(PlaywrightTimeoutError):
@@ -390,7 +390,7 @@ class SafewayBrowserSession(BrowserSession):
             continue_with_password(self.account.username)
             if self.account.password:
                 self.submit_password(modal, self.account.password)
-        if not self.is_signed_in(wait=True):
+        if not self.is_signed_in():
             raise RuntimeError("Sign in did not complete")
         print("Signed in")  # noqa: T201
 
@@ -413,7 +413,7 @@ class SafewayBrowserSession(BrowserSession):
                 "Complete device verification in the browser window,"
                 " then press Enter here to continue: "
             )
-            if not self.is_signed_in(wait=True):
+            if not self.is_signed_in():
                 raise RuntimeError(
                     f"Device verification ({destination}) was not completed"
                 )
@@ -533,7 +533,7 @@ class LoginSession:
 
             if not self.dry_run:
                 browser.login()
-            elif browser.is_signed_in():
+            elif browser.is_signed_in(check=True):
                 print("Already signed in")  # noqa: T201
             else:
                 raise NotSignedIn(self.account)
