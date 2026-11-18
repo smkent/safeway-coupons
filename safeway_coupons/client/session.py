@@ -394,7 +394,7 @@ class SafewayBrowserSession(BrowserSession):
         ) as verify:
             modal.get_by_role(
                 "button", name=re.compile(r"^sign in$", re.IGNORECASE)
-            ).click()
+            ).click(no_wait_after=True)
         print("Clicked Sign in")  # noqa: T201
         if (destination := self.verification_required(verify.value)) is None:
             return
@@ -450,7 +450,7 @@ class SafewayBrowserSession(BrowserSession):
             with self.page.expect_response(_factor_action("verify")) as verify:
                 modal.get_by_role(
                     "button", name=re.compile(r"^sign in$", re.IGNORECASE)
-                ).click()
+                ).click(no_wait_after=True)
             if verify.value.ok:
                 print("Device verified")  # noqa: T201
                 return
