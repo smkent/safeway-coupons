@@ -355,7 +355,7 @@ class SafewayBrowserSession(BrowserSession):
         self.cookie_from_json(cookie, session_info)
         self.page.context.add_cookies([{**cookie}])
 
-    def sign_in(self) -> None:
+    def sign_in(self, *, check: bool = False) -> None:
         def _log_auth_response(response: Response) -> None:
             if response.request.resource_type not in {"xhr", "fetch"}:
                 return
@@ -371,6 +371,8 @@ class SafewayBrowserSession(BrowserSession):
         if self.is_signed_in(check=True):
             print("Already signed in")  # noqa: T201
             return
+        if check:
+            raise NotSignedIn(self.account)
         self.restore_saved_device_id()
         if modal := self.open_sign_in_modal():
             self.page.on("response", _log_auth_response)
@@ -522,12 +524,7 @@ class LoginSession:
             if self.debug_level >= 1:
                 print(f"User Agent: {self.user_agent}")  # noqa: T201
 
-            if not self.dry_run:
-                browser.sign_in()
-            elif browser.is_signed_in(check=True):
-                print("Already signed in")  # noqa: T201
-            else:
-                raise NotSignedIn(self.account)
+            browser.sign_in(check=self.dry_run)
 
             print("Retrieve session information")  # noqa: T201
             session_cookie = browser.cookie_to_json(

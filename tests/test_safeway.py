@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -13,7 +14,6 @@ from .utils import ClipsTestConfig, create_offer
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from unittest import mock
 
     import responses
 
@@ -162,17 +162,17 @@ def test_dry_run_signs_in(
     available_offers.offers |= {"1138": create_offer("1138")}
     main_runner("-c", str(accounts_config), "--sendmail", str(sendmail), "-p")
     browser = mock_browser_driver.return_value.__enter__.return_value
-    browser.sign_in.assert_called_once()
+    browser.sign_in.assert_called_once_with(check=False)
     assert [c.request.method for c in http_responses.calls] == ["GET"]
     assert not mail_log.exists()
 
 
 @pytest.mark.usefixtures("http_responses")
 @pytest.mark.parametrize(
-    ("argv", "login_calls", "status"),
+    ("argv", "check", "status"),
     [
-        pytest.param([], 2, "Signing in", id="live"),
-        pytest.param(["-p"], 0, "Checking sign in", id="dry_run"),
+        pytest.param([], False, "Signing in", id="live"),
+        pytest.param(["-p"], True, "Checking sign in", id="dry_run"),
     ],
 )
 def test_login_only(
@@ -183,8 +183,9 @@ def test_login_only(
     mock_browser_driver: mock.MagicMock,
     capsys: pytest.CaptureFixture[str],
     argv: list[str],
-    login_calls: int,
     status: str,
+    *,
+    check: bool,
 ) -> None:
     main_runner(
         "-c",
@@ -195,7 +196,7 @@ def test_login_only(
         *argv,
     )
     browser = mock_browser_driver.return_value.__enter__.return_value
-    assert browser.sign_in.call_count == login_calls
+    assert browser.sign_in.call_args_list == [mock.call(check=check)] * 2
     out, err = capsys.readouterr()
     for username in ("ness@onett.example", "paula@twoson.example"):
         assert f"{status} for Safeway account {username}" in out
