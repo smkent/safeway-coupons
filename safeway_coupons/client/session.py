@@ -191,7 +191,8 @@ class SafewayBrowserSession(BrowserSession):
     account: Account
 
     STATE_FILE_BASE: ClassVar[dict[str, Any]] = {"_version": 1}
-    SIGNED_OUT_GREETING = re.compile(r"^\s*sign in\s*$", re.IGNORECASE)
+    # Non-blank greeting not starting with "Sign in", ignoring leading symbols
+    SIGNED_IN_GREETING = re.compile(r"^(?!\W*sign in\b)\s*\S", re.IGNORECASE)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -288,14 +289,11 @@ class SafewayBrowserSession(BrowserSession):
             if self.debug_level >= 1:
                 print("No existing session cookie found")  # noqa: T201
             return False
-        signed_in = greeting.filter(has_not_text=self.SIGNED_OUT_GREETING)
+        signed_in = greeting.filter(has_text=self.SIGNED_IN_GREETING)
         if not check:
             with suppress(PlaywrightTimeoutError):
                 signed_in.wait_for(timeout=self.DEFAULT_TIMEOUT)
-        with suppress(PlaywrightTimeoutError):
-            if signed_in.count():
-                return bool(signed_in.inner_text(timeout=1000).strip())
-        return False
+        return bool(signed_in.count())
 
     def open_sign_in_modal(self) -> Locator | None:
         if not (panel := self.open_sign_in_panel()):
