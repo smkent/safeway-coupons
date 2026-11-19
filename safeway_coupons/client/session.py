@@ -323,7 +323,7 @@ class SafewayBrowserSession(BrowserSession):
                 self._account_button.click()
             try:
                 open_menu.first.wait_for(
-                    timeout=min(10000 * attempt, timeout / 4)
+                    timeout=min(10000 * attempt, (timeout * 1000) / 4)
                 )
             except PlaywrightTimeoutError:
                 if time.monotonic() >= deadline:
