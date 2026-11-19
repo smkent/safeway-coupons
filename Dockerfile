@@ -19,14 +19,6 @@ WORKDIR /app
 
 LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 
-ENV CRON_SCHEDULE="5 2 * * *"
-ENV SAFEWAY_ACCOUNT_USERNAME=
-ENV SAFEWAY_ACCOUNT_PASSWORD=
-ENV SAFEWAY_ACCOUNT_MAIL_FROM=
-ENV SAFEWAY_ACCOUNT_MAIL_TO=
-ENV SAFEWAY_ACCOUNTS_FILE=
-ENV EXTRA_ARGS=
-
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates wget && \
     wget -q -O /usr/share/keyrings/chrome.pub https://dl-ssl.google.com/linux/linux_signing_key.pub && \
@@ -50,5 +42,13 @@ VOLUME /state
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
+
+ENV CRON_SCHEDULE="5 2 * * *"
+ENV SAFEWAY_ACCOUNT_USERNAME=
+ENV SAFEWAY_ACCOUNT_PASSWORD=
+ENV SAFEWAY_ACCOUNT_MAIL_FROM=
+ENV SAFEWAY_ACCOUNT_MAIL_TO=
+ENV SAFEWAY_ACCOUNTS_FILE=
+ENV EXTRA_ARGS=
 
 ENTRYPOINT ["/usr/bin/tini", "-s", "--", "/opt/docker/entrypoint"]
