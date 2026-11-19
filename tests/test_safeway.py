@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from safeway_coupons.account import Account
 
-    from .conftest import MainRunner
+    from .utils import MainRunner
 
 
 @pytest.mark.usefixtures("http_responses")
