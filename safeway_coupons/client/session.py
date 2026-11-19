@@ -198,8 +198,16 @@ class SafewayBrowserSession(BrowserSession):
         super().__post_init__()
 
     def __enter__(self) -> Self:
+        @contextmanager
+        def _cleanup_on_error() -> Generator[None]:
+            with ExitStack() as stack:
+                stack.push(self)
+                yield
+                stack.pop_all()
+
         super().__enter__()
-        self.load_site_home()
+        with _cleanup_on_error():
+            self.load_site_home()
         return self
 
     def load_site_home(self) -> None:
