@@ -196,10 +196,10 @@ docker compose logs -f
 ```
 
 To sign in and enter a multi-factor authentication (MFA) verification code, run
-safeway-coupons interactively in the running container:
+safeway-coupons interactively:
 
 ```sh
-docker compose exec -it safeway-coupons --login-only
+docker compose run --rm -it safeway-coupons --login-only
 ```
 
 ## Development
