@@ -44,12 +44,11 @@ RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
 
 COPY --from=builder /app/.venv /app/.venv
 
-COPY docker/entrypoint /
+COPY docker /opt/docker
 
 VOLUME /state
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["/usr/bin/tini", "-s", "--"]
-CMD ["/entrypoint"]
+ENTRYPOINT ["/usr/bin/tini", "-s", "--", "/opt/docker/entrypoint"]

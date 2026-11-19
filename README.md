@@ -199,7 +199,7 @@ To sign in and enter a multi-factor authentication (MFA) verification code, run
 safeway-coupons interactively in the running container:
 
 ```sh
-docker compose exec -it safeway-coupons /entrypoint --login-only
+docker compose exec -it safeway-coupons --login-only
 ```
 
 ## Development
