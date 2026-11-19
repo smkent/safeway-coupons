@@ -1,9 +1,27 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from safeway_coupons.models.safeway.offers import Offer, OfferStatus, OfferType
+import pytest
+
+from safeway_coupons.__main__ import main
+from safeway_coupons.models.safeway.offers import (
+    Offer,
+    OfferStatus,
+    OfferType,
+)
+
+
+@dataclass
+class MainRunner:
+    monkeypatch: pytest.MonkeyPatch
+
+    def __call__(self, *cmd: str, match: int = 0) -> None:
+        self.monkeypatch.setattr(sys, "argv", ["safeway-coupons", *cmd])
+        with pytest.raises(SystemExit, match=str(match)):
+            main()
 
 
 @dataclass

@@ -2,38 +2,25 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import time
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 import responses
 
-from safeway_coupons.__main__ import main
 from safeway_coupons.account import Account
 from safeway_coupons.client import session
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
 
-from .utils import ClipsTestConfig
+from .utils import ClipsTestConfig, MainRunner
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     import requests
-
-
-@dataclass
-class MainRunner:
-    monkeypatch: pytest.MonkeyPatch
-
-    def __call__(self, *cmd: str, match: int = 0) -> None:
-        self.monkeypatch.setattr(sys, "argv", ["safeway-coupons", *cmd])
-        with pytest.raises(SystemExit, match=str(match)):
-            main()
 
 
 @pytest.fixture

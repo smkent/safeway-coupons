@@ -15,7 +15,7 @@ from safeway_coupons.safeway import SafewayCoupons
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from tests.conftest import MainRunner
+    from tests.utils import MainRunner
 
 
 def test_no_accounts(

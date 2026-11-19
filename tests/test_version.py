@@ -11,7 +11,7 @@ from safeway_coupons.cli.main import version
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from .conftest import MainRunner
+    from .utils import MainRunner
 
 
 def test_version() -> None:
