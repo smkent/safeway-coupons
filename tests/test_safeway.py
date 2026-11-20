@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from safeway_coupons.account import Account
 
-    from .utils import MainRunner
+    from .utils import MainRunner, MockMail
 
 
 @pytest.mark.usefixtures("http_responses")
@@ -121,19 +121,6 @@ def test_safeway_coupons_sleep_time(
 
 
 @pytest.fixture
-def mail_log(tmp_path: Path) -> Path:
-    return tmp_path / "mail.log"
-
-
-@pytest.fixture
-def sendmail(tmp_path: Path, mail_log: Path) -> Path:
-    script = tmp_path / "sendmail"
-    script.write_text(f'#!/bin/sh\ncat >> "{mail_log}"\n')
-    script.chmod(0o755)
-    return script
-
-
-@pytest.fixture
 def two_accounts_config(tmp_path: Path) -> Path:
     config = tmp_path / "two_accounts"
     config.write_text(
@@ -153,18 +140,17 @@ def two_accounts_config(tmp_path: Path) -> Path:
 def test_dry_run_signs_in(
     main_runner: MainRunner,
     accounts_config: Path,
-    sendmail: Path,
-    mail_log: Path,
+    mail: MockMail,
     available_offers: OfferMap,
     http_responses: responses.RequestsMock,
     mock_browser_driver: mock.MagicMock,
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
-    main_runner("-c", str(accounts_config), "--sendmail", str(sendmail), "-p")
+    main_runner("-c", str(accounts_config), "-p")
     browser = mock_browser_driver.return_value.__enter__.return_value
     browser.sign_in.assert_called_once_with(check=False)
     assert [c.request.method for c in http_responses.calls] == ["GET"]
-    assert not mail_log.exists()
+    assert not mail.messages
 
 
 @pytest.mark.usefixtures("http_responses")
@@ -178,8 +164,7 @@ def test_dry_run_signs_in(
 def test_login_only(
     main_runner: MainRunner,
     two_accounts_config: Path,
-    sendmail: Path,
-    mail_log: Path,
+    mail: MockMail,
     mock_browser_driver: mock.MagicMock,
     capsys: pytest.CaptureFixture[str],
     argv: list[str],
@@ -187,18 +172,11 @@ def test_login_only(
     *,
     check: bool,
 ) -> None:
-    main_runner(
-        "-c",
-        str(two_accounts_config),
-        "--sendmail",
-        str(sendmail),
-        "--login-only",
-        *argv,
-    )
+    main_runner("-c", str(two_accounts_config), "--login-only", *argv)
     browser = mock_browser_driver.return_value.__enter__.return_value
     assert browser.sign_in.call_args_list == [mock.call(check=check)] * 2
     out, err = capsys.readouterr()
     for username in ("ness@onett.example", "paula@twoson.example"):
         assert f"{status} for Safeway account {username}" in out
     assert not err
-    assert not mail_log.exists()
+    assert not mail.messages

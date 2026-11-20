@@ -1,11 +1,15 @@
 min_version = "2026.10.3"
 
+[vars]
+patchright_browsers = "chrome"
+
 [settings]
 minimum_release_age = "P1W"
 
 [hooks]
 postinstall = [
   "uv sync",
+  { task = "setup-patchright" },
   "[ -e .git ] && prek --quiet install || { echo \"No git repository found.\"; }",
 ]
 
@@ -63,6 +67,14 @@ run = [{ task = "release-notes" }, "uv run bump-my-version bump -v"]
 description = "Scan git history for secrets"
 raw_args = true
 run = "betterleaks git . --redact --config .betterleaks.toml"
+
+[tasks.setup-patchright]
+description = "Install Google Chrome and dependencies for patchright"
+env = { CI = "false" } # Prevent forced Chrome reinstallation in CI
+run = [
+  "uv run patchright install-deps {{ vars.patchright_browsers }} --dry-run || uv run patchright install-deps {{ vars.patchright_browsers }} || { echo \"Warning: patchright browser dependencies installation failed\"; }",
+  "uv run patchright install {{ vars.patchright_browsers }} || { echo \"Warning: patchright browser installation failed\"; }",
+]
 
 [tasks.snapup]
 description = "Update test snapshots"

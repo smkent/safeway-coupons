@@ -14,13 +14,19 @@ from safeway_coupons.client import session
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
 
-from .utils import ClipsTestConfig, MainRunner
+from .utils import ClipsTestConfig, MainRunner, MockMail
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     import requests
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers", "browser: Playwright browser based tests with a mock site"
+    )
 
 
 @pytest.fixture
@@ -31,6 +37,12 @@ def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
 @pytest.fixture(autouse=True)
 def mock_config_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dirs, "state", tmp_path / "state")
+
+
+@pytest.fixture(autouse=True)
+def mail() -> Iterator[MockMail]:
+    with MockMail() as mock_mail:
+        yield mock_mail
 
 
 @pytest.fixture
