@@ -30,7 +30,7 @@ def _send_email(
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
     if send_email:
-        log.debug("Sending email to %sS", account.mail_to)
+        log.debug("Sending email to %s", account.mail_to)
     else:
         log.debug("Would send email to %s", account.mail_to)
     log.debug(">>>>>>")
