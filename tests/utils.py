@@ -62,6 +62,17 @@ class MockMail(ExitStack):
         ) as obj:
             yield obj
 
+    @classmethod
+    def attachments(cls, message: EmailMessage) -> dict[str | None, Any]:
+        return {
+            part.get_filename(): part.get_content()
+            for part in message.iter_attachments()
+        }
+
+    @classmethod
+    def screenshot(cls, message: EmailMessage) -> bytes:
+        return cls.attachments(message)["screenshot.png"]
+
 
 @dataclass
 class ClipsTestConfig:

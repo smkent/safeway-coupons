@@ -23,6 +23,12 @@ if TYPE_CHECKING:
     import requests
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers", "browser: Playwright browser based tests with a mock site"
+    )
+
+
 @pytest.fixture
 def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
     return MainRunner(monkeypatch=monkeypatch)
