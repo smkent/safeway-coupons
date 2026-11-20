@@ -7,6 +7,7 @@ import subprocess
 from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
+from .console import log
 from .errors import Error, TooManyClipErrors
 from .models.safeway.offers import OfferType
 
@@ -23,20 +24,18 @@ def _send_email(
     account: Account,
     subject: str,
     mail_message: list[str],
-    debug_level: int,
     attachments: Sequence[Path] | None = None,
     *,
     send_email: bool,
 ) -> None:
     mail_message_str = os.linesep.join(mail_message)
-    if debug_level >= 1:
-        if send_email:
-            print(f"Sending email to {account.mail_to}")  # noqa: T201
-        else:
-            print(f"Would send email to {account.mail_to}")  # noqa: T201
-        print(">>>>>>")  # noqa: T201
-        print(mail_message_str)  # noqa: T201
-        print("<<<<<<")  # noqa: T201
+    if send_email:
+        log.debug("Sending email to %sS", account.mail_to)
+    else:
+        log.debug("Would send email to %s", account.mail_to)
+    log.debug(">>>>>>")
+    log.debug(mail_message_str)
+    log.debug("<<<<<<")
     if not send_email:
         return
     msg = EmailMessage()
@@ -65,7 +64,6 @@ def email_clip_results(
     sendmail: Sequence[str],
     account: Account,
     offers: list[Offer],
-    debug_level: int,
     *,
     send_email: bool,
 ) -> None:
@@ -90,7 +88,6 @@ def email_clip_results(
         account,
         mail_subject,
         mail_message,
-        debug_level,
         send_email=send_email,
     )
 
@@ -99,7 +96,6 @@ def email_error(
     sendmail: Sequence[str],
     account: Account,
     error: Error,
-    debug_level: int,
     *,
     send_email: bool,
 ) -> None:
@@ -117,7 +113,6 @@ def email_error(
         account,
         mail_subject,
         mail_message,
-        debug_level,
         send_email=send_email,
         attachments=error.attachments,
     )

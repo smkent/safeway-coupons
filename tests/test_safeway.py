@@ -166,7 +166,7 @@ def test_login_only(
     two_accounts_config: Path,
     mail: MockMail,
     mock_browser_driver: mock.MagicMock,
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     argv: list[str],
     status: str,
     *,
@@ -175,8 +175,6 @@ def test_login_only(
     main_runner("-c", str(two_accounts_config), "--login-only", *argv)
     browser = mock_browser_driver.return_value.__enter__.return_value
     assert browser.sign_in.call_args_list == [mock.call(check=check)] * 2
-    out, err = capsys.readouterr()
     for username in ("ness@onett.example", "paula@twoson.example"):
-        assert f"{status} for Safeway account {username}" in out
-    assert not err
+        assert f"{status} for Safeway account {username}" in caplog.messages
     assert not mail.messages

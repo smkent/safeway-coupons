@@ -95,7 +95,7 @@ def test_device_verification_required_from_browser(
 
 
 def test_device_verification_required(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     main_runner: MainRunner,
     accounts_config: Path,
     mock_browser_driver: MagicMock,
@@ -109,13 +109,14 @@ def test_device_verification_required(
     browser.sign_in.side_effect = _raise
     main_runner("-c", str(accounts_config), "--login-only", match=1)
     assert (
-        "ness@onett.example needs an MFA verification code to sign in."
+        "Error for account ness@onett.example:"
+        " ness@onett.example needs an MFA verification code to sign in."
         " Sign in with --login-only from a terminal."
-    ) in capsys.readouterr().err
+    ) in caplog.messages
 
 
 def test_browser_error_message_shows_cause(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     main_runner: MainRunner,
     accounts_config: Path,
     mock_browser_driver: MagicMock,
@@ -126,13 +127,13 @@ def test_browser_error_message_shows_cause(
     browser.sign_in.side_effect = error
     main_runner("-c", str(accounts_config), "--login-only", match=1)
     assert (
-        "Authentication Failure (Device verification cancelled)"
-        in capsys.readouterr().err
-    )
+        "Error for account ness@onett.example:"
+        " Authentication Failure (Device verification cancelled)"
+    ) in caplog.messages
 
 
 def test_check_only_signed_in(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     main_runner: MainRunner,
     accounts_config: Path,
     mock_browser_driver: MagicMock,
@@ -142,11 +143,14 @@ def test_check_only_signed_in(
         "-c", str(accounts_config), "--login-only", "--dry-run", match=0
     )
     browser.sign_in.assert_called_once_with(check=True)
-    assert not capsys.readouterr().err
+    assert (
+        "Checking sign in for Safeway account ness@onett.example"
+        in caplog.messages
+    )
 
 
 def test_check_only_not_signed_in(
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     main_runner: MainRunner,
     accounts_config: Path,
     mock_browser_driver: MagicMock,
@@ -161,6 +165,6 @@ def test_check_only_not_signed_in(
     )
     browser.sign_in.assert_called_once_with(check=True)
     assert (
-        "Account ness@onett.example is not signed in"
-        in capsys.readouterr().err
-    )
+        "Error for account ness@onett.example:"
+        " Account ness@onett.example is not signed in"
+    ) in caplog.messages

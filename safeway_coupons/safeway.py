@@ -3,15 +3,14 @@ from __future__ import annotations
 import random
 import sys
 import time
-import traceback
 from dataclasses import dataclass, field
 from functools import cached_property
-from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 
 from .account import Account
 from .client.client import SafewayClient
 from .client.session import LoginSession
+from .console import log
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors
 from .models.safeway.offers import Offer, OfferStatus, OfferType
@@ -50,22 +49,20 @@ class SafewayCoupons:
 
     def __call__(self) -> None:
         if not self.accounts:
-            print("Error: No Safeway account(s) configured", file=sys.stderr)  # noqa: T201
+            log.error("No Safeway accounts configured")
             sys.exit(1)
-        if self.debug_level >= 2:
-            HTTPConnection.debuglevel = 1
         try:
             errors = sum(not self.run_for_account(a) for a in self.accounts)
             if errors:
                 action = (
                     "signing in" if self.login_only else "clipping coupons"
                 )
-                print(f"Error {action} for {errors} account(s)")  # noqa: T201
+                log.error("Error %s for %s accounts", action, errors)
                 sys.exit(1)
         except Exception as e:
             if self.debug_level:
                 raise
-            print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+            log.error(e)
             sys.exit(1)
 
     def run_for_account(self, account: Account) -> bool:
@@ -78,29 +75,24 @@ class SafewayCoupons:
         except Error as e:
             if not (self.continue_on_error or self.login_only):
                 raise
-            if self.login_only and not self.debug_level:
-                print(f"Error: {e}", file=sys.stderr)  # noqa: T201
-            else:
-                traceback.print_exc()
+            log_method = (
+                log.error
+                if (self.login_only and not self.debug_level)
+                else log.exception
+            )
+            log_method("Error for account %s: %s", account.username, e)
             return False
         return True
 
     def login_for_account(self, account: Account) -> None:
         action = "Checking sign in" if self.dry_run else "Signing in"
-        print(f"{action} for Safeway account {account.username}")  # noqa: T201
-        LoginSession(
-            account,
-            headless=self.headless,
-            debug_level=self.debug_level,
-            dry_run=self.dry_run,
-        )
+        log.info("%s for Safeway account %s", action, account.username)
+        LoginSession(account, headless=self.headless, dry_run=self.dry_run)
 
     def clip_for_account(self, account: Account) -> None:
-        print(f"Clipping coupons for Safeway account {account.username}")  # noqa: T201
+        log.info("Clipping coupons for Safeway account %s", account.username)
         try:
-            swy = SafewayClient(
-                account, headless=self.headless, debug_level=self.debug_level
-            )
+            swy = SafewayClient(account, headless=self.headless)
             clipped_offers: list[Offer] = []
             clip_errors: list[ClipError] = []
             offers = swy.get_offers()
@@ -117,11 +109,12 @@ class SafewayCoupons:
             if unknown_count := (
                 len(all_unclipped_offers) - len(unclipped_offers)
             ):
-                print(  # noqa: T201
-                    f"Skipping {unknown_count} offers with unknown offer types"
+                log.warning(
+                    "Skipping %d offers with unknown offer types",
+                    unknown_count,
                 )
             if not unclipped_offers:
-                print("Nothing to do")  # noqa: T201
+                log.info("Nothing to do")
                 return
             rjust_size = len(str(len(unclipped_offers)))
             for i, offer in enumerate(self.yield_delay(unclipped_offers)):
@@ -132,19 +125,19 @@ class SafewayCoupons:
                 try:
                     if not self.dry_run:
                         swy.clip(offer)
-                    print(f"{progress_count} Clipped {offer}")  # noqa: T201
+                    log.info("%s clipped %s Clipped", progress_count, offer)
                     clipped_offers.append(offer)
                     if (
                         self.max_clip_count
                         and len(clipped_offers) >= self.max_clip_count
                     ):
-                        print(  # noqa: T201
-                            "Clip maximum count of "
-                            f"{self.max_clip_count} reached"
+                        log.info(
+                            "Clip maximum count of %d reached",
+                            self.max_clip_count,
                         )
                         break
                 except ClipError as e:
-                    print(f"{progress_count} {e}")  # noqa: T201
+                    log.info("%s %s", progress_count, e)
                     clip_errors.append(e)
                     if (
                         self.max_clip_errors
@@ -155,12 +148,11 @@ class SafewayCoupons:
                             errors=clip_errors,
                         ) from e
 
-            print(f"Clipped {len(clipped_offers)} coupons")  # noqa: T201
+            log.info("Clipped %d coupons", len(clipped_offers))
             email_clip_results(
                 self.sendmail_path,
                 account,
                 clipped_offers,
-                debug_level=self.debug_level,
                 send_email=self.send_email and not self.dry_run,
             )
         except Error as e:
@@ -168,7 +160,6 @@ class SafewayCoupons:
                 self.sendmail_path,
                 account,
                 error=e,
-                debug_level=self.debug_level,
                 send_email=self.send_email and not self.dry_run,
             )
             raise
@@ -186,7 +177,7 @@ class SafewayCoupons:
                 else:
                     delay_time = random.uniform(0.3, 0.8)  # noqa: S311
             if delay_time:
-                if self.debug_level >= 1 and delay_time >= 1:
-                    print(f"Waiting {delay_time} seconds")  # noqa: T201
+                if delay_time >= 1:
+                    log.debug("Waiting %d seconds", delay_time)
                 time.sleep(delay_time)
             yield item
