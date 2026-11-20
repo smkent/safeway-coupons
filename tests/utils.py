@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import email
+import email.policy
+import subprocess
 import sys
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from safeway_coupons.__main__ import main
-from safeway_coupons.models.safeway.offers import (
-    Offer,
-    OfferStatus,
-    OfferType,
-)
+from safeway_coupons.models.safeway.offers import Offer, OfferStatus, OfferType
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+    from email.message import EmailMessage
+    from typing import Any, Self
 
 
 @dataclass
@@ -22,6 +30,37 @@ class MainRunner:
         self.monkeypatch.setattr(sys, "argv", ["safeway-coupons", *cmd])
         with pytest.raises(SystemExit, match=str(match)):
             main()
+
+
+@dataclass
+class MockMail(ExitStack):
+    messages: list[EmailMessage] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        super().__init__()
+
+    def __enter__(self) -> Self:
+        self.enter_context(self.mock_subprocess_sendmail())
+        return self
+
+    @contextmanager
+    def mock_subprocess_sendmail(self) -> Generator[MagicMock]:
+        real_popen = subprocess.Popen
+
+        def _save_message(message: bytes, *_: Any, **__: Any) -> None:
+            self.messages.append(
+                email.message_from_bytes(message, policy=email.policy.default)
+            )
+
+        def _popen(cmd: Sequence[str], *args: Any, **kwargs: Any) -> Any:
+            if Path(cmd[0]).name == "sendmail":
+                return MagicMock(communicate=_save_message)
+            return real_popen(cmd, *args, **kwargs)
+
+        with patch.object(
+            subprocess, "Popen", autospec=True, side_effect=_popen
+        ) as obj:
+            yield obj
 
 
 @dataclass
