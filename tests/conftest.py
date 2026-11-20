@@ -11,6 +11,7 @@ import responses
 
 from safeway_coupons.account import Account
 from safeway_coupons.client import session
+from safeway_coupons.console import console
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
 
@@ -32,6 +33,11 @@ def pytest_configure(config: pytest.Config) -> None:
 @pytest.fixture
 def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
     return MainRunner(monkeypatch=monkeypatch)
+
+
+@pytest.fixture(autouse=True)
+def console_reset() -> None:
+    console.configure()
 
 
 @pytest.fixture(autouse=True)

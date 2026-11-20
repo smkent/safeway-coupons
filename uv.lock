@@ -1393,6 +1393,7 @@ dependencies = [
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "requests" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -1423,6 +1424,7 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4.14" },
     { name = "pydantic", specifier = ">=2.14" },
     { name = "requests" },
+    { name = "rich", specifier = ">=15" },
     { name = "typer", specifier = ">=0.27" },
 ]
 

@@ -7,6 +7,7 @@ from typing import Annotated
 from typer import Context, Exit, Option
 
 from safeway_coupons import version as package_version
+from safeway_coupons.console import console
 from safeway_coupons.dirs import dirs
 from safeway_coupons.safeway import SafewayCoupons
 
@@ -47,8 +48,8 @@ def setup(
             "--debug",
             count=True,
             help=(
-                "Print debugging information on stdout. Specify "
-                "twice to increase verbosity."
+                "Log debugging information. Specify "
+                "multiple times to increase verbosity."
             ),
         ),
     ] = 0,
@@ -143,6 +144,7 @@ def setup(
         return
     if state_dir:
         dirs.state = state_dir.resolve()
+    console.configure(verbose=debug_level)
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,

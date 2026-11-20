@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 class SafewayClient:
     account: Account
     headless: bool = field(default=True, kw_only=True)
-    debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
         self.session_requests.headers["Authorization"] = (
@@ -35,11 +34,7 @@ class SafewayClient:
 
     @cached_property
     def session(self) -> LoginSession:
-        return LoginSession(
-            self.account,
-            headless=self.headless,
-            debug_level=self.debug_level,
-        )
+        return LoginSession(self.account, headless=self.headless)
 
     @cached_property
     def session_requests(self) -> requests.Session:

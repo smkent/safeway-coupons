@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from patchright.sync_api import sync_playwright
 
+from safeway_coupons.console import log
 from safeway_coupons.dirs import DirsMixin
 from safeway_coupons.errors import (
     AuthenticationFailure,
@@ -49,7 +50,6 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
     channel: str = field(default="chrome", kw_only=True)
     headless: bool = field(default=True, kw_only=True)
     screen: str | None = field(default="1920x1080", kw_only=True)
-    debug_level: int = field(default=0, kw_only=True)
 
     def __post_init__(self) -> None:
         super().__init__()
@@ -96,12 +96,12 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
         # Remove any stale lock files
         for name in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
             (dd / name).unlink(missing_ok=True)
-        print(f"Browser profile dir (user_data_dir): {dd}")  # noqa: T201
+        log.info("Browser profile dir (user_data_dir): %s", dd)
         return dd
 
     @contextmanager
     def _new_page(self) -> Generator[Page]:
-        print("Starting browser session")  # noqa: T201
+        log.info("Starting browser session")
         with sync_playwright() as p:
             args = ["--window-size=1366,900"]
             if self.screen:
@@ -124,7 +124,7 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
                 for extra_tab in extra_tabs:
                     extra_tab.close()
                 self._check_user_agent(page)
-                print("Browser session ready")  # noqa: T201
+                log.info("Browser session ready")
                 try:
                     yield page
                 except Exception as e:
@@ -134,7 +134,7 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
                     )
                     with suppress(Exception):
                         page.screenshot(path=screenshot_path)
-                        print(f"Screenshot saved: {screenshot_path}")  # noqa: T201
+                        log.info("Screenshot saved: %s", screenshot_path)
                     if screenshot_path.is_file():
                         attachments.append(screenshot_path)
                     raise BrowserSessionError(attachments=attachments) from e
@@ -151,8 +151,7 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
         if "HeadlessChrome" not in user_agent:
             return None
         fixed = user_agent.replace("HeadlessChrome", "Chrome")
-        if self.debug_level >= 1:
-            print("Overriding user agent:", fixed)  # noqa: T201
+        log.debug("Overriding user agent: %s", fixed)
         return fixed
 
     @staticmethod
@@ -236,21 +235,20 @@ class SafewayBrowserSession(BrowserSession):
             with tf.open("w") as file:
                 json.dump(new_value, fp=file, indent=4)
             tf.replace(state_file)
-        if self.debug_level >= 1:
-            print("Wrote state file:", state_file)  # noqa: T201
+        log.debug("Wrote state file: %s", state_file)
 
     @cached_property
     def page(self) -> Page:
         page = super().page
 
         def log_navigation(frame: Frame) -> None:
-            if self.debug_level >= 1 and frame == self.page.main_frame:
-                print("Navigated:", frame.url)  # noqa: T201
+            if frame == self.page.main_frame:
+                log.debug("Navigated: %s", frame.url)
 
         page.on("framenavigated", log_navigation)
 
         def dismiss_cookie_banner(banner: Locator) -> None:
-            print("Dismissing cookie banner")  # noqa: T201
+            log.info("Dismissing cookie banner")
             self._click_to_reload(
                 banner.get_by_role(
                     "button", name=re.compile("necessary only", re.IGNORECASE)
@@ -263,7 +261,7 @@ class SafewayBrowserSession(BrowserSession):
         )
 
         def dismiss_info_modal(modal: Locator) -> None:
-            print("Dismissing personal info confirmation modal")  # noqa: T201
+            log.info("Dismissing personal info confirmation modal")
             self._click_to_reload(
                 modal.get_by_role(
                     "button", name=re.compile(r"^close$", re.IGNORECASE)
@@ -298,8 +296,7 @@ class SafewayBrowserSession(BrowserSession):
         greeting.wait_for()
         self.page.wait_for_load_state("load")
         if check and "SWY_SHARED_SESSION" not in self.cookies:
-            if self.debug_level >= 1:
-                print("No existing session cookie found")  # noqa: T201
+            log.debug("No existing session cookie found")
             return False
         signed_in = greeting.filter(has_text=self.SIGNED_IN_GREETING)
         with suppress(PlaywrightTimeoutError):
@@ -314,7 +311,7 @@ class SafewayBrowserSession(BrowserSession):
         ).click()
         modal = self.page.get_by_role("dialog", name="Sign in modal")
         modal.wait_for()
-        print("Sign in modal open")  # noqa: T201
+        log.info("Sign in modal open")
         return modal
 
     def open_sign_in_panel(self, timeout: float = 120) -> Locator | None:
@@ -336,18 +333,16 @@ class SafewayBrowserSession(BrowserSession):
             except PlaywrightTimeoutError:
                 if time.monotonic() >= deadline:
                     break
-                print(  # noqa: T201
-                    "Sign in panel didn't open, reloading page"
-                    f" (attempt {attempt + 1})"
+                log.info(
+                    "Sign in panel didn't open, reloading page (attempt %d)",
+                    attempt + 1,
                 )
                 self.load_site_home()
                 continue
             if signed_in_menu.is_visible():
-                if self.debug_level >= 1:
-                    print("Account menu shows a signed in user")  # noqa: T201
+                log.debug("Account menu shows a signed in user")
                 return None
-            if self.debug_level >= 1:
-                print(f"Sign in panel open after attempt {attempt}")  # noqa: T201
+            log.debug("Sign in panel open after attempt %d", attempt)
             return panel
         msg = f"Sign in panel did not open after {attempt} attempts"
         raise RuntimeError(msg)
@@ -373,14 +368,16 @@ class SafewayBrowserSession(BrowserSession):
             url = urllib.parse.urlsplit(response.url)
             if not re.search(r"safeway\.com|albertsons|okta|ciam", url.netloc):
                 return
-            if self.debug_level >= 1:
-                print(  # noqa: T201
-                    f"Response: {response.status} {response.request.method}"
-                    f" {url.netloc}{url.path}"
-                )
+            log.debug(
+                "Response: %d %s %s%s",
+                response.status,
+                response.request.method,
+                url.netloc,
+                url.path,
+            )
 
         if self.is_signed_in(check=True):
-            print("Already signed in")  # noqa: T201
+            log.info("Already signed in")
             return
         if check:
             raise NotSignedIn(self.account)
@@ -391,12 +388,12 @@ class SafewayBrowserSession(BrowserSession):
                 self.account.username
             )
             modal.get_by_role("button", name="Sign in with password").click()
-            print("Clicked Sign in with password")  # noqa: T201
+            log.info("Clicked Sign in with password")
             if self.account.password:
                 self.submit_password(modal, self.account.password)
         if not self.is_signed_in():
             raise RuntimeError("Sign in did not complete")
-        print("Signed in")  # noqa: T201
+        log.info("Signed in")
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
@@ -408,10 +405,10 @@ class SafewayBrowserSession(BrowserSession):
             modal.get_by_role(
                 "button", name=re.compile(r"^sign in$", re.IGNORECASE)
             ).click(no_wait_after=True)
-        print("Clicked Sign in")  # noqa: T201
+        log.info("Clicked Sign in")
         if (destination := self.verification_required(verify.value)) is None:
             return
-        print(f"Safeway requires device verification ({destination})")  # noqa: T201
+        log.info("Safeway requires device verification (%s)", destination)
         if not self.headless:
             input(
                 "Complete device verification in the browser window,"
@@ -437,7 +434,7 @@ class SafewayBrowserSession(BrowserSession):
         if (radios := modal.get_by_role("radio")).count():
             option = radios.first.locator("xpath=ancestor::label[1]")
             option.click()
-            print(f"Verifying with: {option.inner_text().strip()}")  # noqa: T201
+            log.info("Verifying with: %s", option.inner_text().strip())
         with self.page.expect_response(_factor_action("send")) as send:
             modal.get_by_role(
                 "button", name=re.compile(r"^continue$", re.IGNORECASE)
@@ -456,7 +453,7 @@ class SafewayBrowserSession(BrowserSession):
             if not code:
                 raise RuntimeError("Device verification cancelled")
             if not re.fullmatch(r"\d{6}", code):
-                print("The verification code is 6 digits")  # noqa: T201
+                log.info("The verification code is 6 digits")
                 continue
             tries += 1
             code_box.fill(code)
@@ -465,11 +462,11 @@ class SafewayBrowserSession(BrowserSession):
                     "button", name=re.compile(r"^sign in$", re.IGNORECASE)
                 ).click(no_wait_after=True)
             if verify.value.ok:
-                print("Device verified")  # noqa: T201
+                log.info("Device verified")
                 return
-            print(  # noqa: T201
-                "Verification code not accepted"
-                f" ({self.error_message(verify.value)})"
+            log.error(
+                "Verification code not accepted (%s)",
+                self.error_message(verify.value),
             )
         raise RuntimeError(
             f"Verification code not accepted after {attempts} attempts"
@@ -505,7 +502,6 @@ class LoginSession:
     store_id: str | None = field(default=None, init=False)
     user_agent: str | None = field(default=None, init=False)
     headless: bool = field(default=True, kw_only=True)
-    debug_level: int = field(default=0, kw_only=True)
     dry_run: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
@@ -527,17 +523,14 @@ class LoginSession:
 
     def _login(self) -> None:
         with SafewayBrowserSession(
-            account=self.account,
-            headless=self.headless,
-            debug_level=self.debug_level,
+            account=self.account, headless=self.headless
         ) as browser:
             self.user_agent = browser.user_agent
-            if self.debug_level >= 1:
-                print(f"User Agent: {self.user_agent}")  # noqa: T201
+            log.debug("User Agent: %s", self.user_agent)
 
             browser.sign_in(check=self.dry_run)
 
-            print("Retrieve session information")  # noqa: T201
+            log.info("Retrieve session information")
             session_cookie = browser.cookie_to_json(
                 browser.cookies["SWY_SHARED_SESSION"]
             )
@@ -548,8 +541,7 @@ class LoginSession:
             device_id = (
                 session_info.get("info", {}).get("COMMON", {}).get("deviceId")
             )
-            if self.debug_level >= 1:
-                print(f"Device ID: {device_id}")  # noqa: T201
+            log.debug("Device ID: %s", device_id)
             if device_id and not browser.state.get("device_id"):
                 browser.state |= {"device_id": device_id}
             if not (store_id := session_info["info"]["J4U"]["storeId"]):
