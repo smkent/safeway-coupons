@@ -7,7 +7,7 @@ from typing import Annotated
 from typer import Context, Exit, Option
 
 from safeway_coupons import version as package_version
-from safeway_coupons.console import console
+from safeway_coupons.console import console, log
 from safeway_coupons.dirs import dirs
 from safeway_coupons.safeway import SafewayCoupons
 
@@ -41,16 +41,13 @@ def setup(
             ),
         ),
     ] = None,
-    debug_level: Annotated[
+    debug: Annotated[
+        int, Option("-d", "--debug", count=True, hidden=True)
+    ] = 0,
+    verbose: Annotated[
         int,
         Option(
-            "-d",
-            "--debug",
-            count=True,
-            help=(
-                "Log debugging information. Specify "
-                "multiple times to increase verbosity."
-            ),
+            "-v", "--verbose", count=True, help="Increase logging verbosity."
         ),
     ] = 0,
     max_clip_count: Annotated[
@@ -144,7 +141,9 @@ def setup(
         return
     if state_dir:
         dirs.state = state_dir.resolve()
-    console.configure(verbose=debug_level)
+    console.configure(verbose=(verbose or debug))
+    if debug:
+        log.warning("-d/--debug is deprecated, use -v/--verbose instead")
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,

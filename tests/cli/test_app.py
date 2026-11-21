@@ -25,9 +25,16 @@ def test_no_accounts(
     main_runner(match=1)
 
 
-@pytest.mark.parametrize("debug_level", [0, 1, 2])
+@pytest.mark.parametrize(
+    "verbosity_argument",
+    [pytest.param("-d", id="debug"), pytest.param("-v", id="verbose")],
+)
+@pytest.mark.parametrize("verbosity", [0, 1, 2])
 def test_app_error(
-    main_runner: MainRunner, caplog_helper: CapLogHelper, debug_level: int
+    main_runner: MainRunner,
+    caplog_helper: CapLogHelper,
+    verbosity_argument: str,
+    verbosity: int,
 ) -> None:
     with (
         patch.object(SafewayCoupons, "clip_for_account", side_effect=Error()),
@@ -40,9 +47,14 @@ def test_app_error(
             },
         ),
     ):
-        main_runner(*(["-d"] * debug_level), match=1)
+        main_runner(*([verbosity_argument] * verbosity), match=1)
     [record] = caplog_helper.records("Error for account ness@onett.example: ")
-    if debug_level:
+    if verbosity:
+        assert len(
+            caplog_helper.records(
+                "-d/--debug is deprecated, use -v/--verbose instead"
+            )
+        ) == (1 if verbosity_argument == "-d" else 0)
         assert record.exc_info
         assert record.exc_info[0] is Error
     else:
