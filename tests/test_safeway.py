@@ -2,47 +2,59 @@ from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING
-from unittest import mock
+from unittest.mock import PropertyMock, call, patch
 
 import pytest
 
 from safeway_coupons import SafewayCoupons
-from safeway_coupons.errors import TooManyClipErrors
 from safeway_coupons.models.safeway.offers import Offer, OfferMap
 
 from .utils import ClipsTestConfig, create_offer
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from unittest.mock import MagicMock
 
     import responses
 
-    from safeway_coupons.account import Account
-
-    from .utils import MainRunner, MockMail
+    from .utils import CapLogHelper, MainRunner, MockMail
 
 
 @pytest.mark.usefixtures("http_responses")
 def test_safeway_coupons(
-    account: Account, available_offers: OfferMap, clips: ClipsTestConfig
+    main_runner: MainRunner,
+    accounts_config: Path,
+    available_offers: OfferMap,
+    clips: ClipsTestConfig,
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
-    app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
-    app.accounts = [account]
-    app()
+    main_runner(
+        "-c",
+        str(accounts_config),
+        "--no-email",
+        "--no-sleep",
+        "--no-sleep",
+    )
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert not clips.failed_offer_ids
 
 
 @pytest.mark.usefixtures("http_responses")
 def test_safeway_coupons_few_clip_errors(
-    account: Account, available_offers: OfferMap, clips: ClipsTestConfig
+    main_runner: MainRunner,
+    accounts_config: Path,
+    available_offers: OfferMap,
+    clips: ClipsTestConfig,
 ) -> None:
     available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     clips.fail_response_offer_ids.add("1")
-    app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=5)
-    app.accounts = [account]
-    app()
+    main_runner(
+        "-c",
+        str(accounts_config),
+        "--no-email",
+        "--no-sleep",
+        "--no-sleep",
+    )
     assert set(clips.clipped_offer_ids) == {"0", "2", "3", "4"}
     assert set(clips.failed_offer_ids) == {"1"}
 
@@ -52,7 +64,9 @@ def test_safeway_coupons_few_clip_errors(
     "clip_fail_type", ["fail_http_offer_ids", "fail_response_offer_ids"]
 )
 def test_safeway_coupons_too_many_clip_errors(
-    account: Account,
+    caplog_helper: CapLogHelper,
+    main_runner: MainRunner,
+    accounts_config: Path,
     available_offers: OfferMap,
     clips: ClipsTestConfig,
     clip_fail_type: str,
@@ -60,19 +74,31 @@ def test_safeway_coupons_too_many_clip_errors(
     available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     for i in range(1, 4):
         getattr(clips, clip_fail_type).add(str(i))
-    app = SafewayCoupons(
-        send_email=False, debug_level=1, sleep_level=2, max_clip_errors=2
-    )
-    app.accounts = [account]
-    with pytest.raises(TooManyClipErrors):
-        app()
+    with patch.object(
+        SafewayCoupons, "max_clip_errors", PropertyMock(return_value=2)
+    ):
+        main_runner(
+            "-c",
+            str(accounts_config),
+            "--no-email",
+            "--no-sleep",
+            "--no-sleep",
+            match=1,
+        )
     assert set(clips.clipped_offer_ids) == {"0"}
     assert set(clips.failed_offer_ids) == {"1", "2"}
+    assert (
+        len(caplog_helper.match_records("Exited after 2 clip errors (Last: "))
+        == 1
+    )
 
 
 @pytest.mark.usefixtures("http_responses")
 def test_safeway_coupons_invalid_offer_type(
-    account: Account, available_offers: OfferMap, clips: ClipsTestConfig
+    main_runner: MainRunner,
+    accounts_config: Path,
+    available_offers: OfferMap,
+    clips: ClipsTestConfig,
 ) -> None:
     offer_with_unknown_type = Offer.model_validate(
         create_offer("2187").model_dump(mode="json") | {"offer_pgm": "XX"}
@@ -81,9 +107,13 @@ def test_safeway_coupons_invalid_offer_type(
         "1138": create_offer("1138"),
         offer_with_unknown_type.offer_id: offer_with_unknown_type,
     }
-    app = SafewayCoupons(send_email=False, sleep_level=2, max_clip_errors=1)
-    app.accounts = [account]
-    app()
+    main_runner(
+        "-c",
+        str(accounts_config),
+        "--no-email",
+        "--no-sleep",
+        "--no-sleep",
+    )
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert clips.failed_offer_ids == []
 
@@ -93,10 +123,11 @@ def test_safeway_coupons_invalid_offer_type(
     ("sleep_level", "max_sleep"), [(0, 25.0), (1, 1.0), (2, 0.0)]
 )
 def test_safeway_coupons_sleep_time(
-    account: Account,
+    main_runner: MainRunner,
+    accounts_config: Path,
     available_offers: OfferMap,
     clips: ClipsTestConfig,
-    mock_sleep: mock.MagicMock,
+    mock_sleep: MagicMock,
     sleep_level: int,
     max_sleep: float,
 ) -> None:
@@ -104,11 +135,12 @@ def test_safeway_coupons_sleep_time(
     available_offers.offers |= {
         str(i): create_offer(str(i)) for i in range(offers_count)
     }
-    app = SafewayCoupons(
-        send_email=False, sleep_level=sleep_level, max_clip_errors=1
+    main_runner(
+        "-c",
+        str(accounts_config),
+        "--no-email",
+        *(["--no-sleep"] * sleep_level),
     )
-    app.accounts = [account]
-    app()
     if max_sleep:
         assert mock_sleep.call_count == offers_count
         assert max(i.args[0] for i in mock_sleep.call_args_list) <= max_sleep
@@ -143,7 +175,7 @@ def test_dry_run_signs_in(
     mail: MockMail,
     available_offers: OfferMap,
     http_responses: responses.RequestsMock,
-    mock_browser_driver: mock.MagicMock,
+    mock_browser_driver: MagicMock,
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
     main_runner("-c", str(accounts_config), "-p")
@@ -165,7 +197,7 @@ def test_login_only(
     main_runner: MainRunner,
     two_accounts_config: Path,
     mail: MockMail,
-    mock_browser_driver: mock.MagicMock,
+    mock_browser_driver: MagicMock,
     caplog: pytest.LogCaptureFixture,
     argv: list[str],
     status: str,
@@ -174,7 +206,7 @@ def test_login_only(
 ) -> None:
     main_runner("-c", str(two_accounts_config), "--login-only", *argv)
     browser = mock_browser_driver.return_value.__enter__.return_value
-    assert browser.sign_in.call_args_list == [mock.call(check=check)] * 2
+    assert browser.sign_in.call_args_list == [call(check=check)] * 2
     for username in ("ness@onett.example", "paula@twoson.example"):
         assert f"{status} for Safeway account {username}" in caplog.messages
     assert not mail.messages

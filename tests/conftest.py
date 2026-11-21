@@ -15,7 +15,7 @@ from safeway_coupons.console import console
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
 
-from .utils import ClipsTestConfig, MainRunner, MockMail
+from .utils import CapLogHelper, ClipsTestConfig, MainRunner, MockMail
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -49,6 +49,11 @@ def mock_config_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 def mail() -> Iterator[MockMail]:
     with MockMail() as mock_mail:
         yield mock_mail
+
+
+@pytest.fixture
+def caplog_helper(caplog: pytest.LogCaptureFixture) -> CapLogHelper:
+    return CapLogHelper(caplog=caplog)
 
 
 @pytest.fixture
