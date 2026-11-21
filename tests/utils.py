@@ -79,6 +79,13 @@ class MockMail(ExitStack):
 class CapLogHelper:
     caplog: pytest.LogCaptureFixture
 
+    @property
+    def messages(self) -> Sequence[str]:
+        return self.caplog.messages
+
+    def records(self, message: str) -> Sequence[LogRecord]:
+        return [r for r in self.caplog.records if r.getMessage() == message]
+
     def match_records(self, message: str) -> Sequence[LogRecord]:
         return [r for r in self.caplog.records if message in r.getMessage()]
 

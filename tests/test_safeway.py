@@ -88,7 +88,12 @@ def test_safeway_coupons_too_many_clip_errors(
     assert set(clips.clipped_offer_ids) == {"0"}
     assert set(clips.failed_offer_ids) == {"1", "2"}
     assert (
-        len(caplog_helper.match_records("Exited after 2 clip errors (Last: "))
+        len(
+            caplog_helper.match_records(
+                "Error for account ness@onett.example:"
+                " Exited after 2 clip errors (Last: "
+            )
+        )
         == 1
     )
 

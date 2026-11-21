@@ -153,7 +153,7 @@ services:
       SAFEWAY_ACCOUNT_PASSWORD: very_secret
       SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
       SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
-      # EXTRA_ARGS: --debug  # Optional
+      # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
       - state:/state:rw
@@ -173,7 +173,7 @@ services:
       # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
       SMTPHOST: your.smtp.host
       SAFEWAY_ACCOUNTS_FILE: /accounts_file
-      # EXTRA_ARGS: --debug  # Optional
+      # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro

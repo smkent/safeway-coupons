@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from contextlib import nullcontext
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -15,7 +14,7 @@ from safeway_coupons.safeway import SafewayCoupons
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from tests.utils import MainRunner
+    from tests.utils import CapLogHelper, MainRunner
 
 
 def test_no_accounts(
@@ -27,12 +26,15 @@ def test_no_accounts(
 
 
 @pytest.mark.parametrize(
-    ("debug_level", "expected_exception"), [(0, None), (1, Error), (2, Error)]
+    "verbosity_argument",
+    [pytest.param("-d", id="debug"), pytest.param("-v", id="verbose")],
 )
+@pytest.mark.parametrize("verbosity", [0, 1, 2])
 def test_app_error(
     main_runner: MainRunner,
-    debug_level: int,
-    expected_exception: type[Exception] | None,
+    caplog_helper: CapLogHelper,
+    verbosity_argument: str,
+    verbosity: int,
 ) -> None:
     with (
         patch.object(SafewayCoupons, "clip_for_account", side_effect=Error()),
@@ -44,11 +46,20 @@ def test_app_error(
                 "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
             },
         ),
-        pytest.raises(expected_exception)
-        if expected_exception
-        else nullcontext(),
     ):
-        main_runner(*(["-d"] * debug_level), match=1)
+        main_runner(*([verbosity_argument] * verbosity), match=1)
+    [record] = caplog_helper.records("Error for account ness@onett.example: ")
+    if verbosity:
+        assert len(
+            caplog_helper.records(
+                "-d/--debug is deprecated, use -v/--verbose instead"
+            )
+        ) == (1 if verbosity_argument == "-d" else 0)
+        assert record.exc_info
+        assert record.exc_info[0] is Error
+    else:
+        assert not record.exc_info
+    assert "Error clipping coupons for 1 accounts" in caplog_helper.messages
 
 
 @pytest.mark.parametrize(
@@ -61,9 +72,7 @@ def test_app_error(
         ),
         pytest.param(
             ["-d", "-d", "-SS"],
-            SafewayCoupons(
-                debug_level=2, sleep_level=2, sendmail=["/usr/sbin/sendmail"]
-            ),
+            SafewayCoupons(sleep_level=2, sendmail=["/usr/sbin/sendmail"]),
             id="Debug and sleep levels 2",
         ),
         pytest.param(

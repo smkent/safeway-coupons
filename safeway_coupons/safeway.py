@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 import sys
 import time
@@ -27,7 +28,6 @@ CLIP_ERROR_MAX = 5
 
 @dataclass
 class SafewayCoupons:
-    debug_level: int = field(default=0, kw_only=True)
     sleep_level: int = field(default=0, kw_only=True)
     max_clip_count: int = field(default=0, kw_only=True)
     max_clip_errors: int = field(default=CLIP_ERROR_MAX, kw_only=True)
@@ -51,18 +51,15 @@ class SafewayCoupons:
         if not self.accounts:
             log.error("No Safeway accounts configured")
             sys.exit(1)
-        try:
-            errors = sum(not self.run_for_account(a) for a in self.accounts)
-            if errors:
-                action = (
-                    "signing in" if self.login_only else "clipping coupons"
-                )
-                log.error("Error %s for %s accounts", action, errors)
-                sys.exit(1)
-        except Exception as e:
-            if self.debug_level:
-                raise
-            log.error(e)
+        errors = 0
+        for account in self.accounts:
+            if not self.run_for_account(account):
+                errors += 1
+                if not (self.login_only or self.continue_on_error):
+                    break
+        if errors:
+            action = "signing in" if self.login_only else "clipping coupons"
+            log.error("Error %s for %s accounts", action, errors)
             sys.exit(1)
 
     def run_for_account(self, account: Account) -> bool:
@@ -73,14 +70,12 @@ class SafewayCoupons:
                 else:
                     self.clip_for_account(account)
         except Error as e:
-            if not (self.continue_on_error or self.login_only):
-                raise
-            log_method = (
-                log.error
-                if (self.login_only and not self.debug_level)
-                else log.exception
+            log.error(
+                "Error for account %s: %s",
+                account.username,
+                e,
+                exc_info=log.isEnabledFor(logging.DEBUG),
             )
-            log_method("Error for account %s: %s", account.username, e)
             return False
         return True
 
