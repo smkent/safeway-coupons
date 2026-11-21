@@ -19,6 +19,7 @@ from safeway_coupons.models.safeway.offers import Offer, OfferStatus, OfferType
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
     from email.message import EmailMessage
+    from logging import LogRecord
     from typing import Any, Self
 
 
@@ -72,6 +73,14 @@ class MockMail(ExitStack):
     @classmethod
     def screenshot(cls, message: EmailMessage) -> bytes:
         return cls.attachments(message)["screenshot.png"]
+
+
+@dataclass
+class CapLogHelper:
+    caplog: pytest.LogCaptureFixture
+
+    def match_records(self, message: str) -> Sequence[LogRecord]:
+        return [r for r in self.caplog.records if message in r.getMessage()]
 
 
 @dataclass
