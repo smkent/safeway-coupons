@@ -34,6 +34,7 @@ for _log_level in LogLevel:
 
 class Logger(logging.LoggerAdapter):
     def trace(self, msg: object, *args: object, **kwargs: Any) -> None:
+        kwargs["stacklevel"] = kwargs.get("stacklevel", 1) + 1
         self.log(LogLevel.TRACE, msg, *args, **kwargs)
 
 
