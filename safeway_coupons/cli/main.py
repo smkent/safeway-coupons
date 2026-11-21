@@ -148,7 +148,6 @@ def setup(
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,
-        debug_level=debug_level,
         sleep_level=sleep_level,
         dry_run=dry_run,
         max_clip_count=max_clip_count,
