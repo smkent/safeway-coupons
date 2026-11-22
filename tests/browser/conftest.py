@@ -10,6 +10,8 @@ from patchright.sync_api import BrowserType
 from safeway_coupons.client.session import SITE_URL
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from patchright.sync_api import BrowserContext, Route
 
 
@@ -29,16 +31,19 @@ def mock_browser_driver() -> None:
 @dataclass
 class MockSite:
     requests: list[str] = field(default_factory=list)
+    handlers: dict[str, Callable[[Route], None]] = field(default_factory=dict)
 
     def request_route(self, route: Route) -> None:
-        try:
-            if (url := route.request.url).startswith(SITE_URL):
-                self.requests.append(url)
-        finally:
-            route.abort()
+        url = route.request.url
+        if url.startswith(SITE_URL):
+            self.requests.append(url)
+        if handler := self.handlers.get(url):
+            handler(route)
+            return
+        route.abort()
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_site(monkeypatch: pytest.MonkeyPatch) -> MockSite:
     site = MockSite()
     real_launch = BrowserType.launch_persistent_context
