@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from safeway_coupons.console import log
 from safeway_coupons.errors import AuthenticationFailure, BrowserSessionError
 
-from .session import SafewayBrowserSession
+from .browser import SafewayBrowserSession
 
 if TYPE_CHECKING:
     from safeway_coupons.account import Account
