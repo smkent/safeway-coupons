@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from safeway_coupons.client.session import LoginSession, SafewayBrowserSession
+from safeway_coupons.client.auth import LoginSession
+from safeway_coupons.client.session import SafewayBrowserSession
 from safeway_coupons.errors import (
     BrowserSessionError,
     MultiFactorAuthenticationRequired,

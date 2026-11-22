@@ -10,7 +10,7 @@ import pytest
 import responses
 
 from safeway_coupons.account import Account
-from safeway_coupons.client import session
+from safeway_coupons.client import auth
 from safeway_coupons.console import console
 from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
@@ -70,7 +70,7 @@ def http_responses() -> Iterator[responses.RequestsMock]:
 
 @pytest.fixture(autouse=True)
 def mock_browser_driver(mock_sleep: MagicMock) -> Iterator[MagicMock]:
-    with patch.object(session, "SafewayBrowserSession", autospec=True) as obj:
+    with patch.object(auth, "SafewayBrowserSession", autospec=True) as obj:
         instance = obj.return_value.__enter__.return_value
         instance.user_agent = "UnitTestUserAgent/1.0"
         yield obj

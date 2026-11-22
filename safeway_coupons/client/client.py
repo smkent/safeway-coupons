@@ -16,7 +16,7 @@ from safeway_coupons.models.safeway.offers import (
     OfferMap,
 )
 
-from .session import LoginSession
+from .auth import LoginSession
 
 if TYPE_CHECKING:
     from safeway_coupons.account import Account
