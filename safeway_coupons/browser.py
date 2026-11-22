@@ -81,7 +81,7 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
         # Remove any stale lock files
         for name in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
             (dd / name).unlink(missing_ok=True)
-        log.info("Browser profile dir (user_data_dir): %s", dd)
+        log.debug("Browser profile dir (user_data_dir): %s", dd)
         return dd
 
     @cached_property
