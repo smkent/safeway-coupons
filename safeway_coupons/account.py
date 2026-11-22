@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from filelock import FileLock, Timeout
 
@@ -16,12 +16,13 @@ from .errors import AccountLockedError
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from typing import Self
 
 
 @dataclass
 class Account(DirsMixin):
     username: str
-    password: str = field(repr=False)
+    password: str | None = field(repr=False)
     mail_to: str
     mail_from: str
 
@@ -64,22 +65,21 @@ class Account(DirsMixin):
             config.read_file(itertools.chain(["[_no_section]"], f))
         accounts: list[Self] = []
         mail_from = None
+
         for section in config.sections():
             if section in ["_no_section", "_global"]:
-                if config.has_option(section, "email_sender"):
-                    mail_from = config.get(section, "email_sender")
+                mail_from = config.get(
+                    section, "email_sender", fallback=mail_from
+                )
                 continue
-            mail_to = (
-                config.get(section, "notify")
-                if config.has_option(section, "notify")
-                else None
-            )
             username = str(section)
+            password = config.get(section, "password", fallback=None)
+            mail_to = config.get(section, "notify", fallback=None) or username
             accounts.append(
                 cls(
                     username=username,
-                    password=config.get(section, "password"),
-                    mail_to=mail_to or username,
+                    password=password,
+                    mail_to=mail_to,
                     mail_from=mail_from or username,
                 )
             )

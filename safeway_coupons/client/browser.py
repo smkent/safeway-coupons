@@ -19,6 +19,7 @@ from patchright.sync_api import TimeoutError as PlaywrightTimeoutError
 from safeway_coupons.browser import BrowserSession
 from safeway_coupons.console import log
 from safeway_coupons.errors import (
+    BrowserSessionError,
     MultiFactorAuthenticationRequired,
     NotSignedIn,
 )
@@ -235,13 +236,19 @@ class SafewayBrowserSession(BrowserSession):
             raise NotSignedIn(self.account)
         self.restore_saved_device_id()
         if modal := self.open_sign_in_modal():
+            if not self.account.password:
+                raise BrowserSessionError(
+                    message=(
+                        f"Account {self.account.username} needs to sign in,"
+                        " but has no password configured"
+                    )
+                )
             modal.get_by_role("textbox", name="Email or mobile number").fill(
                 self.account.username
             )
             modal.get_by_role("button", name="Sign in with password").click()
             log.info("Clicked Sign in with password")
-            if self.account.password:
-                self.submit_password(modal, self.account.password)
+            self.submit_password(modal, self.account.password)
         if not self.is_signed_in():
             raise RuntimeError("Sign in did not complete")
         log.info("Signed in")

@@ -50,8 +50,10 @@ class NotSignedIn(AuthenticationFailure):
 
 @dataclass
 class BrowserSessionError(Error):
+    message: str | None = field(default=None, kw_only=True)
+
     def __str__(self) -> str:
-        return str(self.__cause__ or "Browser session error")
+        return self.message or str(self.__cause__ or "Browser session error")
 
 
 @dataclass
