@@ -68,8 +68,18 @@ def http_responses() -> Iterator[responses.RequestsMock]:
         yield resp_mock
 
 
+@pytest.fixture
+def mock_browser_driver_enter() -> Iterator[MagicMock]:
+    with patch.object(
+        SafewayBrowserSession, "__enter__", autospec=True
+    ) as obj:
+        yield obj
+
+
 @pytest.fixture(autouse=True)
-def mock_browser_driver(mock_sleep: MagicMock) -> Iterator[MagicMock]:
+def mock_browser_driver(
+    mock_browser_driver_enter: MagicMock, mock_sleep: MagicMock
+) -> MagicMock:
     instance = create_autospec(SafewayBrowserSession, instance=True)
     instance.user_agent = "UnitTestUserAgent/1.0"
 
@@ -77,10 +87,8 @@ def mock_browser_driver(mock_sleep: MagicMock) -> Iterator[MagicMock]:
         instance.account = self.account
         return instance
 
-    with patch.object(
-        SafewayBrowserSession, "__enter__", autospec=True, side_effect=_enter
-    ):
-        yield instance
+    mock_browser_driver_enter.side_effect = _enter
+    return instance
 
 
 @pytest.fixture
