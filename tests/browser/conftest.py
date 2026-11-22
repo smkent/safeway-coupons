@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from patchright.sync_api import BrowserType
 
-from safeway_coupons.client.session import SITE_URL
+from safeway_coupons.client.browser import SITE_URL
 
 if TYPE_CHECKING:
     from collections.abc import Callable

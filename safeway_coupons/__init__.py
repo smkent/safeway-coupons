@@ -4,7 +4,7 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as import_version
 
 from .account import Account
-from .safeway import SafewayCoupons
+from .app import SafewayCoupons
 
 try:
     version = import_version("safeway-coupons")

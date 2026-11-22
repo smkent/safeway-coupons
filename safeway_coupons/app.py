@@ -9,8 +9,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 from .account import Account
+from .client.auth import LoginSession
 from .client.client import SafewayClient
-from .client.session import LoginSession
 from .console import log
 from .email import email_clip_results, email_error
 from .errors import ClipError, Error, TooManyClipErrors

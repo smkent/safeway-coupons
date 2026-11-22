@@ -7,9 +7,9 @@ from typing import Annotated
 from typer import Context, Exit, Option
 
 from safeway_coupons import version as package_version
+from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.console import console, log
 from safeway_coupons.dirs import dirs
-from safeway_coupons.safeway import SafewayCoupons
 
 from .cli import CLI
 

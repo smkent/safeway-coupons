@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from patchright.sync_api import Error as PlaywrightError
 from patchright.sync_api import Page
 
-from safeway_coupons.client.session import SITE_URL
+from safeway_coupons.client.browser import SITE_URL
 
 if TYPE_CHECKING:
     from pathlib import Path
