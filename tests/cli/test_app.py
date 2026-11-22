@@ -7,9 +7,9 @@ from unittest.mock import patch
 import pytest
 
 from safeway_coupons.account import Account
+from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
-from safeway_coupons.safeway import SafewayCoupons
 
 if TYPE_CHECKING:
     from pathlib import Path
