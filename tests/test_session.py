@@ -86,10 +86,9 @@ def test_device_verification_required_from_browser(
     account: Account, mock_browser_driver: MagicMock, tmp_path: Path
 ) -> None:
     screenshot = tmp_path / "screenshot.png"
-    browser = mock_browser_driver.return_value.__enter__.return_value
     error = BrowserSessionError(attachments=[screenshot])
     error.__cause__ = MultiFactorAuthenticationRequired(account)
-    browser.sign_in.side_effect = error
+    mock_browser_driver.sign_in.side_effect = error
     with pytest.raises(MultiFactorAuthenticationRequired) as exc_info:
         LoginSession(account)
     assert exc_info.value.attachments == [screenshot]
@@ -102,12 +101,9 @@ def test_device_verification_required(
     mock_browser_driver: MagicMock,
 ) -> None:
     def _raise(*, check: bool) -> None:
-        raise MultiFactorAuthenticationRequired(
-            mock_browser_driver.call_args.kwargs["account"]
-        )
+        raise MultiFactorAuthenticationRequired(mock_browser_driver.account)
 
-    browser = mock_browser_driver.return_value.__enter__.return_value
-    browser.sign_in.side_effect = _raise
+    mock_browser_driver.sign_in.side_effect = _raise
     main_runner("-c", str(accounts_config), "--login-only", match=1)
     assert (
         "Error for account ness@onett.example:"
@@ -122,10 +118,9 @@ def test_browser_error_message_shows_cause(
     accounts_config: Path,
     mock_browser_driver: MagicMock,
 ) -> None:
-    browser = mock_browser_driver.return_value.__enter__.return_value
     error = BrowserSessionError()
     error.__cause__ = RuntimeError("Device verification cancelled")
-    browser.sign_in.side_effect = error
+    mock_browser_driver.sign_in.side_effect = error
     main_runner("-c", str(accounts_config), "--login-only", match=1)
     assert (
         "Error for account ness@onett.example:"
@@ -139,11 +134,10 @@ def test_check_only_signed_in(
     accounts_config: Path,
     mock_browser_driver: MagicMock,
 ) -> None:
-    browser = mock_browser_driver.return_value.__enter__.return_value
     main_runner(
         "-c", str(accounts_config), "--login-only", "--dry-run", match=0
     )
-    browser.sign_in.assert_called_once_with(check=True)
+    mock_browser_driver.sign_in.assert_called_once_with(check=True)
     assert (
         "Checking sign in for Safeway account ness@onett.example"
         in caplog.messages
@@ -157,14 +151,13 @@ def test_check_only_not_signed_in(
     mock_browser_driver: MagicMock,
 ) -> None:
     def _raise(*, check: bool) -> None:
-        raise NotSignedIn(mock_browser_driver.call_args.kwargs["account"])
+        raise NotSignedIn(mock_browser_driver.account)
 
-    browser = mock_browser_driver.return_value.__enter__.return_value
-    browser.sign_in.side_effect = _raise
+    mock_browser_driver.sign_in.side_effect = _raise
     main_runner(
         "-c", str(accounts_config), "--login-only", "--dry-run", match=1
     )
-    browser.sign_in.assert_called_once_with(check=True)
+    mock_browser_driver.sign_in.assert_called_once_with(check=True)
     assert (
         "Error for account ness@onett.example:"
         " Account ness@onett.example is not signed in"

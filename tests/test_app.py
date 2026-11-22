@@ -184,8 +184,7 @@ def test_dry_run_signs_in(
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
     main_runner("-c", str(accounts_config), "-p")
-    browser = mock_browser_driver.return_value.__enter__.return_value
-    browser.sign_in.assert_called_once_with(check=False)
+    mock_browser_driver.sign_in.assert_called_once_with(check=False)
     assert [c.request.method for c in http_responses.calls] == ["GET"]
     assert not mail.messages
 
@@ -210,8 +209,9 @@ def test_login_only(
     check: bool,
 ) -> None:
     main_runner("-c", str(two_accounts_config), "--login-only", *argv)
-    browser = mock_browser_driver.return_value.__enter__.return_value
-    assert browser.sign_in.call_args_list == [call(check=check)] * 2
+    assert (
+        mock_browser_driver.sign_in.call_args_list == [call(check=check)] * 2
+    )
     for username in ("ness@onett.example", "paula@twoson.example"):
         assert f"{status} for Safeway account {username}" in caplog.messages
     assert not mail.messages
