@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from safeway_coupons.account import Account
-    from tests.conftest import MainRunner
+    from tests.utils import MainRunner
 
 MFA_REQUIRED = {
     "status": "MFA_REQUIRED",
