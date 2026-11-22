@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Mapping
 
     from patchright.sync_api import (
+        BrowserContext,
         Cookie,
         Frame,
         Locator,
@@ -41,6 +42,8 @@ if TYPE_CHECKING:
     )
 
     from safeway_coupons.account import Account
+
+SITE_URL = "https://www.safeway.com/"
 
 
 @dataclass
@@ -53,6 +56,10 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
 
     def __post_init__(self) -> None:
         super().__init__()
+
+    @property
+    @abstractmethod
+    def state_subdir(self) -> Path: ...
 
     @cached_property
     def user_agent(self) -> str:
@@ -69,14 +76,6 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
         cookie["value"] = urllib.parse.quote(
             json.dumps(value, separators=(",", ":")), safe="!~*'()"
         )
-
-    @cached_property
-    def page(self) -> Page:
-        return self.enter_context(self._new_page())
-
-    @property
-    @abstractmethod
-    def state_subdir(self) -> Path: ...
 
     @cached_property
     def configured_profile_dir(self) -> Path:
@@ -99,45 +98,59 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
         log.info("Browser profile dir (user_data_dir): %s", dd)
         return dd
 
+    @cached_property
+    def browser_context(self) -> BrowserContext:
+        log.info("Starting browser session")
+        p = self.enter_context(sync_playwright())
+        args = ["--window-size=1366,900"]
+        if self.screen:
+            args.append(f"--screen-info={{{self.screen}}}")
+        if user_agent := self._user_agent_override(p):
+            args.append(f"--user-agent={user_agent}")
+        context = self.enter_context(
+            p.chromium.launch_persistent_context(
+                user_data_dir=self.configured_profile_dir,
+                channel=self.channel,
+                headless=self.headless,
+                no_viewport=True,
+                args=args,
+            )
+        )
+        # Allow for slow hardware in all actions, waits and navigations
+        context.set_default_timeout(self.DEFAULT_TIMEOUT)
+        return context
+
+    @cached_property
+    def single_page(self) -> Page:
+        ctx = self.browser_context
+        self.enter_context(nullcontext() if ctx.pages else ctx.new_page())
+        page, *extra_tabs = ctx.pages
+        for extra_tab in extra_tabs:
+            extra_tab.close()
+        self._check_user_agent(page)
+        log.info("Browser session ready")
+        return page
+
+    @cached_property
+    def page(self) -> Page:
+        return self.enter_context(self._new_page())
+
     @contextmanager
     def _new_page(self) -> Generator[Page]:
-        log.info("Starting browser session")
-        with sync_playwright() as p:
-            args = ["--window-size=1366,900"]
-            if self.screen:
-                args.append(f"--screen-info={{{self.screen}}}")
-            if user_agent := self._user_agent_override(p):
-                args.append(f"--user-agent={user_agent}")
-            with (
-                p.chromium.launch_persistent_context(
-                    user_data_dir=self.configured_profile_dir,
-                    channel=self.channel,
-                    headless=self.headless,
-                    no_viewport=True,
-                    args=args,
-                ) as ctx,
-                nullcontext() if ctx.pages else ctx.new_page(),
-            ):
-                # Allow for slow hardware in all actions, waits and navigations
-                ctx.set_default_timeout(self.DEFAULT_TIMEOUT)
-                page, *extra_tabs = ctx.pages
-                for extra_tab in extra_tabs:
-                    extra_tab.close()
-                self._check_user_agent(page)
-                log.info("Browser session ready")
-                try:
-                    yield page
-                except Exception as e:
-                    attachments = []
-                    screenshot_path = self.place_state_file(
-                        Path("debug") / "screenshot.png"
-                    )
-                    with suppress(Exception):
-                        page.screenshot(path=screenshot_path)
-                        log.info("Screenshot saved: %s", screenshot_path)
-                    if screenshot_path.is_file():
-                        attachments.append(screenshot_path)
-                    raise BrowserSessionError(attachments=attachments) from e
+        page = self.single_page
+        try:
+            yield page
+        except Exception as e:
+            attachments = []
+            screenshot_path = self.place_state_file(
+                Path("debug") / "screenshot.png"
+            )
+            with suppress(Exception):
+                page.screenshot(path=screenshot_path)
+                log.info("Screenshot saved: %s", screenshot_path)
+            if screenshot_path.is_file():
+                attachments.append(screenshot_path)
+            raise BrowserSessionError(attachments=attachments) from e
 
     def _user_agent_override(self, p: Playwright) -> str | None:
         if not self.headless:
@@ -210,7 +223,7 @@ class SafewayBrowserSession(BrowserSession):
         return self
 
     def load_site_home(self) -> None:
-        self.page.goto("https://www.safeway.com")
+        self.page.goto(SITE_URL)
         # Wait out any initial reloads by waiting for the account button
         self._account_button.wait_for(state="attached")
         self.page.wait_for_load_state("load")

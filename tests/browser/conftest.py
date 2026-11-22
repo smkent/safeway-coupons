@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from patchright.sync_api import BrowserType
 
+from safeway_coupons.client.session import SITE_URL
+
 if TYPE_CHECKING:
     from patchright.sync_api import BrowserContext, Route
-
-SITE_URL = "https://www.safeway.com/"
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
