@@ -35,6 +35,11 @@ def setup(
         Option(
             "-c",
             "--accounts-config",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            writable=False,
             help=(
                 "Path to configuration file containing Safeway "
                 "accounts information."
