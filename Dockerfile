@@ -22,7 +22,7 @@ LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates wget && \
     wget -q -O /usr/share/keyrings/chrome.pub https://dl-ssl.google.com/linux/linux_signing_key.pub && \
-    echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/chrome.pub] http://dl.google.com/linux/chrome/deb/ stable main' \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/chrome.pub] http://dl.google.com/linux/chrome/deb/ stable main" \
         > /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y google-chrome-stable tini && \
