@@ -48,7 +48,7 @@ jobs:
     with:
       output: image
       push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-      platforms: linux/amd64
+      platforms: linux/amd64,linux/arm64
       cache: true
       cache-mode: max
       set-meta-labels: true
