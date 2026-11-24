@@ -1462,7 +1462,7 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3" },
     { name = "responses" },
     { name = "ruff", specifier = ">=0.17" },
-    { name = "syrupy", specifier = ">=5" },
+    { name = "syrupy", specifier = ">=7" },
     { name = "ty", specifier = ">=0.0.84" },
     { name = "types-requests" },
 ]
