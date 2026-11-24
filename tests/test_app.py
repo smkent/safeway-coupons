@@ -7,6 +7,8 @@ from unittest.mock import PropertyMock, call, patch
 import pytest
 
 from safeway_coupons import SafewayCoupons
+from safeway_coupons.account import AccountsFile
+from safeway_coupons.models.fields import Password
 from safeway_coupons.models.safeway.offers import Offer, OfferMap
 
 from .utils import ClipsTestConfig, create_offer
@@ -158,16 +160,19 @@ def test_safeway_coupons_sleep_time(
 
 
 @pytest.fixture
-def two_accounts_config(tmp_path: Path) -> Path:
-    config = tmp_path / "two_accounts"
+def two_accounts_config() -> Path:
+    config = AccountsFile.default_path()
+    config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(
         os.linesep.join(
             (
-                "[ness@onett.example]",
-                "password = pk_fire",
+                "[accounts.ness]",
+                'username = "ness@onett.example"',
+                f'password = "{Password.encode("pk_fire")}"',
                 "",
-                "[paula@twoson.example]",
-                "password = pk_fire",
+                "[accounts.paula]",
+                'username = "paula@twoson.example"',
+                f'password = "{Password.encode("pk_fire")}"',
             )
         )
     )
@@ -183,7 +188,7 @@ def test_dry_run_signs_in(
     mock_browser_driver: MagicMock,
 ) -> None:
     available_offers.offers |= {"1138": create_offer("1138")}
-    main_runner("-c", str(accounts_config), "-p")
+    main_runner("-p")
     mock_browser_driver.sign_in.assert_called_once_with(check=False)
     assert [c.request.method for c in http_responses.calls] == ["GET"]
     assert not mail.messages
@@ -208,7 +213,7 @@ def test_login_only(
     *,
     check: bool,
 ) -> None:
-    main_runner("-c", str(two_accounts_config), "--login-only", *argv)
+    main_runner("--login-only", *argv)
     assert (
         mock_browser_driver.sign_in.call_args_list == [call(check=check)] * 2
     )

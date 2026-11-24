@@ -6,10 +6,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from safeway_coupons.account import Account
+from safeway_coupons.account import Account, EmailConfig, NotifyConfig
 from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
+from safeway_coupons.models.fields import Password
+from tests.accounts import ACCOUNTS_TOML, LEGACY_ACCOUNTS_INI
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -161,10 +163,14 @@ def test_args(
     mock_app.assert_called_once()
     expected_instance.accounts = [
         Account(
+            name="ness@onett.example",
             username="ness@onett.example",
-            password="pk_fire",  # noqa: S106
-            mail_to="ness@onett.example",
-            mail_from="ness@onett.example",
+            password=Password.encode("pk_fire"),
+            notify=NotifyConfig(
+                email=EmailConfig(
+                    to="ness@onett.example", mail_from="ness@onett.example"
+                )
+            ),
         )
     ]
     assert mock_app.call_args.args[0] == expected_instance
@@ -186,3 +192,120 @@ def test_args_storage_dir(
     )
     assert lock_file.is_file()
     assert dirs.state == (storage_dir / "state").resolve()
+
+
+@pytest.mark.parametrize("custom_storage_dir", [False, True])
+def test_accounts_toml(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_clip: MagicMock,
+    tmp_path: Path,
+    custom_storage_dir: bool,  # noqa: FBT001
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    storage_dir = tmp_path / "custom-storage"
+    config_dir = storage_dir / "config" if custom_storage_dir else dirs.config
+    config_dir.mkdir(parents=True)
+    (config_dir / "accounts.toml").write_text(ACCOUNTS_TOML)
+    args = ["--storage-dir", str(storage_dir)] if custom_storage_dir else []
+    main_runner(*args)
+    assert mock_clip.call_count == 2
+    for name in ("ness", "paula"):
+        assert (dirs.state / "accounts" / name / "lock").is_file()
+
+
+@pytest.mark.parametrize(
+    ("config_content", "account_names"),
+    [
+        pytest.param(ACCOUNTS_TOML, ("ness", "paula"), id="toml"),
+        pytest.param(
+            LEGACY_ACCOUNTS_INI,
+            ("ness@onett.example", "paula@twoson.example"),
+            id="ini",
+        ),
+    ],
+)
+def test_accounts_config_option(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_clip: MagicMock,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    config_content: str,
+    account_names: tuple[str, ...],
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    accounts_config = tmp_path / "accounts-config"
+    accounts_config.write_text(config_content)
+    main_runner("-c", str(accounts_config))
+    assert mock_clip.call_count == 2
+    for name in account_names:
+        assert (dirs.state / "accounts" / name / "lock").is_file()
+    assert any(
+        "-c/--accounts-config is deprecated" in m for m in caplog.messages
+    )
+
+
+@pytest.mark.parametrize("source", ["env", "ini"])
+def test_legacy_username_with_plus(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_clip: MagicMock,
+    tmp_path: Path,
+    source: str,
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    username = "ness+mani-mani@onett.example"
+    legacy_dir = dirs.state / "accounts" / username
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "state.json").write_text("{}")
+    if source == "env":
+        monkeypatch.setenv("SAFEWAY_ACCOUNT_USERNAME", username)
+        monkeypatch.setenv("SAFEWAY_ACCOUNT_PASSWORD", "pk_fire")
+        main_runner()
+    else:
+        accounts_config = tmp_path / "accounts-config"
+        accounts_config.write_text(f"[{username}]\npassword = pk_fire\n")
+        main_runner("-c", str(accounts_config))
+    mock_clip.assert_called_once()
+    assert (legacy_dir / "state.json").is_file()
+    assert (legacy_dir / "lock").is_file()
+
+
+@pytest.mark.parametrize(
+    "new_state_exists",
+    [pytest.param(True, id="exists"), pytest.param(False, id="absent")],
+)
+def test_legacy_state_dir_moved(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_clip: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+    new_state_exists: bool,  # noqa: FBT001
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    dirs.config.mkdir(parents=True)
+    (dirs.config / "accounts.toml").write_text(ACCOUNTS_TOML)
+    legacy_dir = dirs.state / "accounts" / "paula@twoson.example"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "state.json").write_text("{}")
+    new_dir = dirs.state / "accounts" / "paula"
+    if new_state_exists:
+        new_dir.mkdir(parents=True)
+    main_runner()
+    assert mock_clip.call_count == 2
+    if new_state_exists:
+        assert (legacy_dir / "state.json").is_file()
+        assert not (new_dir / "state.json").exists()
+        assert not any("Migrated state" in m for m in caplog.messages)
+    else:
+        assert not legacy_dir.exists()
+        assert (new_dir / "state.json").is_file()
+        assert (
+            f"Migrated state for account paula from {legacy_dir} to {new_dir}"
+            in caplog.messages
+        )

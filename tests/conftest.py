@@ -9,9 +9,15 @@ from unittest.mock import MagicMock, create_autospec, patch
 import pytest
 import responses
 
-from safeway_coupons.account import Account
+from safeway_coupons.account import (
+    Account,
+    AccountsFile,
+    EmailConfig,
+    NotifyConfig,
+)
 from safeway_coupons.client.browser import SafewayBrowserSession
 from safeway_coupons.console import console
+from safeway_coupons.models.fields import Password
 from safeway_coupons.models.safeway.offers import OfferMap
 
 from .utils import (
@@ -110,28 +116,35 @@ def mock_browser_driver(
 @pytest.fixture
 def account() -> Account:
     return Account(
+        name="ness",
         username="ness@onett.example",
-        password="pk_fire",  # noqa: S106
-        mail_from="ness@onett.example",
-        mail_to="ness@onett.example",
+        password=Password.encode("pk_fire"),
+        notify=NotifyConfig(
+            email=EmailConfig(
+                to="ness@onett.example", mail_from="ness@onett.example"
+            )
+        ),
     )
 
 
 @pytest.fixture
-def accounts_config(tmp_path: Path) -> Path:
-    accounts_file = tmp_path / "test_accounts"
+def accounts_config() -> Path:
+    accounts_file = AccountsFile.default_path()
+    accounts_file.parent.mkdir(parents=True, exist_ok=True)
     accounts_file.write_text(
         os.linesep.join(
             (
-                "[_global]",
-                "email_sender = ness@onett.example",
+                "[accounts.ness]",
+                'username = "ness@onett.example"',
+                f'password = "{Password.encode("pk_fire")}"',
                 "",
-                "[ness@onett.example]",
-                "password = pk_fire",
-                "notify = ness@onett.example",
+                "[accounts.ness.notify.email]",
+                'to = "ness@onett.example"',
+                'from = "ness@onett.example"',
             )
         )
     )
+    accounts_file.chmod(0o600)
     return accounts_file
 
 

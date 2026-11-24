@@ -236,10 +236,13 @@ class SafewayBrowserSession(BrowserSession):
             raise NotSignedIn(self.account)
         self.restore_saved_device_id()
         if modal := self.open_sign_in_modal():
-            if not self.account.password:
+            if not (
+                (password_field := self.account.password)
+                and (password := password_field.get_secret_value())
+            ):
                 raise BrowserSessionError(
                     message=(
-                        f"Account {self.account.username} needs to sign in,"
+                        f"Account {self.account.name} needs to sign in,"
                         " but has no password configured"
                     )
                 )
@@ -248,7 +251,7 @@ class SafewayBrowserSession(BrowserSession):
             )
             modal.get_by_role("button", name="Sign in with password").click()
             log.info("Clicked Sign in with password")
-            self.submit_password(modal, self.account.password)
+            self.submit_password(modal, password)
         if not self.is_signed_in():
             raise RuntimeError("Sign in did not complete")
         log.info("Signed in")

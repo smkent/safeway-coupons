@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 import pytest
 from filelock import FileLock
 
-from safeway_coupons.account import Account
+from safeway_coupons.account import Account, EmailConfig, NotifyConfig
 from safeway_coupons.errors import AccountLockedError
+from safeway_coupons.models.fields import Password
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,7 +48,7 @@ def test_account_lock_released(new_account: Account) -> None:
             pass
 
 
-def test_accounts_with_browser_session(
+def test_legacy_accounts_config_with_browser_session(
     main_runner: MainRunner,
     tmp_path: Path,
     mock_browser_driver_enter: MagicMock,
@@ -63,16 +64,21 @@ def test_accounts_with_browser_session(
     main_runner("-c", str(accounts_file), "--login-only", match=0)
     expected_accounts = [
         Account(
+            name="ness@onett.example",
             username="ness@onett.example",
-            password="pk_fire",  # noqa: S106
-            mail_from="ness@onett.example",
-            mail_to="ness@onett.example",
+            password=Password.encode("pk_fire"),
+            notify=None,
         ),
         Account(
+            name="paula@twoson.example",
             username="paula@twoson.example",
             password=None,
-            mail_from="paula@twoson.example",
-            mail_to="ness@onett.example",
+            notify=NotifyConfig(
+                email=EmailConfig(
+                    mail_from=None,
+                    to="ness@onett.example",
+                )
+            ),
         ),
     ]
     assert [

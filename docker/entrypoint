@@ -56,7 +56,8 @@ set -- ${EXTRA_ARGS-} "${@}"
 if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
     echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
     set -- --accounts-config "${SAFEWAY_ACCOUNTS_FILE}" "${@}"
-else
+elif [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ] \
+        && [ -n "${SAFEWAY_ACCOUNT_PASSWORD}" ]; then
     echo "Using environment variables for configuration"
     if [ -z "${SAFEWAY_ACCOUNT_MAIL_TO}" ] \
             && [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ]; then

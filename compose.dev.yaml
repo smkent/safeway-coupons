@@ -1,10 +1,9 @@
 services:
   safeway-coupons:
     build: .
-    command: -c /accounts -n -v -m 1
+    command: -n -v -m 1
     restart: no
     volumes:
-      - ./accounts:/accounts:ro
       - ./config:/storage/config:rw
       - state:/storage/state:rw
 

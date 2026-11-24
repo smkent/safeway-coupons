@@ -76,41 +76,50 @@ If a sender email address is configured, a summary email will be sent for each
 Safeway account via `sendmail`. The email recipient defaults to the Safeway
 account email address, but can be overridden for each account.
 
-Accounts are searched via the following methods in the listed order. Only one
-account configuration method may be used at a time.
+Accounts may be configured via one of the following methods.
+
+#### With `accounts.toml`
+
+Configure your Safeway accounts in `accounts.toml` within the safeway-coupons
+configuration directory. To show the configuration directory's location, run:
+
+```sh
+safeway-coupons storage show config
+```
+
+Each account is named using a [TOML table][toml-table] name placed within the
+top level `accounts` table, e.g. `[accounts.(name)]`. Account names are
+converted to lower case and may not contain spaces or slashes.
+
+Example configuration:
+
+```toml
+[accounts.main]
+username = "safeway.account@example.com"
+password = "base64:<your base64-encoded password>"
+
+# Optional summary email settings for "main" account
+notify.email.to = "your.email@example.com"
+notify.email.from = "sender@example.com"
+
+[accounts.second]
+username = "another.safeway.account@example.com"
+password = "base64:<your base64-encoded password>"
+notify.email.to = "other.email@example.com"  # Optional
+```
+
+Saved passwords must be encoded using base64, with a `base64:` prefix before the
+encoded password value.
 
 #### With environment variables
 
-A single Safeway account can be configured with environment variables:
+A single Safeway account can be configured with environment variables. If set,
+`accounts.toml` is ignored.
 
 * `SAFEWAY_ACCOUNT_USERNAME`: Account email address (required)
 * `SAFEWAY_ACCOUNT_PASSWORD`: Account password (required)
 * `SAFEWAY_ACCOUNT_MAIL_FROM`: Sender address for email summary
 * `SAFEWAY_ACCOUNT_MAIL_TO`: Recipient address for email summary
-
-#### With config file
-
-Multiple Safeway accounts can be provided in an ini-style config file, with a
-section for each account. For example:
-
-```ini
-; optional
-email_sender = sender@example.com
-
-; required
-[safeway.account@example.com]
-; required
-password = 12345
-; optional
-notify = your.email@example.com
-```
-
-Provide the path to your config file using the `-c` or `--accounts-config`
-option:
-
-```sh
-safeway-coupons -c path/to/config/file
-```
 
 ### Multi-factor authentication (MFA) verification codes
 
@@ -123,7 +132,7 @@ text). safeway-coupons will then prompt for the code in the terminal to complete
 sign in. To sign in interactively with an MFA code, run:
 
 ```sh
-safeway-coupons -c path/to/config/file --login-only
+safeway-coupons --login-only
 ```
 
 Scheduled and noninteractive invocations of safeway-coupons cannot obtain or
@@ -176,7 +185,8 @@ volumes:
   state:
 ```
 
-Example `compose.yaml` with configuration via accounts file:
+Example `compose.yaml` with configuration via accounts file (place
+`accounts.toml` at `./config/accounts.toml`):
 
 ```yaml
 services:
@@ -186,11 +196,9 @@ services:
       CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
       # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
       SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNTS_FILE: /accounts_file
       # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
-      - path/to/safeway_accounts_file:/accounts_file:ro
       - ./config:/storage/config:rw
       - state:/storage/state:rw
 
@@ -262,4 +270,5 @@ This project is based on and maintained with [copier-project][copier-project].
 [pipx]: https://pipx.pypa.io
 [platformdirs-docs]: https://platformdirs.readthedocs.io/en/stable/platforms.html
 [requests]: https://requests.readthedocs.io/en/latest/
+[toml-table]: https://toml.io/en/v1.1.0#table
 [uv-tool]: https://docs.astral.sh/uv/guides/tools/
