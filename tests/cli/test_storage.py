@@ -44,11 +44,13 @@ def output_test(
 def test_storage_list(
     output_test: OutputTest, mock_dirs: MockDirs, command: str
 ) -> None:
-    output_test.stdout = f"State: {mock_dirs.state}\n"
+    output_test.stdout = (
+        f"Config: {mock_dirs.config}\nState: {mock_dirs.state}\n"
+    )
     output_test("storage", command)
 
 
-@pytest.mark.parametrize("name", ["state"])
+@pytest.mark.parametrize("name", ["config", "state"])
 def test_storage_show(
     output_test: OutputTest, mock_dirs: MockDirs, name: str
 ) -> None:

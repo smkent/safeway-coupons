@@ -5,6 +5,7 @@ services:
     restart: no
     volumes:
       - ./accounts:/accounts:ro
+      - ./config:/storage/config:rw
       - state:/storage/state:rw
 
 volumes:

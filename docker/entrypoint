@@ -40,6 +40,12 @@ elif ! is_mount /storage/state && ! is_mount /storage; then
         "Browser sessions will be lost when the container is recreated."
 fi
 
+if ! is_mount /storage/config && ! is_mount /storage; then
+    storage_warning "/storage/config volume missing" \
+        "No /storage/config volume was detected." \
+        "Configuration changes will be lost when the container is recreated."
+fi
+
 # shellcheck disable=SC2174
 mkdir -vp -m 0700 /storage/state
 

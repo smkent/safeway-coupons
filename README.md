@@ -133,8 +133,12 @@ safeway-coupons interactively to refresh your sign in session.
 
 ### Data storage
 
-The default location for persistent state such as browser profiles is the
-[User state directory (see `user_state_dir`)][platformdirs-docs].
+Local data storage defaults to these locations:
+
+* [User config directory (see `user_config_dir`)][platformdirs-docs] for user
+  configuration such as accounts
+* [User state directory (see `user_state_dir`)][platformdirs-docs] for
+  persistent state such as browser profiles
 
 To view local data storage locations, run:
 
@@ -165,6 +169,7 @@ services:
       # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
+      - ./config:/storage/config:rw
       - state:/storage/state:rw
 
 volumes:
@@ -186,6 +191,7 @@ services:
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
+      - ./config:/storage/config:rw
       - state:/storage/state:rw
 
 volumes:

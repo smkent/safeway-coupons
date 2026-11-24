@@ -19,23 +19,51 @@ class Dirs:
     platformdirs: ClassVar[PlatformDirs] = PlatformDirs(APP_NAME, APP_AUTHOR)
 
     @property
+    def config(self) -> Path:
+        if self.base:
+            return self.base / "config"
+        return self.platformdirs.user_config_path
+
+    @property
     def state(self) -> Path:
         if self.base:
             return self.base / "state"
         return self.platformdirs.user_state_path
+
+    def config_path(self, *parts: str | os.PathLike[str]) -> Path:
+        return self.config.joinpath(*parts)
+
+    def place_config_file(self, *parts: str | os.PathLike[str]) -> Path:
+        path = self.config_path(*parts)
+        self.mkdirs(path.parent)
+        return path
 
     def state_path(self, *parts: str | os.PathLike[str]) -> Path:
         return self.state.joinpath(*parts)
 
     def place_state_file(self, *parts: str | os.PathLike[str]) -> Path:
         path = self.state_path(*parts)
-        missing = [p for p in (path.parent, *path.parents) if not p.exists()]
+        self.mkdirs(path.parent)
+        return path
+
+    def mkdirs(self, path: Path) -> None:
+        missing = [p for p in (path, *path.parents) if not p.exists()]
         for p in reversed(missing):
             p.mkdir(mode=0o700, exist_ok=True)
-        return path
 
 
 class DirsMixin:
+    @property
+    def config_subdir(self) -> Path:
+        return Path()
+
+    @property
+    def config_dir(self) -> Path:
+        return dirs.config_path(self.config_subdir)
+
+    def place_config_file(self, name: str | os.PathLike[str]) -> Path:
+        return dirs.place_config_file(self.config_subdir, name)
+
     @property
     def state_subdir(self) -> Path:
         return Path()

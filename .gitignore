@@ -22,3 +22,6 @@ mise.local.toml
 /htmlcov/
 /site/
 coverage.xml
+
+# Docker compose volumes
+/config/
