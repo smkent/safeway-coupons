@@ -338,6 +338,11 @@ def test_accounts_source_logged_env(
     monkeypatch.setenv("SAFEWAY_ACCOUNT_USERNAME", "jeff@winters.example")
     monkeypatch.setenv("SAFEWAY_ACCOUNT_PASSWORD", "bottle_rocket")
     main_runner("--verbose")
+    assert (
+        "Account configuration with SAFEWAY_ACCOUNT_* environment variables"
+        " is deprecated and will be removed in a future release."
+        f" Migrate your account to {accounts_toml_setup}."
+    ) in caplog.messages
     assert "Loaded account from environment" in caplog.messages
     found = (
         f"Account from environment overrides {accounts_toml_setup}"

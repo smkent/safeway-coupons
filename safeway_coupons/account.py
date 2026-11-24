@@ -108,6 +108,12 @@ class Account(ConfigModel, DirsMixin):
         mail_to = os.environ.get("SAFEWAY_ACCOUNT_MAIL_TO")
         mail_from = os.environ.get("SAFEWAY_ACCOUNT_MAIL_FROM")
         if username and password:
+            log.warning(
+                "Account configuration with SAFEWAY_ACCOUNT_* environment"
+                " variables is deprecated and will be removed in a future"
+                " release. Migrate your account to %s.",
+                AccountsFile.default_path(),
+            )
             return cls(
                 name=cls._name_from_username(username),
                 username=username,
