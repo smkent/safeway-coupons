@@ -12,11 +12,13 @@ from safeway_coupons.console import console, log
 from safeway_coupons.dirs import dirs
 
 from .cli import CLI
+from .storage import cli as cli_storage
 
 cli = CLI(
     help='Automatic coupon clipper for "Safeway for U" coupons',
     invoke_without_command=True,
 )
+cli.add_typer(cli_storage)
 
 
 class HelpPanel:
@@ -129,12 +131,15 @@ def setup(
             help="Sign in to each account without clipping any coupons.",
         ),
     ] = False,
-    state_dir: Annotated[
+    storage_dir: Annotated[
         Path | None,
         Option(
-            "-s",
-            "--state-dir",
-            help="Directory for persistent state such as browser profiles.",
+            "--storage-dir",
+            envvar="SAFEWAY_COUPONS_STORAGE_DIR",
+            help=(
+                "Base directory for configuration and"
+                " persistent state storage."
+            ),
             rich_help_panel=HelpPanel.ADVANCED,
         ),
     ] = None,
@@ -142,13 +147,13 @@ def setup(
     if version_option:
         version()
         raise Exit
-    if ctx.invoked_subcommand:
-        return
-    if state_dir:
-        dirs.state = state_dir.resolve()
+    if storage_dir:
+        dirs.base = storage_dir.resolve()
     console.configure(verbose=(verbose or debug))
     if debug:
         log.warning("-d/--debug is deprecated, use -v/--verbose instead")
+    if ctx.invoked_subcommand:
+        return
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,

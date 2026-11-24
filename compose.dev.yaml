@@ -5,7 +5,7 @@ services:
     restart: no
     volumes:
       - ./accounts:/accounts:ro
-      - state:/state:rw
+      - state:/storage/state:rw
 
 volumes:
   state:
