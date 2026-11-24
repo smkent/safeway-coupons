@@ -51,6 +51,28 @@ class ConfigModel(BaseModel):
             else:
                 yield (*path, key), value
 
+    @classmethod
+    def _rename_key(
+        cls, table: Any, path: tuple[str, ...], new_key: str
+    ) -> None:
+        """Rename a key in a tomlkit table in place, keeping comments."""
+        *parents, key = path
+        for parent in parents:
+            if not isinstance(table := table.get(parent), dict):
+                return
+        if key not in table or new_key in table:
+            return
+        # Re-add the key and those after it, so it keeps its position
+        keys = list(table)
+        items = [(k, table[k]) for k in keys[keys.index(key) :]]
+        for k, _ in items:
+            del table[k]
+        for k, item in items:
+            indent = item.trivia.indent
+            table[new_key if k == key else k] = item
+            # Keep whitespace as written, rather than adding a blank line
+            item.trivia.indent = indent
+
 
 class ConfigFile(ConfigModel):
     """A model stored as a TOML file."""
@@ -118,6 +140,15 @@ class ConfigFile(ConfigModel):
             "Corrected %s permissions from %04o to %04o", path, mode, new_mode
         )
 
+    def rename_key(self, path: tuple[str, ...], new_key: str) -> None:
+        """Rename a key in the file now, keeping its position and comments.
+
+        Only the key is renamed: other unsaved changes aren't written.
+        """
+        data = tomlkit.parse(self.path.read_text())
+        self._rename_key(data, path, new_key)
+        self._write(self.path, data)
+
     def delete(self, *, missing_ok: bool = False) -> None:
         self.path.unlink(missing_ok=missing_ok)
 
@@ -135,6 +166,11 @@ class ConfigFile(ConfigModel):
                 exclude_none=True,
             ),
         )
+        self._write(path, data)
+        self._path = path
+
+    @classmethod
+    def _write(cls, path: Path, data: Any) -> None:
         dirs.mkdirs(path.parent)
         with tempfile.TemporaryDirectory(dir=path.parent, suffix=".tmp") as td:
             temp_path = Path(td) / f".{path.name}.tmp"
@@ -142,4 +178,3 @@ class ConfigFile(ConfigModel):
                 temp_path.chmod(0o600)
                 tomlkit.dump(data, file)
             temp_path.replace(path)
-        self._path = path

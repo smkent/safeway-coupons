@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import getpass
 import io
+from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -21,7 +22,6 @@ from .utils import ExpectedOutput
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
     from .utils import OutputTest
 
@@ -659,6 +659,39 @@ def test_accounts_rename(
     assert (accounts["jeff"].state_dir / "state.json").is_file()
 
 
+def test_accounts_rename_keeps_place(
+    output_test: OutputTest, accounts_command: str
+) -> None:
+    def accounts_toml(name: str) -> str:
+        return (
+            "# Onett\n"
+            "[accounts.ness]  # Ness\n"
+            'username = "ness@onett.example"\n'
+            "\n"
+            "# Twoson\n"
+            f"[accounts.{name}]  # Paula\n"
+            'username = "paula@twoson.example"\n'
+            f"[accounts.{name}.notify.email]\n"
+            'to = "ness@onett.example"  # Ness again\n'
+            "\n"
+            "# Winters\n"
+            "[accounts.jeff]  # Jeff\n"
+            'username = "jeff@winters.example"\n'
+        )
+
+    path = AccountsFile.default_path()
+    path.parent.mkdir(parents=True)
+    path.write_text(accounts_toml("paula"))
+    path.chmod(0o600)
+    with AccountsFile.load().accounts["paula"].lock:
+        pass  # Creates the state directory to be moved
+    output_test.expected = ExpectedOutput(
+        logs=['Account "paula" renamed to "paula-again".']
+    )
+    output_test(accounts_command, "rename", "paula", "paula-again")
+    assert path.read_text() == accounts_toml("paula-again")
+
+
 def test_accounts_rename_existing_name(
     output_test: OutputTest, accounts_command: str, renamable_account: Account
 ) -> None:
@@ -737,7 +770,7 @@ def test_accounts_rename_save_fails(
     def _fail(*_: object, **__: object) -> None:
         raise OSError("Disk full")
 
-    monkeypatch.setattr(AccountsFile, "save", _fail)
+    monkeypatch.setattr(Path, "replace", _fail)
     with pytest.raises(OSError, match="Disk full"):
         main_runner(accounts_command, "rename", "ness", "jeff")
     assert list(AccountsFile.load().accounts) == ["ness", "paula"]
