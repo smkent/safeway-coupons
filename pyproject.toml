@@ -54,7 +54,7 @@ dev = [
   "pytest>=9,<9.2",
   "responses",
   "ruff>=0.17",
-  "syrupy>=5",
+  "syrupy>=7",
   "ty>=0.0.84",
   "types-requests",
 ]

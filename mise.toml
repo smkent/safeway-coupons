@@ -79,7 +79,7 @@ run = [
 [tasks.snapup]
 description = "Update test snapshots"
 raw_args = true
-run = "uv run pytest --snapshot-update --numprocesses 0"
+run = "uv run pytest --snapshot-update -m syrupy_snapshot"
 
 [tasks.test]
 description = "Run tests"
