@@ -372,13 +372,7 @@ def rename(
         with account.lock:
             account.state_dir.rename(renamed.state_dir)
             try:
-                config.accounts = {
-                    (new_name if k == name else k): (
-                        renamed if k == name else v
-                    )
-                    for k, v in config.accounts.items()
-                }
-                config.save()
+                config.rename_account(name, renamed)
             except Exception:
                 renamed.state_dir.rename(account.state_dir)
                 raise

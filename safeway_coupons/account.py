@@ -199,6 +199,13 @@ class AccountsFile(ConfigFile):
             return False
         return isinstance(data.get("accounts"), dict)
 
+    def rename_account(self, name: str, renamed: Account) -> None:
+        self.accounts = {
+            (renamed.name if k == name else k): (renamed if k == name else v)
+            for k, v in self.accounts.items()
+        }
+        self.rename_key(("accounts", name), renamed.name)
+
     @field_validator("accounts", mode="before")
     @classmethod
     def _names_from_keys(cls, value: Any) -> Any:
