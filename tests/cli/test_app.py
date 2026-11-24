@@ -194,7 +194,10 @@ def test_args_storage_dir(
     assert dirs.state == (storage_dir / "state").resolve()
 
 
-@pytest.mark.parametrize("custom_storage_dir", [False, True])
+@pytest.mark.parametrize(
+    "custom_storage_dir",
+    [pytest.param(True, id="present"), pytest.param(False, id="absent")],
+)
 def test_accounts_toml(
     main_runner: MainRunner,
     monkeypatch: pytest.MonkeyPatch,
@@ -309,3 +312,79 @@ def test_legacy_state_dir_moved(
             f"Migrated state for account paula from {legacy_dir} to {new_dir}"
             in caplog.messages
         )
+
+
+@pytest.fixture(
+    params=(pytest.param(True, id="present"), pytest.param(False, id="absent"))
+)
+def accounts_toml_setup(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    accounts_toml = dirs.config / "accounts.toml"
+    if request.param:
+        accounts_toml.parent.mkdir(parents=True)
+        accounts_toml.write_text(ACCOUNTS_TOML)
+    return accounts_toml
+
+
+def test_accounts_source_logged_env(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    accounts_toml_setup: Path,
+) -> None:
+    monkeypatch.setenv("SAFEWAY_ACCOUNT_USERNAME", "jeff@winters.example")
+    monkeypatch.setenv("SAFEWAY_ACCOUNT_PASSWORD", "bottle_rocket")
+    main_runner("--verbose")
+    assert "Loaded account from environment" in caplog.messages
+    found = (
+        f"Account from environment overrides {accounts_toml_setup}"
+        in caplog.messages
+    )
+    assert found is accounts_toml_setup.is_file()
+
+
+def test_accounts_source_logged_ini(
+    main_runner: MainRunner,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    accounts_toml_setup: Path,
+) -> None:
+    accounts_config = tmp_path / "accounts-config"
+    accounts_config.write_text(LEGACY_ACCOUNTS_INI)
+    main_runner("--verbose", "-c", str(accounts_config))
+    assert f"Loaded 2 account(s) from {accounts_config}" in caplog.messages
+    found = (
+        f"{accounts_config} via deprecated -c/--accounts-config"
+        f" overrides {accounts_toml_setup}"
+    ) in caplog.messages
+    assert found is accounts_toml_setup.is_file()
+
+
+@pytest.mark.parametrize(
+    "with_accounts_config_arg",
+    [
+        pytest.param(True, id="accounts-config-arg"),
+        pytest.param(False, id="no-args"),
+    ],
+)
+def test_accounts_source_logged_toml(
+    main_runner: MainRunner,
+    caplog: pytest.LogCaptureFixture,
+    *,
+    with_accounts_config_arg: bool,
+) -> None:
+    accounts_toml = dirs.config / "accounts.toml"
+    accounts_toml.parent.mkdir(parents=True)
+    accounts_toml.write_text(ACCOUNTS_TOML)
+    main_runner(
+        "--verbose",
+        *(["-c", str(accounts_toml)] if with_accounts_config_arg else []),
+    )
+    assert f"Loaded 2 account(s) from {accounts_toml}" in caplog.messages
+    assert not any(
+        "via deprecated -c/--accounts-config overrides" in m
+        for m in caplog.messages
+    )

@@ -67,36 +67,85 @@ For full usage options, run
 safeway-coupons --help
 ```
 
-### Configuration
+### Accounts configuration
 
 **safeway-coupons** can clip coupons for one or more Safeway accounts in a
-single run, depending on the configuration method used.
+single run.
 
-If a sender email address is configured, a summary email will be sent for each
-Safeway account via `sendmail`. The email recipient defaults to the Safeway
-account email address, but can be overridden for each account.
-
-Accounts may be configured via one of the following methods.
-
-#### With `accounts.toml`
-
-Configure your Safeway accounts in `accounts.toml` within the safeway-coupons
-configuration directory. To show the configuration directory's location, run:
+Commands are provided for managing accounts. The most useful commands are
+listed below. For a full list of account management commands, run:
 
 ```sh
-safeway-coupons storage show config
+safeway-coupons accounts --help
 ```
+
+#### Accounts file location
+
+Account configuration is stored within `accounts.toml` in the local config
+directory. To see the `accounts.toml` path, run:
+
+```sh
+safeway-coupons accounts path
+```
+
+#### Adding a new account
+
+An account is referred to by a name you choose (similar to a label). Account
+names are converted to lower case and may not contain spaces or slashes.
+
+To add a new account, run:
+
+```sh
+safeway-coupons accounts add [account-name] [sign-in-email]
+```
+
+If `account-name` or `sign-in-email` from the above example are omitted,
+`accounts add` will prompt for them interactively.
+
+`accounts add` will prompt for an optional email sender and/or email recipient
+address, for use if email summaries are enabled. These may be left blank to use
+the sign in email instead.
+
+#### Listing configured accounts
+
+To list all configured accounts, run:
+
+```sh
+safeway-coupons accounts list
+```
+
+#### Updating an account password
+
+To update the saved password for a configured account, run:
+
+```sh
+safeway-coupons accounts set-password <account-name>
+```
+
+#### Removing an account
+
+To remove a configured account, run:
+
+```sh
+safeway-coupons accounts remove <account-name>
+```
+
+An account's persistent data, such as its browser profile, is not deleted
+automatically. The `accounts remove` command shows the location of this
+directory when an account is deleted.
+
+#### Example `accounts.toml`
 
 Each account is named using a [TOML table][toml-table] name placed within the
 top level `accounts` table, e.g. `[accounts.(name)]`. Account names are
 converted to lower case and may not contain spaces or slashes.
 
-Example configuration:
+An example `accounts.toml`:
 
 ```toml
 [accounts.main]
 username = "safeway.account@example.com"
-password = "base64:<your base64-encoded password>"
+password = "base64:<base64-encoded password>"
 
 # Optional summary email settings for "main" account
 notify.email.to = "your.email@example.com"
@@ -104,22 +153,36 @@ notify.email.from = "sender@example.com"
 
 [accounts.second]
 username = "another.safeway.account@example.com"
-password = "base64:<your base64-encoded password>"
+password = "base64:<base64-encoded password>"
 notify.email.to = "other.email@example.com"  # Optional
 ```
 
-Saved passwords must be encoded using base64, with a `base64:` prefix before the
-encoded password value.
+#### Migration from legacy ini-style configuration file
 
-#### With environment variables
+safeway-coupons previously supported an ini-style accounts configuration file
+used with the now deprecated `-c`/`--accounts-config` option.
 
-A single Safeway account can be configured with environment variables. If set,
-`accounts.toml` is ignored.
+To import accounts from a legacy ini-style accounts configuration file, run:
 
-* `SAFEWAY_ACCOUNT_USERNAME`: Account email address (required)
-* `SAFEWAY_ACCOUNT_PASSWORD`: Account password (required)
-* `SAFEWAY_ACCOUNT_MAIL_FROM`: Sender address for email summary
-* `SAFEWAY_ACCOUNT_MAIL_TO`: Recipient address for email summary
+```sh
+safeway-coupons accounts import path/to/legacy/accounts/file
+```
+
+#### Migration from legacy environment variable account configuration
+
+safeway-coupons previously supported using environment variables to configure a
+single account. If legacy account configuration environment variables are set,
+a warning is logged and `accounts.toml` is ignored.
+
+Legacy environment variable based account configuration may be removed in a
+future release. To migrate:
+
+* Unset environment variables beginning with `SAFEWAY_ACCOUNT_`
+* Configure the account by running:
+
+```sh
+safeway-coupons accounts add [account-name] [sign-in-email]
+```
 
 ### Multi-factor authentication (MFA) verification codes
 
@@ -158,23 +221,18 @@ safeway-coupons storage list
 ## Installation and usage with Docker Compose
 
 A Docker container is provided which runs safeway-coupons with cron. The cron
-schedule and your Safeway account details may be configured using environment
-variables, or with an accounts file.
+schedule may be configured using environment variables.
 
-Example `compose.yaml` with configuration via environment variables:
+Example `compose.yaml`:
 
 ```yaml
 services:
   safeway-coupons:
     image: ghcr.io/smkent/safeway-coupons:latest
     environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
+      CRON_SCHEDULE: 0 2 * * *  # Run at 2:00 AM UTC each day
       # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: very_secret
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      # SMTPHOST: your.smtp.host  # Optional SMTP host for sending summary emails
       # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
@@ -185,26 +243,87 @@ volumes:
   state:
 ```
 
-Example `compose.yaml` with configuration via accounts file (place
-`accounts.toml` at `./config/accounts.toml`):
+With this example, account configuration is stored at `./config/accounts.toml`.
 
-```yaml
-services:
-  safeway-coupons:
-    image: ghcr.io/smkent/safeway-coupons:latest
-    environment:
-      CRON_SCHEDULE: "0 2 * * *"  # Run at 2:00 AM UTC each day
-      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
-      SMTPHOST: your.smtp.host
-      # EXTRA_ARGS: --verbose  # Optional
-    restart: unless-stopped
-    volumes:
-      - ./config:/storage/config:rw
-      - state:/storage/state:rw
+### Accounts configuration
 
-volumes:
-  state:
+To run specific safeway-coupons commands within a Docker compose configured
+container, run:
+
 ```
+docker compose run --rm safeway-coupons [command-arguments]
+```
+
+Accounts configuration with Docker uses the same accounts management commands
+described in the main Installation and usage /
+[Accounts configuration](#accounts-configuration) section. Examples:
+
+* `docker compose run --rm safeway-coupons accounts add`
+* `docker compose run --rm safeway-coupons accounts list`
+* `docker compose run --rm safeway-coupons accounts set-password <account-name>`
+* `docker compose run --rm safeway-coupons accounts remove <account-name>`
+
+After configuring accounts, run safeway-coupons once to sign in to each of the
+accounts, and enter any multi-factor authentication (MFA) verification codes if
+prompted:
+
+* `docker compose run --rm safeway-coupons --login-only`
+
+Note that running safeway-coupons in a Docker container with no command
+arguments (such as simply `docker compose run --rm safeway-coupons`) will run
+the cron service instead of running safeway-coupons interactively.
+
+#### Migration from legacy ini-style configuration file
+
+safeway-coupons previously supported an ini-style accounts configuration file
+used in Docker with the `SAFEWAY_ACCOUNTS_FILE` environment variable.
+
+To import accounts from a legacy ini-style accounts configuration file using
+`SAFEWAY_ACCOUNTS_FILE`:
+
+* Ensure the container mounts a volume at `/storage/config` similar to the
+  `compose.yaml` example. (Keep the `SAFEWAY_ACCOUNTS_FILE` environment variable
+  and volume mount until a later step.)
+* Convert the saved accounts to the new format and location by running:
+
+```sh
+docker compose run --rm safeway-coupons accounts import
+```
+
+* Remove the `SAFEWAY_ACCOUNTS_FILE` environment variable and associated volume
+  mount from your Docker compose configuration (`compose.yaml`)
+* Restart the service:
+
+```sh
+docker compose up -d
+```
+
+#### Migration from legacy environment variable account configuration
+
+safeway-coupons previously supported using environment variables to configure a
+single account. If legacy account configuration environment variables are set,
+a warning is logged and `accounts.toml` is ignored.
+
+Legacy environment variable based account configuration may be removed in a
+future release. To migrate:
+
+* Ensure the container mounts a volume at `/storage/config` similar to the
+  `compose.yaml` example.
+* Remove environment variables beginning with `SAFEWAY_ACCOUNT_` from your
+  Docker compose configuration (`compose.yaml`)
+* Configure the account by running:
+
+```sh
+docker compose run --rm safeway-coupons accounts add [account-name] [sign-in-email]
+```
+
+* Restart the service:
+
+```sh
+docker compose up -d
+```
+
+### Container usage
 
 Start the container by running:
 
@@ -218,39 +337,31 @@ Debugging information can be viewed in the container log:
 docker compose logs -f
 ```
 
-To sign in and enter a multi-factor authentication (MFA) verification code, run
-safeway-coupons interactively:
+Stop the container by running:
 
 ```sh
-docker compose run --rm -it safeway-coupons --login-only
+docker compose down
 ```
 
 ## Development
 
-### Invocation with `docker compose`
+### Building a container locally with `docker compose`
 
-safeway-coupons can be executed within a Docker container using
-`compose.dev.yaml`.
+To build the safeway-coupons container locally when using `docker compose`,
+replace the `image:` line in your `compose.yaml` with `build: .`:
 
-To use, first create an `accounts` file in the same directory with your
-safeway-coupons accounts configuration. Then, execute safeway-coupons within a
-container using `docker compose`:
-
-```sh
-docker compose -f compose.dev.yaml up --build
+```yaml
+services:
+  safeway-coupons:
+    # image: ghcr.io/smkent/safeway-coupons:latest  # Removed
+    build: .
+# [...]
 ```
 
-The container will run safeway-coupons once, attempt to clip one coupon, and
-then stop.
-
-To change the safeway-coupons arguments, modify the `command` value in
-`compose.dev.yaml`.
-
-When finished with development tasks, the `docker compose` state can be cleaned
-up with:
+Then, when using `docker compose up -d`, include `--build`:
 
 ```sh
-docker compose -f compose.dev.yaml down
+docker compose up --build -d
 ```
 
 ## License

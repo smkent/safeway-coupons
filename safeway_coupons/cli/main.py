@@ -12,13 +12,16 @@ from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.console import console, log
 from safeway_coupons.dirs import dirs
 
-from .cli import CLI
+from .accounts import cli as cli_accounts
+from .cli import CLI, CLIContext
 from .storage import cli as cli_storage
 
 cli = CLI(
     help='Automatic coupon clipper for "Safeway for U" coupons',
     invoke_without_command=True,
 )
+cli.add_typer(cli_accounts)
+cli.add_typer(cli_accounts, name="account", hidden=True)
 cli.add_typer(cli_storage)
 
 
@@ -142,22 +145,23 @@ def setup(
         ),
     ] = None,
 ) -> None:
+    ctx.obj = CLIContext(accounts_config=accounts_config)
     if version_option:
         version()
         raise Exit
     if storage_dir:
-        dirs.base = storage_dir.resolve()
+        dirs.base = storage_dir
     console.configure(verbose=(verbose or debug))
     if debug:
         log.warning("-d/--debug is deprecated, use -v/--verbose instead")
-    if ctx.invoked_subcommand:
-        return
     if accounts_config:
         log.warning(
             "-c/--accounts-config is deprecated and will be removed"
             " in a future release. Migrate your accounts to %s.",
             AccountsFile.default_path(),
         )
+    if ctx.invoked_subcommand:
+        return
     SafewayCoupons(
         send_email=send_email,
         sendmail=shlex.split(sendmail) if sendmail else None,

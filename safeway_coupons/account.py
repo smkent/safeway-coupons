@@ -147,15 +147,34 @@ class Account(ConfigModel, DirsMixin):
 
     @classmethod
     def load_all(cls, config_file: Path | None = None) -> list[Account]:
+        default_path = AccountsFile.default_path()
         if account := cls.load_from_env():
+            log.debug("Loaded account from environment")
+            if default_path.is_file():
+                log.warning(
+                    "Account from environment overrides %s", default_path
+                )
             return [account]
-        if config_file:
-            if AccountsFile.is_accounts_file(config_file):
-                return list(AccountsFile.load(config_file).accounts.values())
-            return list(cls.load_all_from_config(config_file))
-        if (path := AccountsFile.default_path()).is_file():
-            return list(AccountsFile.load(path).accounts.values())
-        return []
+        accounts: list[Account] = []
+        if path := config_file:
+            accounts = (
+                list(AccountsFile.load(path).accounts.values())
+                if AccountsFile.is_accounts_file(path)
+                else list(cls.load_all_from_config(path))
+            )
+            if (
+                default_resolved := default_path.resolve()
+            ).is_file() and default_resolved != path.resolve():
+                log.warning(
+                    "%s via deprecated -c/--accounts-config overrides %s",
+                    path,
+                    default_path,
+                )
+        elif (path := default_path).is_file():
+            accounts = list(AccountsFile.load(path).accounts.values())
+        if path.is_file():
+            log.debug("Loaded %d account(s) from %s", len(accounts), path)
+        return accounts
 
 
 class AccountsFile(ConfigFile):

@@ -1,0 +1,129 @@
+# serializer version: 1
+# name: test_accounts_list[platformdirs-account-list]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[platformdirs-account-list].1
+  ''
+# ---
+# name: test_accounts_list[platformdirs-account-ls]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[platformdirs-account-ls].1
+  ''
+# ---
+# name: test_accounts_list[platformdirs-accounts-list]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[platformdirs-accounts-list].1
+  ''
+# ---
+# name: test_accounts_list[platformdirs-accounts-ls]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[platformdirs-accounts-ls].1
+  ''
+# ---
+# name: test_accounts_list[storagedir-account-list]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[storagedir-account-list].1
+  ''
+# ---
+# name: test_accounts_list[storagedir-account-ls]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[storagedir-account-ls].1
+  ''
+# ---
+# name: test_accounts_list[storagedir-accounts-list]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[storagedir-accounts-list].1
+  ''
+# ---
+# name: test_accounts_list[storagedir-accounts-ls]
+  '''
+  ╭─ Accounts ─────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                            │
+  │ Name                  Sign in account                     Email recipient     Email sender │
+  │                                                                                            │
+  │ ness@onett.example    ness@onett.example                  (username)          (username)   │
+  │ paula@twoson.example  paula@twoson.example (no password)  ness@onett.example  (username)   │
+  │                                                                                            │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_accounts_list[storagedir-accounts-ls].1
+  ''
+# ---

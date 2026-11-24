@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
 import responses
+import rich
 
 from safeway_coupons.account import (
     Account,
@@ -35,6 +36,9 @@ if TYPE_CHECKING:
     import requests
 
 
+pytest.register_assert_rewrite("tests.cli.utils")
+
+
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers", "browser: Playwright browser based tests with a mock site"
@@ -47,7 +51,10 @@ def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
 
 
 @pytest.fixture(autouse=True)
-def console_reset() -> None:
+def console_reset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COLUMNS", "120")
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    monkeypatch.setattr(rich, "_console", None)
     console.configure()
 
 
