@@ -14,12 +14,18 @@ COPY safeway_coupons/ ./safeway_coupons/
 ARG UV_DYNAMIC_VERSIONING_BYPASS=0.0.0
 RUN uv sync --locked --no-default-groups --no-editable
 
+# Condition build cache on Chrome version via packages index
+FROM scratch AS chrome-version-cache
+ARG TARGETARCH
+ADD https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-${TARGETARCH}/Packages /chrome-packages
+
 FROM python:3.15-slim
 WORKDIR /app
 
 LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 
-RUN apt-get update && \
+RUN --mount=type=bind,from=chrome-version-cache,target=/tmp/chrome-version-cache \
+    apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates wget && \
     wget -q -O /usr/share/keyrings/chrome.pub https://dl-ssl.google.com/linux/linux_signing_key.pub && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/chrome.pub] http://dl.google.com/linux/chrome/deb/ stable main" \
