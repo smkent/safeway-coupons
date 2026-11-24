@@ -32,6 +32,7 @@ dependencies = [
   "pydantic>=2.14",
   "requests",
   "rich>=15",
+  "tomlkit>=0.15",
   "typer>=0.27",
 ]
 

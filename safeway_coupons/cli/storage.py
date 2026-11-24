@@ -20,12 +20,15 @@ cli = CLI(
 @cli.command(name="ls", hidden=True)
 def list_command() -> None:
     """List storage directory paths."""
+    print("Config:", dirs.config)  # noqa: T201
     print("State:", dirs.state)  # noqa: T201
 
 
 @cli.command(name="show")
 def show(
-    name: Annotated[Literal["state"], Argument(help="Storage path type")],
+    name: Annotated[
+        Literal["config", "state"], Argument(help="Storage path type")
+    ],
 ) -> None:
     """Show specified storage directory path."""
     print(getattr(dirs, name))  # noqa: T201

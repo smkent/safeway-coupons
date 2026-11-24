@@ -54,10 +54,17 @@ class MockDirs(ExitStack):
 
     base_storage_dir: Path = field(kw_only=True)
     type: Type = field(kw_only=True)
+    user_config_dir: MagicMock = field(init=False, repr=False)
     user_state_dir: MagicMock = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         super().__init__()
+
+    @property
+    def config(self) -> Path:
+        if self.type == self.Type.StorageDir:
+            return self.base_storage_dir / "config"
+        return self._mock_subdir("config")
 
     @property
     def state(self) -> Path:
@@ -71,7 +78,7 @@ class MockDirs(ExitStack):
                 patch.object(dirs, "base", self.base_storage_dir)
             )
         else:
-            for dir_type in ["state"]:
+            for dir_type in ["config", "state"]:
                 self._patch_platformdirs_property(dir_type)
             self.enter_context(patch.object(dirs, "base", None))
         return self

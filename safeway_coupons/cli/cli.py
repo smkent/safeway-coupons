@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from typer import Typer
 from typer.core import TyperGroup
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class CLI(Typer):
@@ -27,3 +31,8 @@ class CLI(Typer):
         os.environ.setdefault(
             "TERMINAL_WIDTH", str(min(shutil.get_terminal_size().columns, 160))
         )
+
+
+@dataclass
+class CLIContext:
+    accounts_config: Path | None = None

@@ -41,7 +41,7 @@ def test_device_verification_required(
         raise MultiFactorAuthenticationRequired(mock_browser_driver.account)
 
     mock_browser_driver.sign_in.side_effect = _raise
-    main_runner("-c", str(accounts_config), "--login-only", match=1)
+    main_runner("--login-only", match=1)
     assert (
         "Error for account ness@onett.example:"
         " ness@onett.example needs an MFA verification code to sign in."
@@ -58,7 +58,7 @@ def test_browser_error_message_shows_cause(
     error = BrowserSessionError()
     error.__cause__ = RuntimeError("Device verification cancelled")
     mock_browser_driver.sign_in.side_effect = error
-    main_runner("-c", str(accounts_config), "--login-only", match=1)
+    main_runner("--login-only", match=1)
     assert (
         "Error for account ness@onett.example:"
         " Authentication Failure (Device verification cancelled)"
@@ -71,9 +71,7 @@ def test_check_only_signed_in(
     accounts_config: Path,
     mock_browser_driver: MagicMock,
 ) -> None:
-    main_runner(
-        "-c", str(accounts_config), "--login-only", "--dry-run", match=0
-    )
+    main_runner("--login-only", "--dry-run", match=0)
     mock_browser_driver.sign_in.assert_called_once_with(check=True)
     assert (
         "Checking sign in for Safeway account ness@onett.example"
@@ -91,9 +89,7 @@ def test_check_only_not_signed_in(
         raise NotSignedIn(mock_browser_driver.account)
 
     mock_browser_driver.sign_in.side_effect = _raise
-    main_runner(
-        "-c", str(accounts_config), "--login-only", "--dry-run", match=1
-    )
+    main_runner("--login-only", "--dry-run", match=1)
     mock_browser_driver.sign_in.assert_called_once_with(check=True)
     assert (
         "Error for account ness@onett.example:"

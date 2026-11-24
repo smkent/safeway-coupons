@@ -1417,6 +1417,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
     { name = "rich" },
+    { name = "tomlkit" },
     { name = "typer" },
 ]
 
@@ -1448,6 +1449,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.14" },
     { name = "requests" },
     { name = "rich", specifier = ">=15" },
+    { name = "tomlkit", specifier = ">=0.15" },
     { name = "typer", specifier = ">=0.27" },
 ]
 

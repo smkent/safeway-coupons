@@ -5,7 +5,7 @@ useDefault = true
 id = "generic-password"
 [[rules.allowlists]]
 description = "Example and test placeholder passwords"
-regexes = ['''^(12345|very_secret|pk_fire)$''']
+regexes = ['''^(12345|very_secret|pk_fire)$''', '''^base64:<[^>]+>$''']
 
 [[rules]]
 id = "generic-api-key"

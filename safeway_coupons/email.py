@@ -28,19 +28,22 @@ def _send_email(
     *,
     send_email: bool,
 ) -> None:
+    email = account.notify_email
+    mail_to = (email.to if email else None) or account.username
+    mail_from = (email.mail_from if email else None) or account.username
     mail_message_str = os.linesep.join(mail_message)
     if send_email:
-        log.debug("Sending email to %s", account.mail_to)
+        log.debug("Sending email to %s", mail_to)
     else:
-        log.debug("Would send email to %s", account.mail_to)
+        log.debug("Would send email to %s", mail_to)
     log.debug(">>>>>>")
     log.debug(mail_message_str)
     log.debug("<<<<<<")
     if not send_email:
         return
     msg = EmailMessage()
-    msg["To"] = account.mail_to
-    msg["From"] = account.mail_from
+    msg["To"] = mail_to
+    msg["From"] = mail_from
     if subject:
         msg["Subject"] = subject
     msg.set_content(mail_message_str)
@@ -54,7 +57,7 @@ def _send_email(
             subtype=sub,
         )
     p = subprocess.Popen(  # noqa: S603
-        [*sendmail, "-f", account.mail_from, "-t"],
+        [*sendmail, "-f", str(mail_from), "-t"],
         stdin=subprocess.PIPE,
     )
     p.communicate(bytes(msg.as_string(), "UTF-8"))

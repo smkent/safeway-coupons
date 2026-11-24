@@ -3,13 +3,12 @@ services:
     image: ghcr.io/smkent/safeway-coupons:latest
     environment:
       CRON_SCHEDULE: 0 2 * * *
-      SMTPHOST: your.smtp.host
-      SAFEWAY_ACCOUNT_USERNAME: your.safeway.account.email@example.com
-      SAFEWAY_ACCOUNT_PASSWORD: very_secret
-      SAFEWAY_ACCOUNT_MAIL_FROM: your.email@example.com
-      SAFEWAY_ACCOUNT_MAIL_TO: your.email@example.com
+      # TZ: Antarctica/McMurdo  # Optional time zone to use instead of UTC
+      # SMTPHOST: your.smtp.host  # Optional SMTP host for sending summary emails
+      # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
+      - ./config:/storage/config:rw
       - state:/storage/state:rw
 
 volumes:
