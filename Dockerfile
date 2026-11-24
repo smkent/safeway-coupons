@@ -44,11 +44,10 @@ COPY --from=builder /app/.venv /app/.venv
 
 COPY docker /opt/docker
 
-VOLUME /state
-
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
+ENV SAFEWAY_COUPONS_STORAGE_DIR=/storage
 ENV CRON_SCHEDULE="5 2 * * *"
 
 ENTRYPOINT ["/usr/bin/tini", "-s", "--", "/opt/docker/entrypoint"]

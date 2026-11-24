@@ -27,11 +27,9 @@ interactive challenges.
 Safeway's sign in page may also require verifying a new device with a
 multi-factor authentication (MFA) verification code. To reduce how often this
 happens, a persistent Google Chrome profile directory is created for each
-account and reused for logins with the same account. These are stored within the
-[User state directory (see `user_state_dir`)][platformdirs-docs].
-
-Once a signed in session is established, coupon clipping is performed using HTTP
-requests via [requests][requests].
+account and reused for logins with the same account. Once a signed in session is
+established, coupon clipping is performed using HTTP requests via
+[requests][requests].
 
 ## Installation and usage
 
@@ -133,6 +131,17 @@ enter MFA verification codes. If the sign in page asks for an MFA code,
 safeway-coupons exits with an error message. When this happens, run
 safeway-coupons interactively to refresh your sign in session.
 
+### Data storage
+
+The default location for persistent state such as browser profiles is the
+[User state directory (see `user_state_dir`)][platformdirs-docs].
+
+To view local data storage locations, run:
+
+```sh
+safeway-coupons storage list
+```
+
 ## Installation and usage with Docker Compose
 
 A Docker container is provided which runs safeway-coupons with cron. The cron
@@ -156,7 +165,7 @@ services:
       # EXTRA_ARGS: --verbose  # Optional
     restart: unless-stopped
     volumes:
-      - state:/state:rw
+      - state:/storage/state:rw
 
 volumes:
   state:
@@ -177,7 +186,7 @@ services:
     restart: unless-stopped
     volumes:
       - path/to/safeway_accounts_file:/accounts_file:ro
-      - state:/state:rw
+      - state:/storage/state:rw
 
 volumes:
   state:

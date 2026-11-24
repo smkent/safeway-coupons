@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
-import platformdirs
+from platformdirs import PlatformDirs
 
 if TYPE_CHECKING:
     import os
@@ -15,11 +15,14 @@ APP_AUTHOR = "smkent"
 
 @dataclass
 class Dirs:
-    state: Path = field(
-        default_factory=lambda: platformdirs.user_state_path(
-            appname=APP_NAME, appauthor=APP_AUTHOR
-        )
-    )
+    base: Path | None = None
+    platformdirs: ClassVar[PlatformDirs] = PlatformDirs(APP_NAME, APP_AUTHOR)
+
+    @property
+    def state(self) -> Path:
+        if self.base:
+            return self.base / "state"
+        return self.platformdirs.user_state_path
 
     def state_path(self, *parts: str | os.PathLike[str]) -> Path:
         return self.state.joinpath(*parts)

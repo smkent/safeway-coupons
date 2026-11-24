@@ -12,10 +12,15 @@ import responses
 from safeway_coupons.account import Account
 from safeway_coupons.client.browser import SafewayBrowserSession
 from safeway_coupons.console import console
-from safeway_coupons.dirs import dirs
 from safeway_coupons.models.safeway.offers import OfferMap
 
-from .utils import CapLogHelper, ClipsTestConfig, MainRunner, MockMail
+from .utils import (
+    CapLogHelper,
+    ClipsTestConfig,
+    MainRunner,
+    MockDirs,
+    MockMail,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -40,9 +45,20 @@ def console_reset() -> None:
     console.configure()
 
 
+@pytest.fixture(params=[MockDirs.Type.param(MockDirs.Type.StorageDir)])
+def mock_dirs_type(request: pytest.FixtureRequest) -> MockDirs.Type:
+    return request.param
+
+
 @pytest.fixture(autouse=True)
-def mock_config_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(dirs, "state", tmp_path / "state")
+def mock_dirs(
+    tmp_path: Path, *, mock_dirs_type: MockDirs.Type
+) -> Iterator[MockDirs]:
+    base_storage_dir = tmp_path / "storage"
+    with MockDirs(
+        base_storage_dir=base_storage_dir, type=mock_dirs_type
+    ) as pd:
+        yield pd
 
 
 @pytest.fixture(autouse=True)

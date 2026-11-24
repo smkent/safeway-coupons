@@ -2,10 +2,51 @@
 
 set -e
 
+is_mount() { awk -v p="$1" '$5 == p { found = 1 } END { exit !found }' /proc/self/mountinfo; }
+
+print_prefix() {
+    prefix="${1}"; shift;
+    printf "${prefix}"' %s\n' "${@}"
+}
+
+storage_warning() {
+    title="WARNING: ${1}"
+    shift
+    {
+        sep="$(echo "${title}" | sed 's/./=/g')";
+        set -- "" "${sep}" "${title}" "" "${@}" "${sep}" ""
+        print_prefix "!!!" "${@}"
+    } >&2
+}
+
+if is_mount /state; then
+    if is_mount /storage/state || is_mount /storage; then
+        storage_warning "Unused /state volume" \
+            "The /state volume mount point is deprecated." \
+            "Both /state and /storage/state are mounted. /state is ignored." \
+            "Remove the /state volume mount."
+    else
+        storage_warning "Deprecated /state volume" \
+            "The /state volume mount point is deprecated." \
+            "Update the state volume mount to /storage/state instead."
+        if [ ! -e /storage/state ]; then
+            mkdir -p /storage
+            ln -sv /state /storage/state
+        fi
+    fi
+elif ! is_mount /storage/state && ! is_mount /storage; then
+    storage_warning "/storage/state volume missing" \
+        "No /storage/state volume was detected." \
+        "Browser sessions will be lost when the container is recreated."
+fi
+
+# shellcheck disable=SC2174
+mkdir -vp -m 0700 /storage/state
+
 run_once="${#}"
 
 # shellcheck disable=SC2086,SC2090
-set -- --state-dir=/state ${EXTRA_ARGS-} "${@}"
+set -- ${EXTRA_ARGS-} "${@}"
 if [ -n "${SAFEWAY_ACCOUNTS_FILE}" ]; then
     echo "Using accounts file at ${SAFEWAY_ACCOUNTS_FILE} for configuration"
     set -- --accounts-config "${SAFEWAY_ACCOUNTS_FILE}" "${@}"
