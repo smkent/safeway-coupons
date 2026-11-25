@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from typer import Argument
+from typer import Argument, echo
 
 from safeway_coupons.dirs import dirs
 
@@ -20,8 +20,8 @@ cli = CLI(
 @cli.command(name="ls", hidden=True)
 def list_command() -> None:
     """List storage directory paths."""
-    print("Config:", dirs.config)  # noqa: T201
-    print("State:", dirs.state)  # noqa: T201
+    echo(f"Config: {dirs.config}")
+    echo(f"State: {dirs.state}")
 
 
 @cli.command(name="show")
@@ -31,4 +31,4 @@ def show(
     ],
 ) -> None:
     """Show specified storage directory path."""
-    print(getattr(dirs, name))  # noqa: T201
+    echo(getattr(dirs, name))
