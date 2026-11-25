@@ -49,7 +49,7 @@ fi
 # shellcheck disable=SC2174
 mkdir -vp -m 0700 /storage/state
 
-run_once="${#}"
+[ "${#}" = "1" ] && [ "${1}" = "service" ] && { shift; run_service=1; } || true
 
 # shellcheck disable=SC2086,SC2090
 set -- ${EXTRA_ARGS-} "${@}"
@@ -77,7 +77,7 @@ if [ -z "${SMTPHOST-}" ]; then
     set -- --no-email "${@}"
 fi
 
-if [ "${run_once}" -gt 0 ]; then
+if [ -z "${run_service-}" ]; then
     (
         set -x
         safeway-coupons "${@}";
