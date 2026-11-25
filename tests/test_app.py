@@ -33,7 +33,7 @@ def test_safeway_coupons(
     main_runner(
         "-c",
         str(accounts_config),
-        "--no-email",
+        "--no-notify",
         "--no-sleep",
         "--no-sleep",
     )
@@ -51,11 +51,7 @@ def test_safeway_coupons_few_clip_errors(
     available_offers.offers |= {str(i): create_offer(str(i)) for i in range(5)}
     clips.fail_response_offer_ids.add("1")
     main_runner(
-        "-c",
-        str(accounts_config),
-        "--no-email",
-        "--no-sleep",
-        "--no-sleep",
+        "-c", str(accounts_config), "--no-notify", "--no-sleep", "--no-sleep"
     )
     assert set(clips.clipped_offer_ids) == {"0", "2", "3", "4"}
     assert set(clips.failed_offer_ids) == {"1"}
@@ -82,7 +78,7 @@ def test_safeway_coupons_too_many_clip_errors(
         main_runner(
             "-c",
             str(accounts_config),
-            "--no-email",
+            "--no-notify",
             "--no-sleep",
             "--no-sleep",
             match=1,
@@ -115,11 +111,7 @@ def test_safeway_coupons_invalid_offer_type(
         offer_with_unknown_type.offer_id: offer_with_unknown_type,
     }
     main_runner(
-        "-c",
-        str(accounts_config),
-        "--no-email",
-        "--no-sleep",
-        "--no-sleep",
+        "-c", str(accounts_config), "--no-notify", "--no-sleep", "--no-sleep"
     )
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert clips.failed_offer_ids == []
@@ -145,7 +137,7 @@ def test_safeway_coupons_sleep_time(
     main_runner(
         "-c",
         str(accounts_config),
-        "--no-email",
+        "--no-notify",
         *(["--no-sleep"] * sleep_level),
     )
     if max_sleep:

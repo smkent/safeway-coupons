@@ -69,12 +69,12 @@ elif [ -n "${SAFEWAY_ACCOUNT_USERNAME}" ] \
     env | grep -vie 'password' | grep -e '^SAFEWAY_' -e '^SMTPHOST=' || true
 fi
 
-if [ -z "${SMTPHOST-}" ]; then
+if { [ ! -t 0 ] || [ -n "${run_service-}" ]; } && [ -z "${SMTPHOST-}" ]; then
     (
         echo "Warning: Email server not configured."
         echo "To enable sending email, set \$SMTPHOST."
     ) >&2
-    set -- --no-email "${@}"
+    set -- --no-notify "${@}"
 fi
 
 if [ -z "${run_service-}" ]; then
