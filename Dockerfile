@@ -51,3 +51,4 @@ ENV SAFEWAY_COUPONS_STORAGE_DIR=/storage
 ENV CRON_SCHEDULE="5 2 * * *"
 
 ENTRYPOINT ["/usr/bin/tini", "-s", "--", "/opt/docker/entrypoint"]
+CMD ["service"]
