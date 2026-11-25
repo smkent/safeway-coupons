@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -106,9 +107,19 @@ def test_app_error(
             id="Custom sendmail with arguments",
         ),
         pytest.param(
+            ["-N"],
+            SafewayCoupons(send_email=True, sendmail=["/usr/sbin/sendmail"]),
+            id="Notification",
+        ),
+        pytest.param(
             ["-n"],
             SafewayCoupons(send_email=False, sendmail=["/usr/sbin/sendmail"]),
-            id="No email",
+            id="No notification",
+        ),
+        pytest.param(
+            ["--no-email"],
+            SafewayCoupons(send_email=False, sendmail=["/usr/sbin/sendmail"]),
+            id="Deprecated no email option",
         ),
         pytest.param(
             ["-p", "--max-clip", "42"],
@@ -144,12 +155,36 @@ def test_app_error(
     ],
 )
 def test_args(
-    main_runner: MainRunner, argv: list[str], expected_instance: SafewayCoupons
+    main_runner: MainRunner,
+    caplog_helper: CapLogHelper,
+    argv: list[str],
+    expected_instance: SafewayCoupons,
 ) -> None:
     with patch.object(SafewayCoupons, "__call__", autospec=True) as mock_app:
         main_runner(*argv)
     mock_app.assert_called_once()
     assert mock_app.call_args.args[0] == expected_instance
+    assert len(
+        caplog_helper.records(
+            "--no-email is deprecated, use -n/--no-notify instead"
+        )
+    ) == (1 if "--no-email" in argv else 0)
+
+
+@pytest.mark.parametrize(
+    "isatty",
+    [pytest.param(True, id="tty"), pytest.param(False, id="not-a-tty")],
+)
+def test_args_notify_default(main_runner: MainRunner, *, isatty: bool) -> None:
+    with (
+        patch.object(SafewayCoupons, "__call__", autospec=True) as mock_app,
+        patch.object(sys.stdin, "isatty", return_value=isatty),
+    ):
+        main_runner()
+    mock_app.assert_called_once()
+    assert mock_app.call_args.args[0] == SafewayCoupons(
+        send_email=not isatty, sendmail=["/usr/sbin/sendmail"]
+    )
 
 
 def test_args_storage_dir(

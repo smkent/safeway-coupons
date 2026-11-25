@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, create_autospec, patch
@@ -43,6 +44,12 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers", "browser: Playwright browser based tests with a mock site"
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_stdin_isatty() -> Iterator[None]:
+    with patch.object(sys.stdin, "isatty", return_value=False):
+        yield
 
 
 @pytest.fixture

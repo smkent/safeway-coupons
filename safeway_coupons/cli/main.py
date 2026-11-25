@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shlex
+import sys
 from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
@@ -52,6 +53,10 @@ def setup(
     debug: Annotated[
         int, Option("-d", "--debug", count=True, hidden=True)
     ] = 0,
+    no_email: Annotated[
+        bool,
+        Option("--no-email", show_default=False, hidden=True),
+    ] = False,
     verbose: Annotated[
         int,
         Option(
@@ -66,15 +71,15 @@ def setup(
             help="Maximum number of coupons to clip (default 0 means all).",
         ),
     ] = 0,
-    send_email: Annotated[
-        bool,
+    notify: Annotated[
+        bool | None,
         Option(
-            " /-n",
-            " /--no-email",
-            show_default=False,
-            help="Don't send results email.",
+            "-N/-n",
+            "--notify/--no-notify",
+            show_default="Notify when run non-interactively",
+            help="Send results notification (email).",
         ),
-    ] = True,
+    ] = None,
     dry_run: Annotated[
         bool,
         Option(
@@ -162,8 +167,12 @@ def setup(
         )
     if ctx.invoked_subcommand:
         return
+    if no_email:
+        log.warning("--no-email is deprecated, use -n/--no-notify instead")
+    if notify is None:
+        notify = not sys.stdin.isatty()
     SafewayCoupons(
-        send_email=send_email,
+        send_email=notify and not no_email,
         sendmail=shlex.split(sendmail) if sendmail else None,
         sleep_level=sleep_level,
         dry_run=dry_run,
