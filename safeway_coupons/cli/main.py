@@ -4,7 +4,7 @@ import shlex
 from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
-from typer import Context, Exit, Option
+from typer import Context, Exit, Option, echo
 
 from safeway_coupons import version as package_version
 from safeway_coupons.account import AccountsFile
@@ -177,4 +177,4 @@ def setup(
 
 @cli.command(help=f"Show version ({package_version}) and exit.")
 def version() -> None:
-    print(package_version)  # noqa: T201
+    echo(package_version)
