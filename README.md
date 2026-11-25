@@ -67,6 +67,13 @@ For full usage options, run
 safeway-coupons --help
 ```
 
+By default, safeway-coupons runs for each configured account. To only run for
+one or more specific accounts, specify each account name with `-a`/`--account`:
+
+```sh
+safeway-coupons -a main-account-name -a other-account-name
+```
+
 ### Accounts configuration
 
 **safeway-coupons** can clip coupons for one or more Safeway accounts in a

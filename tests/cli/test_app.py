@@ -404,3 +404,64 @@ def test_accounts_source_logged_toml(
         "via deprecated -c/--accounts-config overrides" in m
         for m in caplog.messages
     )
+
+
+@pytest.mark.usefixtures("accounts_toml")
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        pytest.param([], ["ness", "paula"], id="none"),
+        pytest.param(["-a", "paula"], ["paula"], id="single"),
+        pytest.param(["--account", "Ness"], ["ness"], id="lowercase-match"),
+        pytest.param(
+            ["-a", "paula", "-a", "ness", "-a", "PAULA"],
+            ["paula", "ness"],
+            id="order",
+        ),
+    ],
+)
+def test_account_option(
+    main_runner: MainRunner,
+    mock_clip: MagicMock,
+    args: list[str],
+    expected: list[str],
+) -> None:
+    main_runner(*args)
+    assert [c.args[0].name for c in mock_clip.call_args_list] == expected
+
+
+@pytest.mark.usefixtures("accounts_toml")
+def test_account_option_login_only(
+    main_runner: MainRunner, caplog: pytest.LogCaptureFixture
+) -> None:
+    main_runner("--login-only", "-a", "paula")
+    assert [m for m in caplog.messages if m.startswith("Signing in")] == [
+        "Signing in for Safeway account Paula@twoson.example"
+    ]
+
+
+@pytest.mark.usefixtures("accounts_toml")
+@pytest.mark.parametrize(
+    ("args", "unknown_account_names"),
+    [
+        pytest.param(["-a", "jeff"], ["jeff"], id="single"),
+        pytest.param(
+            ["-a", "AppleKid", "-a", "ness", "-a", "orange/kid"],
+            ["applekid", "orange/kid"],
+            id="multiple",
+        ),
+    ],
+)
+def test_account_option_unknown(
+    main_runner: MainRunner,
+    mock_clip: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+    args: list[str],
+    unknown_account_names: list[str],
+) -> None:
+    main_runner(*args, match=1)
+    mock_clip.assert_not_called()
+    assert [m for m in caplog.messages if m.startswith("No account")] == [
+        f'No account named "{name}" is configured'
+        for name in unknown_account_names
+    ]

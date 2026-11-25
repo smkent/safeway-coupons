@@ -22,6 +22,7 @@ from safeway_coupons.console import console
 from safeway_coupons.models.fields import Password
 from safeway_coupons.models.safeway.offers import OfferMap
 
+from .accounts import ACCOUNTS_TOML
 from .utils import (
     CapLogHelper,
     ClipsTestConfig,
@@ -139,6 +140,15 @@ def account() -> Account:
             )
         ),
     )
+
+
+@pytest.fixture
+def accounts_toml() -> Path:
+    accounts_file = AccountsFile.default_path()
+    accounts_file.parent.mkdir(parents=True, exist_ok=True)
+    accounts_file.write_text(ACCOUNTS_TOML)
+    accounts_file.chmod(0o600)
+    return accounts_file
 
 
 @pytest.fixture

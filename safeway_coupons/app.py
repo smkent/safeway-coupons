@@ -38,10 +38,20 @@ class SafewayCoupons:
     sendmail: Sequence[str] | None = field(default=None, kw_only=True)
     accounts_config: Path | None = field(default=None, kw_only=True)
     login_only: bool = field(default=False, kw_only=True)
+    account_names: Sequence[str] = field(default=(), kw_only=True)
 
     @cached_property
     def accounts(self) -> Sequence[Account]:
-        return Account.load_all(config_file=self.accounts_config)
+        all_accounts = Account.load_all(config_file=self.accounts_config)
+        if not self.account_names:
+            return all_accounts
+        accounts_by_name = {a.name: a for a in all_accounts}
+        names = list(dict.fromkeys(n.lower() for n in self.account_names))
+        if unknown_names := [n for n in names if n not in accounts_by_name]:
+            for name in unknown_names:
+                log.error('No account named "%s" is configured', name)
+            sys.exit(1)
+        return [accounts_by_name[n] for n in names]
 
     @cached_property
     def sendmail_path(self) -> Sequence[str]:

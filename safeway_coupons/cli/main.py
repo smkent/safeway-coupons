@@ -63,6 +63,18 @@ def setup(
             "-v", "--verbose", count=True, help="Increase logging verbosity."
         ),
     ] = 0,
+    account_names: Annotated[
+        list[str] | None,
+        Option(
+            "-a",
+            "--account",
+            metavar="<str>",
+            envvar="SAFEWAY_COUPONS_ACCOUNTS",
+            show_default="All accounts",
+            show_envvar=False,
+            help="Account name (may be used multiple times).",
+        ),
+    ] = None,
     max_clip_count: Annotated[
         int,
         Option(
@@ -181,6 +193,7 @@ def setup(
         headless=headless,
         accounts_config=accounts_config,
         login_only=login_only,
+        account_names=account_names or (),
     )()
 
 
