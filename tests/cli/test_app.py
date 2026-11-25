@@ -6,11 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from safeway_coupons.account import Account, EmailConfig, NotifyConfig
 from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
-from safeway_coupons.models.fields import Password
 from tests.accounts import ACCOUNTS_TOML, LEGACY_ACCOUNTS_INI
 
 if TYPE_CHECKING:
@@ -148,31 +146,9 @@ def test_app_error(
 def test_args(
     main_runner: MainRunner, argv: list[str], expected_instance: SafewayCoupons
 ) -> None:
-    with (
-        patch.object(SafewayCoupons, "__call__", autospec=True) as mock_app,
-        patch.object(
-            os,
-            "environ",
-            {
-                "SAFEWAY_ACCOUNT_USERNAME": "ness@onett.example",
-                "SAFEWAY_ACCOUNT_PASSWORD": "pk_fire",
-            },
-        ),
-    ):
+    with patch.object(SafewayCoupons, "__call__", autospec=True) as mock_app:
         main_runner(*argv)
     mock_app.assert_called_once()
-    expected_instance.accounts = [
-        Account(
-            name="ness@onett.example",
-            username="ness@onett.example",
-            password=Password.encode("pk_fire"),
-            notify=NotifyConfig(
-                email=EmailConfig(
-                    to="ness@onett.example", mail_from="ness@onett.example"
-                )
-            ),
-        )
-    ]
     assert mock_app.call_args.args[0] == expected_instance
 
 
