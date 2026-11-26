@@ -42,10 +42,15 @@ RUN for target in /usr/sbin/sendmail /usr/sbin/crond /usr/bin/crontab; do \
 
 COPY --from=builder /app/.venv /app/.venv
 
-COPY docker /opt/docker
-
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
+
+ARG NO_BROWSER_TEST=
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/fontconfig \
+    [ -n "${NO_BROWSER_TEST-}" ] || HOME=/tmp PYTHONDONTWRITEBYTECODE=1 safeway-coupons browser test;
+
+COPY docker /opt/docker
 
 ENV SAFEWAY_COUPONS_STORAGE_DIR=/storage
 ENV CRON_SCHEDULE="5 2 * * *"

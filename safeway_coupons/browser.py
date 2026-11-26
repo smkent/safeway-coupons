@@ -225,6 +225,7 @@ class BrowserSession(ExitStack, DirsMixin, ABC):
             user_agent = cdp.send("Browser.getVersion")["userAgent"]
         finally:
             browser.close()
+        log.trace("Detected user agent: %s", user_agent)
         if "HeadlessChrome" not in user_agent:
             return None
         fixed = user_agent.replace("HeadlessChrome", "Chrome")
