@@ -26,9 +26,9 @@ from safeway_coupons.errors import (
 from safeway_coupons.models.safeway.auth import AuthErrorResponse, AuthResponse
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, Generator, Mapping
 
-    from patchright.sync_api import Frame, Locator, Page, Response
+    from patchright.sync_api import Cookie, Frame, Locator, Page, Response
 
     from safeway_coupons.account import Account
 
@@ -59,6 +59,10 @@ class SafewayBrowserSession(BrowserSession):
         with _cleanup_on_error():
             self.load_site_home()
         return self
+
+    @property
+    def cookies(self) -> Mapping[str, Cookie]:
+        return {c["name"]: c for c in self.page.context.cookies(SITE_URL)}
 
     def load_site_home(self) -> None:
         self.page.goto(SITE_URL)
