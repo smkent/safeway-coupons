@@ -350,6 +350,24 @@ Stop the container by running:
 docker compose down
 ```
 
+### Release image tags
+
+Container images are tagged for each corresponding release version.
+
+Two floating tags are provided that track the latest release:
+
+* `latest`: The latest project version release, built at release time. Only
+  updated when a new project version is released.
+* `latest-auto`: The latest project version release, starting with the `latest`
+  release-time build, and then automatically rebuilt on a schedule from the same
+  project version tag. The purpose of `latest-auto` is to provide the latest
+  package versions for the browser and system dependencies that may have been
+  released upstream since the latest project version was released.
+
+While all container image builds include a test that the browser starts within
+the image, note that `latest-auto` images are updated automatically without
+human review.
+
 ## Development
 
 ### Building a container locally with `docker compose`

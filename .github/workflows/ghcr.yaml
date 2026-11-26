@@ -44,7 +44,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           keep-n-tagged: 0
           use-regex: true
-          exclude-tags: ^(\d+|\d+\.\d+|\d+\.\d+\.\d+|latest|edge|${{ github.event.repository.default_branch }})$
+          exclude-tags: ^(\d+|\d+\.\d+|\d+\.\d+\.\d+|latest|latest-auto|edge|${{ github.event.repository.default_branch }})$
           older-than: 30 days
 
   cleanup-untagged:

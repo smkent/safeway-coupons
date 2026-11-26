@@ -1,0 +1,38 @@
+name: Container Refresh
+
+on:
+  schedule:
+    - cron: 12 12 * * 1,4
+      timezone: Etc/UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild latest release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+    steps:
+      - name: ♻️ Rebuild latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq .tagName)"
+          url="$(gh workflow run container.yaml --repo "${GITHUB_REPOSITORY}" --ref "${tag}" -f latest-auto=true)"
+          if [ -z "${url}" ]; then
+            echo "::error::No run URL returned for container workflow run"
+            exit 1
+          fi
+          echo "::notice title=Rebuilding ${tag}::${url}"
+          gh run watch "${url##*/}" --repo "${GITHUB_REPOSITORY}" \
+            --exit-status --compact --interval 30

@@ -7,6 +7,12 @@ on:
       - main
     tags:
       - v[0-9]*.[0-9]*
+  workflow_dispatch:
+    inputs:
+      latest-auto:
+        description: Rebuild this release tag as only `latest-auto`
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +46,8 @@ jobs:
   image:
     name: Image
     needs: version
+    # workflow_dispatch may only build `latest-auto` from a tag
+    if: github.event_name != 'workflow_dispatch' || (inputs.latest-auto && github.ref_type == 'tag')
     uses: docker/github-builder/.github/workflows/build.yml@v1
     permissions:
       contents: read
@@ -55,15 +63,17 @@ jobs:
       meta-images: ghcr.io/${{ github.repository }}
       meta-labels: |
         org.opencontainers.image.licenses=GPL-3.0-or-later
+        ${{ inputs.latest-auto && format('org.opencontainers.image.version={0}', needs.version.outputs.version) || '' }}
       meta-flavor: |
-        latest=auto
+        latest=${{ inputs.latest-auto && 'false' || 'auto' }}
       meta-tags: |
         type=edge
         type=ref,event=pr
         type=ref,event=branch,enable={{is_default_branch}}
-        type=semver,pattern={{version}}
-        type=semver,pattern={{major}}.{{minor}}
-        type=semver,pattern={{major}}
+        type=semver,pattern={{version}},enable=${{ !inputs.latest-auto }}
+        type=semver,pattern={{major}}.{{minor}},enable=${{ !inputs.latest-auto }}
+        type=semver,pattern={{major}},enable=${{ !inputs.latest-auto }}
+        type=raw,value=latest-auto,enable=${{ github.ref_type == 'tag' }}
       build-args: |
         UV_DYNAMIC_VERSIONING_BYPASS=${{ needs.version.outputs.version }}
     secrets:
