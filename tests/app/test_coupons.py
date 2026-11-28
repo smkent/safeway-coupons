@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, PropertyMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 import responses
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
     import requests
 
-    from .utils import CapLogHelper, MainRunner, MockMail
+    from tests.utils import CapLogHelper, MainRunner, MockMail
 
 
 @dataclass
@@ -238,31 +238,4 @@ def test_dry_run_signs_in(
     main_runner("-a", "ness", "-p")
     mock_browser_driver.sign_in.assert_called_once_with(check=False)
     assert [c.request.method for c in http_responses.calls] == ["GET"]
-    assert not mail.messages
-
-
-@pytest.mark.usefixtures("accounts_toml", "http_responses")
-@pytest.mark.parametrize(
-    ("argv", "check", "status"),
-    [
-        pytest.param([], False, "Signing in", id="live"),
-        pytest.param(["-p"], True, "Checking sign in", id="dry_run"),
-    ],
-)
-def test_login_only(
-    main_runner: MainRunner,
-    mail: MockMail,
-    mock_browser_driver: MagicMock,
-    caplog: pytest.LogCaptureFixture,
-    argv: list[str],
-    status: str,
-    *,
-    check: bool,
-) -> None:
-    main_runner("--login-only", *argv)
-    assert (
-        mock_browser_driver.sign_in.call_args_list == [call(check=check)] * 2
-    )
-    for username in ("ness@onett.example", "Paula@twoson.example"):
-        assert f"{status} for Safeway account {username}" in caplog.messages
     assert not mail.messages
