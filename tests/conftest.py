@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 import os
 import sys
-import time
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, create_autospec, patch
 
@@ -20,22 +18,13 @@ from safeway_coupons.account import (
 from safeway_coupons.client.browser import SafewayBrowserSession
 from safeway_coupons.console import console
 from safeway_coupons.models.fields import Password
-from safeway_coupons.models.safeway.offers import OfferMap
 
 from .accounts import ACCOUNTS_TOML
-from .utils import (
-    CapLogHelper,
-    ClipsTestConfig,
-    MainRunner,
-    MockDirs,
-    MockMail,
-)
+from .utils import CapLogHelper, MainRunner, MockDirs, MockMail
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
     from pathlib import Path
-
-    import requests
 
 
 pytest.register_assert_rewrite("tests.cli.utils")
@@ -94,12 +83,6 @@ def caplog_helper(caplog: pytest.LogCaptureFixture) -> CapLogHelper:
 
 
 @pytest.fixture
-def mock_sleep() -> Iterator[MagicMock]:
-    with patch.object(time, "sleep") as obj:
-        yield obj
-
-
-@pytest.fixture
 def http_responses() -> Iterator[responses.RequestsMock]:
     with responses.RequestsMock() as resp_mock:
         yield resp_mock
@@ -114,9 +97,7 @@ def mock_browser_driver_enter() -> Iterator[MagicMock]:
 
 
 @pytest.fixture(autouse=True)
-def mock_browser_driver(
-    mock_browser_driver_enter: MagicMock, mock_sleep: MagicMock
-) -> MagicMock:
+def mock_browser_driver(mock_browser_driver_enter: MagicMock) -> MagicMock:
     instance = create_autospec(SafewayBrowserSession, instance=True)
     instance.user_agent = "UnitTestUserAgent/1.0"
 
@@ -170,63 +151,3 @@ def accounts_config() -> Path:
     )
     accounts_file.chmod(0o600)
     return accounts_file
-
-
-@pytest.fixture
-def clips(
-    http_responses: responses.RequestsMock,
-) -> ClipsTestConfig:
-    clips_test_config = ClipsTestConfig()
-
-    def _clip_response(
-        request: requests.PreparedRequest,
-    ) -> tuple[int, Mapping[str, str], str]:
-        assert request.body
-        data = json.loads(request.body)
-        offer_id = data["items"][0]["itemId"]
-        if offer_id in clips_test_config.fail_http_offer_ids:
-            # This clip should return an HTTP error
-            clips_test_config.failed_offer_ids.append(offer_id)
-            return (400, {}, "")
-        if offer_id in clips_test_config.fail_response_offer_ids:
-            # This clip should return a non-successful response
-            clip_status = 0
-            clips_test_config.failed_offer_ids.append(offer_id)
-        else:
-            # This clip should succeed
-            clip_status = 1
-            clips_test_config.clipped_offer_ids.append(offer_id)
-        for clip_item in data["items"]:
-            clip_item.update(
-                {"status": clip_status, "clipId": 1000, "checked": False}
-            )
-
-        return (200, {"Content-Type": "application/json"}, json.dumps(data))
-
-    http_responses.add_callback(
-        method=responses.POST,
-        url=("https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"),
-        callback=_clip_response,
-    )
-    return clips_test_config
-
-
-@pytest.fixture
-def available_offers(http_responses: responses.RequestsMock) -> OfferMap:
-    offer_map: OfferMap = OfferMap(offers={})
-    http_responses.add_callback(
-        method=responses.GET,
-        url=(
-            "https://www.safeway.com/abs/pub/xapi/offers/companiongalleryoffer"
-        ),
-        callback=lambda request: (
-            200,
-            {"Content-Type": "application/json"},
-            json.dumps(
-                offer_map.model_dump(
-                    mode="json", by_alias=True, exclude_none=True
-                )
-            ),
-        ),
-    )
-    return offer_map
