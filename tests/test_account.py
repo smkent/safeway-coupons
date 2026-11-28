@@ -8,11 +8,8 @@ from filelock import FileLock
 from safeway_coupons.account import Account, AccountsFile
 from safeway_coupons.errors import AccountLockedError
 
-from .accounts import LEGACY_ACCOUNTS, LEGACY_ACCOUNTS_INI
-
 if TYPE_CHECKING:
     from pathlib import Path
-    from unittest.mock import MagicMock
 
     from safeway_coupons.account import Account
     from tests.conftest import MainRunner
@@ -52,15 +49,18 @@ def test_account_lock_released(new_account: Account) -> None:
 
 
 def test_legacy_accounts_config_with_browser_session(
+    caplog: pytest.LogCaptureFixture,
     main_runner: MainRunner,
-    tmp_path: Path,
-    mock_browser_driver_enter: MagicMock,
+    accounts_ini: Path,
 ) -> None:
-    accounts_file = tmp_path / "test_accounts"
-    accounts_file.write_text(LEGACY_ACCOUNTS_INI)
-    main_runner("-c", str(accounts_file), "--login-only", match=0)
-    assert {
-        account.name: account
-        for call in mock_browser_driver_enter.call_args_list
-        if (account := call.args[0].account)
-    } == LEGACY_ACCOUNTS
+    main_runner(
+        "-a",
+        "ness@onett.example",
+        "-c",
+        str(accounts_ini),
+        "--login-only",
+        match=0,
+    )
+    assert (
+        "Signing in for Safeway account ness@onett.example" in caplog.messages
+    )

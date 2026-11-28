@@ -124,3 +124,25 @@ def accounts_toml() -> Path:
     )
     accounts_file.chmod(0o600)
     return accounts_file
+
+
+@pytest.fixture
+def accounts_ini(tmp_path: Path) -> Path:
+    legacy_accounts_file = tmp_path / "legacy_accounts_ini"
+    legacy_accounts_file.write_text(
+        os.linesep.join(
+            [
+                "[_global]",
+                "email_sender = ness@onett.example",
+                "",
+                "[ness@onett.example]",
+                "password = pk_fire",
+                "",
+                "[Paula@twoson.example]",
+                "password = pk_freeze",
+                "notify = ness@onett.example",
+            ]
+        )
+        + os.linesep
+    )
+    return legacy_accounts_file

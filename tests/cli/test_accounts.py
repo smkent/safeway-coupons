@@ -15,7 +15,6 @@ from safeway_coupons.account import (
     NotifyConfig,
 )
 from safeway_coupons.models.fields import Password
-from tests.accounts import LEGACY_ACCOUNTS, LEGACY_ACCOUNTS_INI
 from tests.utils import CapLogHelper, MainRunner, MockDirs
 
 from .utils import ExpectedOutput
@@ -24,6 +23,26 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from .utils import OutputTest
+
+
+LEGACY_ACCOUNTS = {
+    "ness@onett.example": Account(
+        name="ness@onett.example",
+        username="ness@onett.example",
+        password=Password.encode("pk_fire"),
+        notify=NotifyConfig(email=EmailConfig(mail_from="ness@onett.example")),
+    ),
+    "paula@twoson.example": Account(
+        name="paula@twoson.example",
+        username="Paula@twoson.example",
+        password=Password.encode("pk_freeze"),
+        notify=NotifyConfig(
+            email=EmailConfig(
+                to="ness@onett.example", mail_from="ness@onett.example"
+            )
+        ),
+    ),
+}
 
 
 @pytest.fixture(params=["account", "accounts"])
@@ -40,13 +59,6 @@ def mock_getpass() -> Iterator[MagicMock]:
 @pytest.fixture(params=MockDirs.Type.params())
 def mock_dirs_type(request: pytest.FixtureRequest) -> MockDirs.Type:
     return request.param
-
-
-@pytest.fixture
-def legacy_config(tmp_path: Path) -> Path:
-    path = tmp_path / "legacy_accounts"
-    path.write_text(LEGACY_ACCOUNTS_INI)
-    return path
 
 
 @pytest.fixture
@@ -475,10 +487,10 @@ def import_log(
 
 
 def test_accounts_import(
-    output_test: OutputTest, accounts_command: str, legacy_config: Path
+    output_test: OutputTest, accounts_command: str, accounts_ini: Path
 ) -> None:
-    output_test.expected = ExpectedOutput(logs=import_log(legacy_config))
-    output_test(accounts_command, "import", str(legacy_config))
+    output_test.expected = ExpectedOutput(logs=import_log(accounts_ini))
+    output_test(accounts_command, "import", str(accounts_ini))
     assert AccountsFile.load().accounts == LEGACY_ACCOUNTS
 
 
@@ -490,13 +502,13 @@ def test_accounts_import_accounts_config_option(
     output_test: OutputTest,
     monkeypatch: pytest.MonkeyPatch,
     accounts_command: str,
-    legacy_config: Path,
+    accounts_ini: Path,
     *,
     accounts_file_env: bool,
 ) -> None:
     path = AccountsFile.default_path()
     if accounts_file_env:
-        monkeypatch.setenv("SAFEWAY_ACCOUNTS_FILE", str(legacy_config))
+        monkeypatch.setenv("SAFEWAY_ACCOUNTS_FILE", str(accounts_ini))
         next_step = "Remove SAFEWAY_ACCOUNTS_FILE and its volume mount"
     else:
         next_step = "Stop passing -c/--accounts-config"
@@ -506,19 +518,19 @@ def test_accounts_import_accounts_config_option(
                 "-c/--accounts-config is deprecated and will be removed in a"
                 f" future release. Migrate your accounts to {path}."
             ),
-            *import_log(legacy_config),
+            *import_log(accounts_ini),
             (
                 f"Accounts are now configured in {path}. {next_step}"
                 " so it is used."
             ),
         ]
     )
-    output_test("-c", str(legacy_config), accounts_command, "import")
+    output_test("-c", str(accounts_ini), accounts_command, "import")
     assert AccountsFile.load().accounts == LEGACY_ACCOUNTS
 
 
 def test_accounts_import_existing(
-    output_test: OutputTest, accounts_command: str, legacy_config: Path
+    output_test: OutputTest, accounts_command: str, accounts_ini: Path
 ) -> None:
     AccountsFile(
         accounts={
@@ -529,7 +541,7 @@ def test_accounts_import_existing(
     ).save()
     output_test.expected = ExpectedOutput(
         logs=[
-            f"Importing accounts from {legacy_config}",
+            f"Importing accounts from {accounts_ini}",
             (
                 'Not importing account "ness@onett.example", which matches an'
                 " existing account"
@@ -541,7 +553,7 @@ def test_accounts_import_existing(
             "Imported 1 account(s)",
         ]
     )
-    output_test(accounts_command, "import", str(legacy_config))
+    output_test(accounts_command, "import", str(accounts_ini))
     accounts = AccountsFile.load().accounts
     assert accounts["ness@onett.example"].password is None
     assert (
@@ -582,12 +594,12 @@ def test_accounts_import_same_derived_name(
 
 
 def test_accounts_import_dry_run(
-    output_test: OutputTest, accounts_command: str, legacy_config: Path
+    output_test: OutputTest, accounts_command: str, accounts_ini: Path
 ) -> None:
     output_test.expected = ExpectedOutput(
-        logs=import_log(legacy_config, dry_run=True)
+        logs=import_log(accounts_ini, dry_run=True)
     )
-    output_test(accounts_command, "import", "--dry-run", str(legacy_config))
+    output_test(accounts_command, "import", "--dry-run", str(accounts_ini))
     assert not AccountsFile.default_path().exists()
 
 
@@ -632,11 +644,11 @@ def test_accounts_import_env_account(
     caplog_helper: CapLogHelper,
     monkeypatch: pytest.MonkeyPatch,
     accounts_command: str,
-    legacy_config: Path,
+    accounts_ini: Path,
 ) -> None:
     monkeypatch.setenv("SAFEWAY_ACCOUNT_USERNAME", "ness@onett.example")
     monkeypatch.setenv("SAFEWAY_ACCOUNT_PASSWORD", "pk_fire")
-    main_runner(accounts_command, "import", str(legacy_config), match=1)
+    main_runner(accounts_command, "import", str(accounts_ini), match=1)
     assert (
         "Account configured with environment variables"
         " cannot be used with accounts management commands."

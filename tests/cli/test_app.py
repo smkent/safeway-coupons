@@ -10,7 +10,6 @@ import pytest
 from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
-from tests.accounts import LEGACY_ACCOUNTS_INI
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -368,16 +367,14 @@ def test_accounts_source_logged_env(
 
 def test_accounts_source_logged_ini(
     main_runner: MainRunner,
-    tmp_path: Path,
+    accounts_ini: Path,
     caplog: pytest.LogCaptureFixture,
     accounts_toml_setup: Path,
 ) -> None:
-    accounts_config = tmp_path / "accounts-config"
-    accounts_config.write_text(LEGACY_ACCOUNTS_INI)
-    main_runner("--verbose", "-c", str(accounts_config))
-    assert f"Loaded 2 account(s) from {accounts_config}" in caplog.messages
+    main_runner("--verbose", "-c", str(accounts_ini))
+    assert f"Loaded 2 account(s) from {accounts_ini}" in caplog.messages
     found = (
-        f"{accounts_config} via deprecated -c/--accounts-config"
+        f"{accounts_ini} via deprecated -c/--accounts-config"
         f" overrides {accounts_toml_setup}"
     ) in caplog.messages
     assert found is accounts_toml_setup.is_file()
