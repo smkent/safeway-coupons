@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "safeway-coupons"
 dynamic = ["version"]
-description = "Automatic coupon clipper for Safeway's online \"Safeway for U\" coupons"
+description = "Automatic coupon clipper for Safeway and other Albertsons brands' online \"for U\" coupons"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["COPYING"]

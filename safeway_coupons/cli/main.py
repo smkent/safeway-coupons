@@ -19,7 +19,10 @@ from .cli import CLI, CLIContext
 from .storage import cli as cli_storage
 
 cli = CLI(
-    help='Automatic coupon clipper for "Safeway for U" coupons',
+    help=(
+        "Automatic coupon clipper for Safeway and other Albertsons Companies"
+        " stores"
+    ),
     invoke_without_command=True,
 )
 cli.add_typer(cli_accounts)

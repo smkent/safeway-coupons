@@ -1,4 +1,4 @@
-"""Automatic coupon clipper for Safeway's online "Safeway for U" coupons."""
+"""Automatic coupon clipper for Safeway and other Albertsons brands' online "for U" coupons."""  # noqa: E501
 
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as import_version

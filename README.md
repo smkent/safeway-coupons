@@ -1,6 +1,6 @@
 # safeway-coupons
 
-Automatic coupon clipper for Safeway's online "Safeway for U" coupons
+Automatic coupon clipper for Safeway and other Albertsons brands' online "for U" coupons
 
 [![License](https://img.shields.io/github/license/smkent/safeway-coupons)](https://github.com/smkent/safeway-coupons/blob/main/COPYING)
 [![PyPI](https://img.shields.io/pypi/v/safeway-coupons)](https://pypi.org/project/safeway-coupons/)
@@ -10,13 +10,39 @@ Automatic coupon clipper for Safeway's online "Safeway for U" coupons
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 [![GitHub stars](https://img.shields.io/github/stars/smkent/safeway-coupons?style=social)](https://github.com/smkent/safeway-coupons)
 
-**safeway-coupons** is a tool that will log in to an account on safeway.com,
-and attempt to select all of the "Safeway for U" electronic coupons on the site
-so they don't have to each be clicked manually.
+**safeway-coupons** is a tool that will log in to an Albertsons brand store
+account (such as Safeway), and attempt to select all of the "for U" electronic
+coupons on the site so they don't have to each be clicked manually.
+
+## Supported store brands
+
+The web sites for all Albertsons brands (including Safeway) use the same
+platform, so coupon clipping works the same way on each. safeway-coupons
+supports the following Albertsons brands:
+
+[Acme](https://acmemarkets.com),
+[Albertsons Market](https://shopalbertsonsmarket.com),
+[Albertsons](https://albertsons.com),
+[Amigos](https://shopamigos.com),
+[Andronico's](https://andronicos.com),
+[Balducci's](https://balduccis.com),
+[Carrs](https://carrsqc.com),
+[Haggen](https://haggen.com),
+[Jewel-Osco](https://jewelosco.com),
+[Kings](https://kingsfoodmarkets.com),
+[Market Street](https://shopmarketstreet.com),
+[Pavilions](https://pavilions.com),
+[Randalls](https://randalls.com),
+[Safeway](https://safeway.com),
+[Shaw's](https://shaws.com),
+[Star Market](https://starmarket.com),
+[Tom Thumb](https://tomthumb.com),
+[United Supermarkets](https://shopunitedsupermarkets.com),
+[Vons](https://vons.com)
 
 ## Design notes
 
-Safeway's sign in page is protected by a web application firewall (WAF).
+The sign in page is protected by a web application firewall (WAF).
 safeway-coupons performs authentication using Google Chrome. Authentication may
 fail based on your IP's reputation, either by presenting an interactive
 challenge or denying sign in attempts altogether.
@@ -24,10 +50,10 @@ challenge or denying sign in attempts altogether.
 safeway-coupons currently does not have support for prompting the user to solve
 interactive challenges.
 
-Safeway's sign in page may also require verifying a new device with a
-multi-factor authentication (MFA) verification code. To reduce how often this
-happens, a persistent Google Chrome profile directory is created for each
-account and reused for logins with the same account. Once a signed in session is
+The sign in page may also require verifying a new device with a multi-factor
+authentication (MFA) verification code. To reduce how often this happens, a
+persistent Google Chrome profile directory is created for each account and
+reused for logins with the same account. Once a signed in session is
 established, coupon clipping is performed using HTTP requests via
 [requests][requests].
 
@@ -76,8 +102,8 @@ safeway-coupons -a main-account-name -a other-account-name
 
 ### Accounts configuration
 
-**safeway-coupons** can clip coupons for one or more Safeway accounts in a
-single run.
+**safeway-coupons** can clip coupons for one or more accounts in a single run
+across any supported store brand.
 
 Commands are provided for managing accounts. The most useful commands are
 listed below. For a full list of account management commands, run:
@@ -103,11 +129,12 @@ names are converted to lower case and may not contain spaces or slashes.
 To add a new account, run:
 
 ```sh
-safeway-coupons accounts add [account-name] [sign-in-email]
+safeway-coupons accounts add [brand] [account-name] [sign-in-email]
 ```
 
-If `account-name` or `sign-in-email` from the above example are omitted,
-`accounts add` will prompt for them interactively.
+`brand` is one of the [supported store brands](#supported-store-brands), such
+as `albertsons` or `safeway`. If any of `brand`, `account-name` or
+`sign-in-email` are omitted, `accounts add` will prompt for them interactively.
 
 `accounts add` will prompt for an optional email sender and/or email recipient
 address, for use if email summaries are enabled. These may be left blank to use
@@ -151,6 +178,7 @@ An example `accounts.toml`:
 
 ```toml
 [accounts.main]
+brand = "safeway"
 username = "safeway.account@example.com"
 password = "base64:<base64-encoded password>"
 
@@ -159,7 +187,8 @@ notify.email.to = "your.email@example.com"
 notify.email.from = "sender@example.com"
 
 [accounts.second]
-username = "another.safeway.account@example.com"
+brand = "albertsons"
+username = "albertsons.account@example.com"
 password = "base64:<base64-encoded password>"
 notify.email.to = "other.email@example.com"  # Optional
 ```
@@ -188,15 +217,15 @@ future release. To migrate:
 * Configure the account by running:
 
 ```sh
-safeway-coupons accounts add [account-name] [sign-in-email]
+safeway-coupons accounts add safeway [account-name] [sign-in-email]
 ```
 
 ### Multi-factor authentication (MFA) verification codes
 
-Safeway's sign in page will ask for an MFA code when signing in from a new
+The sign in page will ask for an MFA code when signing in from a new
 device, and occasionally on other logins.
 
-When run interactively, safeway-coupons can request Safeway's sign in page to
+When run interactively, safeway-coupons can request the sign in page to
 send an MFA code to the first listed destination for your account (e.g. email or
 text). safeway-coupons will then prompt for the code in the terminal to complete
 sign in. To sign in interactively with an MFA code, run:
@@ -321,7 +350,7 @@ future release. To migrate:
 * Configure the account by running:
 
 ```sh
-docker compose run --rm safeway-coupons accounts add [account-name] [sign-in-email]
+docker compose run --rm safeway-coupons accounts add safeway [account-name] [sign-in-email]
 ```
 
 * Restart the service:
