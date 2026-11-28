@@ -50,13 +50,14 @@ def legacy_config(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def renamable_account(accounts_config: Path, account: Account) -> Account:
+def renamable_account(accounts_config: Path) -> Account:
     """accounts.toml with ness, which has saved state, and paula."""
     config = AccountsFile.load(accounts_config)
     config.accounts["paula"] = Account(
         name="paula", username="paula@twoson.example"
     )
     config.save()
+    account = config.accounts["ness"]
     with account.lock:
         (account.state_dir / "state.json").write_text("{}")
     return account
@@ -315,8 +316,9 @@ def test_accounts_remove_last(
 
 @pytest.mark.usefixtures("accounts_config")
 def test_accounts_remove_keeps_state(
-    output_test: OutputTest, accounts_command: str, account: Account
+    output_test: OutputTest, accounts_command: str
 ) -> None:
+    account = AccountsFile.load().accounts["ness"]
     with account.lock:
         pass
     output_test.expected = ExpectedOutput(

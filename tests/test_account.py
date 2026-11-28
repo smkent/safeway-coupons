@@ -5,7 +5,12 @@ from typing import TYPE_CHECKING
 import pytest
 from filelock import FileLock
 
-from safeway_coupons.account import Account, EmailConfig, NotifyConfig
+from safeway_coupons.account import (
+    Account,
+    AccountsFile,
+    EmailConfig,
+    NotifyConfig,
+)
 from safeway_coupons.errors import AccountLockedError
 from safeway_coupons.models.fields import Password
 
@@ -17,7 +22,8 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-def new_account(account: Account) -> Account:
+def new_account(accounts_toml: Path) -> Account:
+    account = AccountsFile.load().accounts["ness"]
     assert not account.lock_file.exists()
     return account
 

@@ -9,12 +9,7 @@ import pytest
 import responses
 import rich
 
-from safeway_coupons.account import (
-    Account,
-    AccountsFile,
-    EmailConfig,
-    NotifyConfig,
-)
+from safeway_coupons.account import AccountsFile
 from safeway_coupons.client.browser import SafewayBrowserSession
 from safeway_coupons.console import console
 from safeway_coupons.models.fields import Password
@@ -107,20 +102,6 @@ def mock_browser_driver(mock_browser_driver_enter: MagicMock) -> MagicMock:
 
     mock_browser_driver_enter.side_effect = _enter
     return instance
-
-
-@pytest.fixture
-def account() -> Account:
-    return Account(
-        name="ness",
-        username="ness@onett.example",
-        password=Password.encode("pk_fire"),
-        notify=NotifyConfig(
-            email=EmailConfig(
-                to="ness@onett.example", mail_from="ness@onett.example"
-            )
-        ),
-    )
 
 
 @pytest.fixture

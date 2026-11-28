@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from safeway_coupons.account import AccountsFile
 from safeway_coupons.client.auth import LoginSession
 from safeway_coupons.errors import (
     BrowserSessionError,
@@ -15,13 +16,14 @@ if TYPE_CHECKING:
     from pathlib import Path
     from unittest.mock import MagicMock
 
-    from safeway_coupons.account import Account
     from tests.utils import MainRunner
 
 
+@pytest.mark.usefixtures("accounts_toml")
 def test_device_verification_required_from_browser(
-    account: Account, mock_browser_driver: MagicMock, tmp_path: Path
+    mock_browser_driver: MagicMock, tmp_path: Path
 ) -> None:
+    account = AccountsFile.load().accounts["ness"]
     screenshot = tmp_path / "screenshot.png"
     error = BrowserSessionError(attachments=[screenshot])
     error.__cause__ = MultiFactorAuthenticationRequired(account)
