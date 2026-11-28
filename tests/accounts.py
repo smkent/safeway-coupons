@@ -9,9 +9,7 @@ password = "{Password.encode("pk_fire")}"
 [accounts.paula]
 username = "Paula@twoson.example"
 password = "{Password.encode("pk_freeze")}"
-
-[accounts.paula.notify.email]
-to = "ness@onett.example"
+notify.email.to = "ness@onett.example"
 """
 
 

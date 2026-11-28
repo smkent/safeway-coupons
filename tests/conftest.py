@@ -142,10 +142,6 @@ def accounts_config() -> Path:
                 "[accounts.ness]",
                 'username = "ness@onett.example"',
                 f'password = "{Password.encode("pk_fire")}"',
-                "",
-                "[accounts.ness.notify.email]",
-                'to = "ness@onett.example"',
-                'from = "ness@onett.example"',
             )
         )
     )
