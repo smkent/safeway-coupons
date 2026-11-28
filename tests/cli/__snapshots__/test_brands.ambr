@@ -1,0 +1,133 @@
+# serializer version: 1
+# name: test_brands_list[storagedir-brand-list]
+  '''
+  ╭─ Supported store brands ────────────────────╮
+  │                                             │
+  │ Name                 Account brand setting  │
+  │                                             │
+  │ Acme                 acmemarkets            │
+  │ Albertsons           albertsons             │
+  │ Albertsons Market    shopalbertsonsmarket   │
+  │ Amigos               shopamigos             │
+  │ Andronico's          andronicos             │
+  │ Balducci's           balduccis              │
+  │ Carrs                carrsqc                │
+  │ Haggen               haggen                 │
+  │ Jewel-Osco           jewelosco              │
+  │ Kings                kingsfoodmarkets       │
+  │ Market Street        shopmarketstreet       │
+  │ Pavilions            pavilions              │
+  │ Randalls             randalls               │
+  │ Safeway              safeway                │
+  │ Shaw's               shaws                  │
+  │ Star Market          starmarket             │
+  │ Tom Thumb            tomthumb               │
+  │ United Supermarkets  shopunitedsupermarkets │
+  │ Vons                 vons                   │
+  │                                             │
+  ╰─────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_brands_list[storagedir-brand-list].1
+  ''
+# ---
+# name: test_brands_list[storagedir-brand-ls]
+  '''
+  ╭─ Supported store brands ────────────────────╮
+  │                                             │
+  │ Name                 Account brand setting  │
+  │                                             │
+  │ Acme                 acmemarkets            │
+  │ Albertsons           albertsons             │
+  │ Albertsons Market    shopalbertsonsmarket   │
+  │ Amigos               shopamigos             │
+  │ Andronico's          andronicos             │
+  │ Balducci's           balduccis              │
+  │ Carrs                carrsqc                │
+  │ Haggen               haggen                 │
+  │ Jewel-Osco           jewelosco              │
+  │ Kings                kingsfoodmarkets       │
+  │ Market Street        shopmarketstreet       │
+  │ Pavilions            pavilions              │
+  │ Randalls             randalls               │
+  │ Safeway              safeway                │
+  │ Shaw's               shaws                  │
+  │ Star Market          starmarket             │
+  │ Tom Thumb            tomthumb               │
+  │ United Supermarkets  shopunitedsupermarkets │
+  │ Vons                 vons                   │
+  │                                             │
+  ╰─────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_brands_list[storagedir-brand-ls].1
+  ''
+# ---
+# name: test_brands_list[storagedir-brands-list]
+  '''
+  ╭─ Supported store brands ────────────────────╮
+  │                                             │
+  │ Name                 Account brand setting  │
+  │                                             │
+  │ Acme                 acmemarkets            │
+  │ Albertsons           albertsons             │
+  │ Albertsons Market    shopalbertsonsmarket   │
+  │ Amigos               shopamigos             │
+  │ Andronico's          andronicos             │
+  │ Balducci's           balduccis              │
+  │ Carrs                carrsqc                │
+  │ Haggen               haggen                 │
+  │ Jewel-Osco           jewelosco              │
+  │ Kings                kingsfoodmarkets       │
+  │ Market Street        shopmarketstreet       │
+  │ Pavilions            pavilions              │
+  │ Randalls             randalls               │
+  │ Safeway              safeway                │
+  │ Shaw's               shaws                  │
+  │ Star Market          starmarket             │
+  │ Tom Thumb            tomthumb               │
+  │ United Supermarkets  shopunitedsupermarkets │
+  │ Vons                 vons                   │
+  │                                             │
+  ╰─────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_brands_list[storagedir-brands-list].1
+  ''
+# ---
+# name: test_brands_list[storagedir-brands-ls]
+  '''
+  ╭─ Supported store brands ────────────────────╮
+  │                                             │
+  │ Name                 Account brand setting  │
+  │                                             │
+  │ Acme                 acmemarkets            │
+  │ Albertsons           albertsons             │
+  │ Albertsons Market    shopalbertsonsmarket   │
+  │ Amigos               shopamigos             │
+  │ Andronico's          andronicos             │
+  │ Balducci's           balduccis              │
+  │ Carrs                carrsqc                │
+  │ Haggen               haggen                 │
+  │ Jewel-Osco           jewelosco              │
+  │ Kings                kingsfoodmarkets       │
+  │ Market Street        shopmarketstreet       │
+  │ Pavilions            pavilions              │
+  │ Randalls             randalls               │
+  │ Safeway              safeway                │
+  │ Shaw's               shaws                  │
+  │ Star Market          starmarket             │
+  │ Tom Thumb            tomthumb               │
+  │ United Supermarkets  shopunitedsupermarkets │
+  │ Vons                 vons                   │
+  │                                             │
+  ╰─────────────────────────────────────────────╯
+  
+  '''
+# ---
+# name: test_brands_list[storagedir-brands-ls].1
+  ''
+# ---

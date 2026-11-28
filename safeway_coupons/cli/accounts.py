@@ -187,7 +187,7 @@ def add(
         Argument(
             parser=partial(_parse_value, Brand),
             show_choices=False,
-            help="Store brand, choices: " + ", ".join(Brand),
+            help="Store brand, for choices run: safeway-coupons brands list",
         ),
     ] = None,
     name: Annotated[

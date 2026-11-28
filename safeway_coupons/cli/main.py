@@ -14,6 +14,7 @@ from safeway_coupons.console import console, log
 from safeway_coupons.dirs import dirs
 
 from .accounts import cli as cli_accounts
+from .brands import cli as cli_brands
 from .browser import cli as cli_browser
 from .cli import CLI, CLIContext
 from .storage import cli as cli_storage
@@ -27,6 +28,8 @@ cli = CLI(
 )
 cli.add_typer(cli_accounts)
 cli.add_typer(cli_accounts, name="account", hidden=True)
+cli.add_typer(cli_brands)
+cli.add_typer(cli_brands, name="brand", hidden=True)
 cli.add_typer(cli_storage)
 cli.add_typer(cli_browser)
 

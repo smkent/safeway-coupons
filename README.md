@@ -133,8 +133,14 @@ safeway-coupons accounts add [brand] [account-name] [sign-in-email]
 ```
 
 `brand` is one of the [supported store brands](#supported-store-brands), such
-as `albertsons` or `safeway`. If any of `brand`, `account-name` or
-`sign-in-email` are omitted, `accounts add` will prompt for them interactively.
+as `albertsons` or `safeway`. To see the supported `brand` choices, run:
+
+```sh
+safeway-coupons brands list
+```
+
+If any of `brand`, `account-name` or `sign-in-email` are omitted, `accounts add`
+will prompt for them interactively.
 
 `accounts add` will prompt for an optional email sender and/or email recipient
 address, for use if email summaries are enabled. These may be left blank to use
