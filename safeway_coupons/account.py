@@ -62,6 +62,10 @@ class Account(ConfigModel, DirsMixin):
         return data
 
     @property
+    def description(self) -> str:
+        return f"{self.brand.display_name} account {self.username}"
+
+    @property
     def notify_email(self) -> EmailConfig | None:
         return self.notify.email if self.notify else None
 

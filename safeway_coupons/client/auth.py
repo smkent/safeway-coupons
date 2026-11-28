@@ -64,6 +64,7 @@ class LoginSession:
             if not (store_id := session_info["info"]["J4U"]["storeId"]):
                 raise ValueError("Unable to retrieve store ID")
             self.store_id = store_id
+            log.debug("Store ID: %s", store_id)
 
             if not self.headless:
                 input(

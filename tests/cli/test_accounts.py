@@ -773,8 +773,8 @@ def test_accounts_rename_locked(
     output_test.expected = ExpectedOutput(
         logs=[
             (
-                "Account ness@onett.example is in use by another process,"
-                " try again later"
+                "Safeway account ness@onett.example is in use"
+                " by another process, try again later"
             ),
         ]
     )

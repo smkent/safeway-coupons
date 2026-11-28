@@ -49,7 +49,9 @@ def test_app_error(
     ):
         main_runner(*([verbosity_argument] * verbosity), match=1)
     mock_clip.assert_called_once()
-    [record] = caplog_helper.records("Error for account ness@onett.example: ")
+    [record] = caplog_helper.records(
+        "Error for Safeway account ness@onett.example: "
+    )
     if verbosity:
         assert len(
             caplog_helper.records(

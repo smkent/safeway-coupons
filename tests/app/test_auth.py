@@ -102,8 +102,9 @@ def test_device_verification_required(
         f"{action} for Safeway account ness@onett.example" in caplog.messages
     )
     assert (
-        "Error for account ness@onett.example:"
-        " ness@onett.example needs an MFA verification code to sign in."
+        "Error for Safeway account ness@onett.example:"
+        " Safeway account ness@onett.example needs"
+        " an MFA verification code to sign in."
         " Sign in with --login-only from a terminal."
     ) in caplog.messages
     if login_only:
@@ -144,7 +145,7 @@ def test_authentication_failure_shows_cause(
         f"{action} for Safeway account ness@onett.example" in caplog.messages
     )
     assert (
-        "Error for account ness@onett.example:"
+        "Error for Safeway account ness@onett.example:"
         " Authentication Failure (Device verification cancelled)"
     ) in caplog.messages
     if login_only:

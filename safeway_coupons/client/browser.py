@@ -305,7 +305,11 @@ class SafewayBrowserSession(BrowserSession):
         log.info("Clicked Sign in")
         if (destination := self.verification_required(verify.value)) is None:
             return
-        log.info("Safeway requires device verification (%s)", destination)
+        log.info(
+            "%s requires device verification (%s)",
+            self.account.brand.display_name,
+            destination,
+        )
         if not self.headless:
             input(
                 "Complete device verification in the browser window,"

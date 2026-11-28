@@ -59,7 +59,7 @@ class SafewayCoupons:
 
     def __call__(self) -> None:
         if not self.accounts:
-            log.error("No Safeway accounts configured")
+            log.error("No accounts configured")
             sys.exit(1)
         errors = 0
         for account in self.accounts:
@@ -81,8 +81,8 @@ class SafewayCoupons:
                     self.clip_for_account(account)
         except Error as e:
             log.error(
-                "Error for account %s: %s",
-                account.username,
+                "Error for %s: %s",
+                account.description,
                 e,
                 exc_info=log.isEnabledFor(logging.DEBUG),
             )
@@ -91,11 +91,11 @@ class SafewayCoupons:
 
     def login_for_account(self, account: Account) -> None:
         action = "Checking sign in" if self.dry_run else "Signing in"
-        log.info("%s for Safeway account %s", action, account.username)
+        log.info("%s for %s", action, account.description)
         LoginSession(account, headless=self.headless, dry_run=self.dry_run)
 
     def clip_for_account(self, account: Account) -> None:
-        log.info("Clipping coupons for Safeway account %s", account.username)
+        log.info("Clipping coupons for %s", account.description)
         try:
             swy = SafewayClient(account, headless=self.headless)
             clipped_offers: list[Offer] = []
