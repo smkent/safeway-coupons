@@ -14,14 +14,11 @@ from safeway_coupons.account import (
     EmailConfig,
     NotifyConfig,
 )
+from safeway_coupons.brands import Brand
 from safeway_coupons.models.config import ConfigFile, ConfigModel
 
 if TYPE_CHECKING:
     from tests.utils import CapLogHelper
-
-
-def paula() -> Account:
-    return Account(name="paula", username="paula@twoson.example")
 
 
 def test_load_default_path(accounts_toml: Path) -> None:
@@ -45,15 +42,12 @@ def test_load_missing_ok() -> None:
 def test_load_missing_ok_save(tmp_path: Path) -> None:
     path = tmp_path / "onett.toml"
     accounts_file = AccountsFile.load(path, missing_ok=True)
-    accounts_file.accounts["paula"] = paula()
+    accounts_file.accounts["paula"] = Account(
+        name="paula", username="paula@twoson.example"
+    )
     accounts_file.save()
     assert list(AccountsFile.load(path).accounts) == ["paula"]
     assert not AccountsFile.default_path().exists()
-
-
-def test_new_saves_to_default_path() -> None:
-    AccountsFile(accounts={"paula": paula()}).save()
-    assert list(AccountsFile.load().accounts) == ["paula"]
 
 
 def test_save_keeps_comments(accounts_toml: Path) -> None:
@@ -61,7 +55,9 @@ def test_save_keeps_comments(accounts_toml: Path) -> None:
         "# The year is 199X\n" + accounts_toml.read_text()
     )
     accounts_file = AccountsFile.load()
-    accounts_file.accounts["paula"] = paula()
+    accounts_file.accounts["paula"] = Account(
+        name="paula", username="paula@twoson.example"
+    )
     accounts_file.save()
     assert accounts_toml.read_text().startswith("# The year is 199X\n")
     assert list(AccountsFile.load().accounts) == ["ness", "paula"]
@@ -113,7 +109,55 @@ def test_load_minimal() -> None:
     path = AccountsFile.default_path()
     path.parent.mkdir(parents=True)
     path.write_text('[accounts.paula]\nusername = "paula@twoson.example"\n')
-    assert AccountsFile.load().accounts == {"paula": paula()}
+    config = AccountsFile.load()
+    assert config.accounts == {
+        "paula": Account(
+            name="paula", username="paula@twoson.example", brand=Brand.Safeway
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    "brand",
+    ["jewelosco", "JewelOsco", "JEWELOSCO", "Jewel-Osco", "jewel-OSCO.COM"],
+)
+def test_load_brand(brand: str) -> None:
+    path = AccountsFile.default_path()
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        f'[accounts.paula]\nbrand = "{brand}"\n'
+        'username = "paula@twoson.example"\n'
+    )
+    accounts_file = AccountsFile.load()
+    assert accounts_file.accounts["paula"].brand == Brand.JewelOsco
+    accounts_file.save()
+    assert path.read_text() == (
+        '[accounts.paula]\nbrand = "jewelosco"\n'
+        'username = "paula@twoson.example"\n'
+    )
+
+
+def test_load_unknown_brand() -> None:
+    path = AccountsFile.default_path()
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        '[accounts.paula]\nbrand = "machpizza"\n'
+        'username = "paula@twoson.example"\n'
+    )
+    with pytest.raises(ValueError, match=r"'jewelosco'.*'safeway'"):
+        AccountsFile.load()
+
+
+def test_save_new_account_brand_first() -> None:
+    account = Account(
+        name="paula", username="paula@twoson.example", brand=Brand.Albertsons
+    )
+    AccountsFile(accounts={"paula": account}).save()
+    assert AccountsFile.default_path().read_text() == (
+        "[accounts.paula]\n"
+        'brand = "albertsons"\n'
+        'username = "paula@twoson.example"\n'
+    )
 
 
 @pytest.mark.parametrize(
@@ -201,11 +245,13 @@ def test_save_new_tables_as_dotted_keys() -> None:
     ).save()
     assert AccountsFile.default_path().read_text() == (
         "[accounts.paula]\n"
+        'brand = "safeway"\n'
         'username = "paula@twoson.example"\n'
         'notify.email.to = "ness@onett.example"\n'
         'notify.email.from = "paula@twoson.example"\n'
         "\n"
         "[accounts.jeff]\n"
+        'brand = "safeway"\n'
         'username = "jeff@winters.example"\n'
     )
 
@@ -235,9 +281,11 @@ def test_save_keeps_table_style() -> None:
         'username = "ness@onett.example"\n'
         'notify.email.to = "ness@onett.example"  # Ness\n'
         'notify.email.from = "jeff@winters.example"\n'
+        'brand = "safeway"\n'
         "\n"
         "[accounts.paula]\n"
         'username = "paula@twoson.example"\n'
+        'brand = "safeway"\n'
         "\n"
         "[accounts.paula.notify.email]\n"
         'to = "ness@onett.example"  # Also Ness\n'
