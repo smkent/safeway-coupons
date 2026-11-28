@@ -25,6 +25,20 @@ def mock_clip() -> Iterator[MagicMock]:
         yield obj
 
 
+@pytest.fixture(
+    params=(pytest.param(True, id="present"), pytest.param(False, id="absent"))
+)
+def accounts_toml_setup(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    accounts_toml = dirs.config / "accounts.toml"
+    if not request.param:
+        accounts_toml.unlink(missing_ok=True)
+    return accounts_toml
+
+
 def test_no_accounts(
     main_runner: MainRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -323,21 +337,6 @@ def test_legacy_state_dir_moved(
             f"Migrated state for account paula from {legacy_dir} to {new_dir}"
             in caplog.messages
         )
-
-
-@pytest.fixture(
-    params=(pytest.param(True, id="present"), pytest.param(False, id="absent"))
-)
-def accounts_toml_setup(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> Path:
-    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
-        monkeypatch.delenv(kk)
-    accounts_toml = dirs.config / "accounts.toml"
-    if request.param:
-        accounts_toml.parent.mkdir(parents=True)
-        accounts_toml.write_text(ACCOUNTS_TOML)
-    return accounts_toml
 
 
 def test_accounts_source_logged_env(

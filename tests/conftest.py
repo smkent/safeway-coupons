@@ -48,6 +48,14 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.fixture(autouse=True)
+def console_reset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COLUMNS", "120")
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    monkeypatch.setattr(rich, "_console", None)
+    console.configure()
+
+
+@pytest.fixture(autouse=True)
 def mock_stdin_isatty() -> Iterator[None]:
     with patch.object(sys.stdin, "isatty", return_value=False):
         yield
@@ -56,14 +64,6 @@ def mock_stdin_isatty() -> Iterator[None]:
 @pytest.fixture
 def main_runner(monkeypatch: pytest.MonkeyPatch) -> MainRunner:
     return MainRunner(monkeypatch=monkeypatch)
-
-
-@pytest.fixture(autouse=True)
-def console_reset(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("COLUMNS", "120")
-    monkeypatch.delenv("FORCE_COLOR", raising=False)
-    monkeypatch.setattr(rich, "_console", None)
-    console.configure()
 
 
 @pytest.fixture(params=[MockDirs.Type.param(MockDirs.Type.StorageDir)])
