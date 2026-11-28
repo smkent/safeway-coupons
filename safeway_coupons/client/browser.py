@@ -250,15 +250,43 @@ class SafewayBrowserSession(BrowserSession):
                         " but has no password configured"
                     )
                 )
-            modal.get_by_role("textbox", name="Email or mobile number").fill(
-                self.account.username
+            password_button = modal.get_by_role(
+                "button", name="Sign in with password"
             )
-            modal.get_by_role("button", name="Sign in with password").click()
+            password_button.wait_for()
+            self.enter_username(modal)
+            password_button.click()
             log.info("Clicked Sign in with password")
             self.submit_password(modal, password)
         if not self.is_signed_in():
             raise RuntimeError("Sign in did not complete")
         log.info("Signed in")
+
+    def enter_username(self, modal: Locator) -> None:
+        username_input = modal.get_by_role(
+            "textbox", name="Email or mobile number"
+        )
+        if username_input.is_enabled():
+            username_input.fill(self.account.username)
+            return
+        prefilled_username = username_input.input_value().strip()
+        if prefilled_username.lower() == self.account.username.strip().lower():
+            log.info("Sign in form already has this account's sign in name")
+            return
+        log.error(
+            "Sign in form is prefilled with an unexpected sign in name"
+            " (%s). To sign in as %s, delete this account's browser profile"
+            " directory and run again: %s",
+            prefilled_username,
+            self.account.username,
+            self.configured_profile_dir,
+        )
+        raise BrowserSessionError(
+            message=(
+                "Sign in form is prefilled with an unexpected sign in name"
+                f" ({prefilled_username})"
+            )
+        )
 
     def submit_password(self, modal: Locator, password: str) -> None:
         modal.get_by_role("textbox", name="Password").fill(password)
