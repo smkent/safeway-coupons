@@ -14,6 +14,7 @@ from safeway_coupons.account import (
     EmailConfig,
     NotifyConfig,
 )
+from safeway_coupons.brands import Brand
 from safeway_coupons.models.fields import Password
 from tests.utils import CapLogHelper, MainRunner, MockDirs
 
@@ -27,12 +28,14 @@ if TYPE_CHECKING:
 
 LEGACY_ACCOUNTS = {
     "ness@onett.example": Account(
+        brand=Brand.Safeway,
         name="ness@onett.example",
         username="ness@onett.example",
         password=Password.encode("pk_fire"),
         notify=NotifyConfig(email=EmailConfig(mail_from="ness@onett.example")),
     ),
     "paula@twoson.example": Account(
+        brand=Brand.Safeway,
         name="paula@twoson.example",
         username="Paula@twoson.example",
         password=Password.encode("pk_freeze"),
@@ -111,6 +114,7 @@ def test_accounts_list(
             ),
             "paula@twoson.example": Account(
                 name="paula@twoson.example",
+                brand="albertsons",
                 username="paula@twoson.example",
                 password=None,
                 notify=NotifyConfig(
@@ -186,7 +190,7 @@ def test_accounts_add_invalid_name(
             ),
         ]
     )
-    output_test(accounts_command, "add", "--", name, match=1)
+    output_test(accounts_command, "add", "--", "safeway", name, match=1)
     assert not AccountsFile.default_path().exists()
 
 
@@ -203,15 +207,105 @@ def test_accounts_add_new_file(
         logs=['Account "ness" saved.'],
     )
     output_test(
-        accounts_command, "add", name, "ness@onett.example", "-t", "", "-f", ""
+        accounts_command,
+        "add",
+        "safeway",
+        name,
+        "ness@onett.example",
+        "-t",
+        "",
+        "-f",
+        "",
+    )
+    assert (
+        AccountsFile.default_path()
+        .read_text()
+        .startswith('[accounts.ness]\nbrand = "safeway"\n')
+    )
+    assert AccountsFile.load().accounts == {
+        "ness": Account(
+            brand=Brand.Safeway,
+            name="ness",
+            username="ness@onett.example",
+            password=Password.encode("pk_fire"),
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    "brand", ["jewelosco", "JewelOsco", "Jewel-Osco", "jewelosco.com"]
+)
+def test_accounts_add_brand(
+    output_test: OutputTest,
+    monkeypatch: pytest.MonkeyPatch,
+    accounts_command: str,
+    brand: str,
+) -> None:
+    monkeypatch.setattr("getpass.getpass", lambda *_, **__: "pk_fire")
+    output_test.expected = ExpectedOutput(
+        stdout="Sign in password: Confirm password: ",
+        logs=['Account "ness" saved.'],
+    )
+    output_test(
+        accounts_command,
+        "add",
+        brand,
+        "ness",
+        "ness@onett.example",
+        "-t",
+        "",
+        "-f",
+        "",
     )
     assert AccountsFile.load().accounts == {
         "ness": Account(
             name="ness",
             username="ness@onett.example",
             password=Password.encode("pk_fire"),
+            brand=Brand.JewelOsco,
         )
     }
+
+
+def test_accounts_add_unknown_brand(
+    main_runner: MainRunner, accounts_command: str
+) -> None:
+    main_runner(
+        accounts_command,
+        "add",
+        "machpizza",
+        "ness",
+        "ness@onett.example",
+        match=2,
+    )
+    assert not AccountsFile.default_path().exists()
+
+
+def test_accounts_add_prompt_unknown_brand(
+    output_test: OutputTest,
+    monkeypatch: pytest.MonkeyPatch,
+    accounts_command: str,
+) -> None:
+    monkeypatch.setattr("getpass.getpass", lambda *_, **__: "pk_fire")
+    monkeypatch.setattr(
+        "sys.stdin",
+        io.StringIO("machpizza\nAlbertsons\nness\nness@onett.example\n"),
+    )
+    output_test.expected = ExpectedOutput(
+        stdout=(
+            "Store brand (safeway): Store brand (safeway): "
+            "Account name (will be converted to lower case): "
+            "Sign in email address: "
+            "Sign in password: Confirm password: "
+        ),
+        logs=[
+            "'machpizza' is not a valid brand, use one of: "
+            + ", ".join(repr(b.value) for b in Brand),
+            'Account "ness" saved.',
+        ],
+    )
+    output_test(accounts_command, "add", "-t", "", "-f", "")
+    assert AccountsFile.load().accounts["ness"].brand == Brand.Albertsons
 
 
 def test_accounts_add_no_sign_in_email(
@@ -224,7 +318,7 @@ def test_accounts_add_no_sign_in_email(
         stdout="Sign in email address: ",
         logs=["Sign in email address is required"],
     )
-    output_test(accounts_command, "add", "ness", match=1)
+    output_test(accounts_command, "add", "safeway", "ness", match=1)
     assert not AccountsFile.default_path().exists()
 
 
@@ -243,6 +337,7 @@ def test_accounts_add_existing_file(
     output_test(
         accounts_command,
         "add",
+        "safeway",
         "paula",
         "paula@twoson.example",
         "--email-to",
@@ -277,7 +372,12 @@ def test_accounts_add_existing_name(
         logs=['An account named "ness" is already configured']
     )
     output_test(
-        accounts_command, "add", name, "ninten@podunk.example", match=1
+        accounts_command,
+        "add",
+        "safeway",
+        name,
+        "ninten@podunk.example",
+        match=1,
     )
     assert accounts_toml.read_text() == original
 
@@ -289,10 +389,11 @@ def test_accounts_add_prompts(
 ) -> None:
     monkeypatch.setattr(
         "sys.stdin",
-        io.StringIO("Jeff\njeff@winters.example\nness@onett.example\n\n"),
+        io.StringIO("\nJeff\njeff@winters.example\nness@onett.example\n\n"),
     )
     output_test.expected = ExpectedOutput(
         stdout=(
+            "Store brand (safeway): "
             "Account name (will be converted to lower case): "
             "Sign in email address: "
             "Sign in password: "
@@ -302,9 +403,15 @@ def test_accounts_add_prompts(
         logs=['Account "jeff" saved.'],
     )
     output_test(accounts_command, "add")
+    assert (
+        AccountsFile.default_path()
+        .read_text()
+        .startswith('[accounts.jeff]\nbrand = "safeway"\n')
+    )
     assert AccountsFile.load().accounts == {
         "jeff": Account(
             name="jeff",
+            brand=Brand.Safeway,
             username="jeff@winters.example",
             notify=NotifyConfig(email=EmailConfig(to="ness@onett.example")),
         )
@@ -492,6 +599,8 @@ def test_accounts_import(
     output_test.expected = ExpectedOutput(logs=import_log(accounts_ini))
     output_test(accounts_command, "import", str(accounts_ini))
     assert AccountsFile.load().accounts == LEGACY_ACCOUNTS
+    saved = AccountsFile.default_path().read_text()
+    assert saved.count('brand = "safeway"') == len(LEGACY_ACCOUNTS)
 
 
 @pytest.mark.parametrize(
@@ -621,6 +730,7 @@ def test_accounts_import_accounts_toml_format(
     path = tmp_path / "other_accounts.toml"
     paula = Account(
         name="paula",
+        brand=Brand.Safeway,
         username="paula@twoson.example",
         password=Password.encode("pk_freeze"),
     )
@@ -637,6 +747,11 @@ def test_accounts_import_accounts_toml_format(
     )
     output_test(accounts_command, "import", str(path))
     assert AccountsFile.load().accounts == {"paula": paula}
+    assert (
+        AccountsFile.default_path()
+        .read_text()
+        .startswith('[accounts.paula]\nbrand = "safeway"\n')
+    )
 
 
 def test_accounts_import_env_account(
@@ -773,8 +888,8 @@ def test_accounts_rename_locked(
     output_test.expected = ExpectedOutput(
         logs=[
             (
-                "Account ness@onett.example is in use by another process,"
-                " try again later"
+                "Safeway account ness@onett.example is in use"
+                " by another process, try again later"
             ),
         ]
     )

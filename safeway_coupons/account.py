@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from filelock import FileLock, Timeout
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
+from .brands import Brand
 from .console import log
 from .dirs import DirsMixin, dirs
 from .errors import AccountLockedError
@@ -48,9 +49,21 @@ class Account(ConfigModel, DirsMixin):
 
     # Stored as the account's table key in the accounts file, not a value
     name: ItemNameT = Field(exclude=True)
+    brand: Brand = Brand.Safeway
     username: str
     password: PasswordT | None = None
     notify: NotifyConfig | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _default_brand(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return {"brand": Brand.Safeway, **data}
+        return data
+
+    @property
+    def description(self) -> str:
+        return f"{self.brand.display_name} account {self.username}"
 
     @property
     def notify_email(self) -> EmailConfig | None:
@@ -75,11 +88,13 @@ class Account(ConfigModel, DirsMixin):
             raise AccountLockedError(self) from e
 
     def _move_legacy_state_dir(self) -> None:
-        # State directories were previously keyed by lowercased username
+        # State directories were previously keyed by lowercased username,
+        # and only Safeway was supported
         legacy_dir = dirs.state_path("accounts", self.username.lower())
         state_dir = self.state_dir
         if (
-            legacy_dir == state_dir
+            self.brand != Brand.Safeway
+            or legacy_dir == state_dir
             or legacy_dir.parent != state_dir.parent
             or legacy_dir.name == ".."
             or state_dir.exists()
@@ -116,6 +131,7 @@ class Account(ConfigModel, DirsMixin):
             )
             return cls(
                 name=cls._name_from_username(username),
+                brand=Brand.Safeway,
                 username=username,
                 password=Password.encode(password),
                 notify=NotifyConfig.for_email(to=mail_to, mail_from=mail_from),
@@ -142,6 +158,7 @@ class Account(ConfigModel, DirsMixin):
             accounts.append(
                 cls(
                     name=cls._name_from_username(username),
+                    brand=Brand.Safeway,
                     username=username,
                     password=Password.encode(password) if password else None,
                     notify=NotifyConfig.for_email(

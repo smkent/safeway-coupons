@@ -7,14 +7,19 @@ import pytest
 from patchright.sync_api import Error as PlaywrightError
 from patchright.sync_api import Page
 
-from safeway_coupons.client.browser import SITE_URL
+from safeway_coupons.brands import Brand
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from patchright.sync_api import Response
 
     from tests.utils import CapLogHelper, MainRunner, MockMail
 
     from .conftest import MockSite
+
+
+SITE_URL = f"{Brand.Safeway.origin}/"
 
 
 @pytest.mark.usefixtures("accounts_toml")
@@ -27,16 +32,36 @@ def test_site_load_failure_emails_screenshot(
     assert mail.screenshot(mail.messages[0]).startswith(b"\x89PNG")
 
 
-@pytest.mark.usefixtures("accounts_toml")
+@pytest.mark.parametrize(
+    ("brand", "site_url"),
+    [
+        pytest.param(None, "https://www.safeway.com/", id="default"),
+        pytest.param(
+            "albertsons", "https://www.albertsons.com/", id="albertsons"
+        ),
+    ],
+)
 def test_site_load_failure_logs_failed_requests(
-    main_runner: MainRunner, caplog_helper: CapLogHelper
+    main_runner: MainRunner,
+    accounts_toml: Path,
+    caplog_helper: CapLogHelper,
+    mock_site: MockSite,
+    brand: str | None,
+    site_url: str,
 ) -> None:
-    main_runner("--verbose", match=1)
+    if brand:
+        accounts_toml.write_text(
+            accounts_toml.read_text().replace(
+                "[accounts.ness]", f'[accounts.ness]\nbrand = "{brand}"', 1
+            )
+        )
+    main_runner("-a", "ness", "--verbose", match=1)
     records = caplog_helper.match_records("Request failed")
     assert all(r.levelno == logging.DEBUG for r in records)
     assert caplog_helper.match_records(
-        f" document   GET  {SITE_URL} (net::ERR_FAILED)"
+        f" document   GET  {site_url} (net::ERR_FAILED)"
     )
+    assert mock_site.requests[0] == site_url
 
 
 @pytest.mark.usefixtures("accounts_toml")

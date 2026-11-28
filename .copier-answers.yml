@@ -14,8 +14,8 @@ enable_features:
 enable_pypi: true
 github_user: smkent
 llm_contribution_policy: accepted-with-disclosure
-project_description: Automatic coupon clipper for Safeway's online "Safeway for U"
-    coupons
+project_description: Automatic coupon clipper for Safeway and other Albertsons brands'
+    online "for U" coupons
 project_name: safeway-coupons
 project_slug: safeway_coupons
 project_type: application

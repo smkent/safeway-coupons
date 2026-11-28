@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from patchright.sync_api import BrowserType
 
-from safeway_coupons.client.browser import SITE_URL
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -35,8 +33,7 @@ class MockSite:
 
     def request_route(self, route: Route) -> None:
         url = route.request.url
-        if url.startswith(SITE_URL):
-            self.requests.append(url)
+        self.requests.append(url)
         if handler := self.handlers.get(url):
             handler(route)
             return

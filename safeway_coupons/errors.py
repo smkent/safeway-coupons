@@ -22,7 +22,7 @@ class AccountLockedError(Error):
     account: Account
 
     def __str__(self) -> str:
-        return f"Account {self.account.username} is in use by another process"
+        return f"{self.account.description} is in use by another process"
 
 
 @dataclass
@@ -37,7 +37,7 @@ class AuthenticationFailure(Error):  # noqa: N818
 class MultiFactorAuthenticationRequired(AuthenticationFailure):
     def __str__(self) -> str:
         return (
-            f"{self.account.username} needs an MFA verification code to"
+            f"{self.account.description} needs an MFA verification code to"
             " sign in. Sign in with --login-only from a terminal."
         )
 
@@ -45,7 +45,7 @@ class MultiFactorAuthenticationRequired(AuthenticationFailure):
 @dataclass
 class NotSignedIn(AuthenticationFailure):
     def __str__(self) -> str:
-        return f"Account {self.account.username} is not signed in"
+        return f"{self.account.description} is not signed in"
 
 
 @dataclass

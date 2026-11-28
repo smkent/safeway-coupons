@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+from functools import partial
 from pathlib import Path  # noqa: TC003
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich import print  # noqa: A004
@@ -11,14 +12,21 @@ from rich.prompt import Confirm, Prompt
 from rich.style import Style
 from rich.table import Table
 from rich.text import Text
-from typer import Argument, Context, Exit, Option, echo
+from typer import Argument, BadParameter, Context, Exit, Option, echo
 
 from safeway_coupons.account import Account, AccountsFile, NotifyConfig
+from safeway_coupons.brands import Brand
 from safeway_coupons.console import log
 from safeway_coupons.errors import AccountLockedError
 from safeway_coupons.models.fields import ItemNameT, Password
 
 from .cli import CLI
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import TypeVar
+
+    T = TypeVar("T")
 
 cli = CLI(
     name="accounts",
@@ -26,6 +34,13 @@ cli = CLI(
     invoke_without_command=False,
     no_args_is_help=True,
 )
+
+
+def _parse_value(parser: Callable[..., T], value: str) -> T:
+    try:
+        return parser(value)
+    except ValueError as e:
+        raise BadParameter(str(e)) from e
 
 
 def require_no_env_account() -> None:
@@ -90,6 +105,15 @@ def prompt_password() -> str:
     return password
 
 
+def prompt_brand() -> Brand:
+    while True:
+        answer = Prompt.ask("Store brand", default=Brand.Safeway)
+        try:
+            return Brand(answer)
+        except ValueError as e:
+            log.error("%s", e)
+
+
 @cli.command(name="path")
 def path() -> None:
     """Show accounts configuration file path."""
@@ -111,6 +135,7 @@ def list_command(ctx: Context) -> None:
             Text(t, style="white bold")
             for t in (
                 "Name",
+                "Brand",
                 "Sign in account",
                 "Email recipient",
                 "Email sender",
@@ -122,6 +147,7 @@ def list_command(ctx: Context) -> None:
         email = account.notify_email
         grid.add_row(
             Text(account.name, style="bold"),
+            account.brand.display_name,
             Text.assemble(
                 account.username,
                 ""
@@ -156,6 +182,14 @@ def list_command(ctx: Context) -> None:
 @cli.command()
 def add(
     ctx: Context,
+    brand: Annotated[
+        Brand | None,
+        Argument(
+            parser=partial(_parse_value, Brand),
+            show_choices=False,
+            help="Store brand, for choices run: safeway-coupons brands list",
+        ),
+    ] = None,
     name: Annotated[
         str | None,
         Argument(help="Account name (will be converted to lower case)"),
@@ -175,6 +209,8 @@ def add(
     """Add an account."""
     require_accounts_file(ctx)
     config = AccountsFile.load(missing_ok=True)
+    if brand is None:
+        brand = prompt_brand()
     if not name:
         name = Prompt.ask("Account name (will be converted to lower case)")
     name = validate_account_name(name)
@@ -193,6 +229,7 @@ def add(
         mail_from = Prompt.ask("Notification email sender (optional)")
     new_account = Account(
         name=name,
+        brand=brand,
         username=sign_in_email,
         password=Password.encode(password) if password else None,
         notify=NotifyConfig.for_email(to=mail_to, mail_from=mail_from),

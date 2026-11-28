@@ -1,6 +1,6 @@
 [project]
 site_name = "safeway-coupons"
-site_description = "Automatic coupon clipper for Safeway's online \"Safeway for U\" coupons"
+site_description = "Automatic coupon clipper for Safeway and other Albertsons brands' online \"for U\" coupons"
 site_author = "Stephen Kent"
 site_url = "https://smkent.github.io/safeway-coupons"
 repo_url = "https://github.com/smkent/safeway-coupons"
