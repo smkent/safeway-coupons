@@ -170,6 +170,30 @@ def test_legacy_state_dir_moved(
         )
 
 
+def test_legacy_state_dir_not_moved_for_other_brand(
+    main_runner: MainRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_clip: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+    accounts_toml: Path,
+) -> None:
+    for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
+        monkeypatch.delenv(kk)
+    accounts_toml.write_text(
+        accounts_toml.read_text().replace(
+            "[accounts.paula]", '[accounts.paula]\nbrand = "albertsons"', 1
+        )
+    )
+    legacy_dir = dirs.state / "accounts" / "paula@twoson.example"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "state.json").write_text("{}")
+    main_runner()
+    assert mock_clip.call_count == 2
+    assert (legacy_dir / "state.json").is_file()
+    assert not (dirs.state / "accounts" / "paula" / "state.json").exists()
+    assert not any("Migrated state" in m for m in caplog.messages)
+
+
 def test_accounts_source_logged_env(
     main_runner: MainRunner,
     monkeypatch: pytest.MonkeyPatch,

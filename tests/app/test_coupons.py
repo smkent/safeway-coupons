@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from functools import partial
@@ -21,6 +23,7 @@ from safeway_coupons.models.safeway.offers import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from pathlib import Path
     from unittest.mock import MagicMock
 
     import requests
@@ -61,8 +64,8 @@ def available_offers(http_responses: responses.RequestsMock) -> OfferMap:
     offer_map: OfferMap = OfferMap(offers={})
     http_responses.add_callback(
         method=responses.GET,
-        url=(
-            "https://www.safeway.com/abs/pub/xapi/offers/companiongalleryoffer"
+        url=re.compile(
+            r"https://[a-z0-9\.]+/abs/pub/xapi/offers/companiongalleryoffer"
         ),
         callback=lambda request: (
             200,
@@ -110,7 +113,7 @@ def clips(
 
     http_responses.add_callback(
         method=responses.POST,
-        url=("https://www.safeway.com/abs/pub/web/j4u/api/offers/clip"),
+        url=re.compile(r"https://[a-z0-9\.]+/abs/pub/web/j4u/api/offers/clip"),
         callback=_clip_response,
     )
     return clips_test_config
@@ -124,6 +127,27 @@ def test_safeway_coupons(
     main_runner("--no-notify", "--no-sleep", "--no-sleep")
     assert set(clips.clipped_offer_ids) == {"1138"}
     assert not clips.failed_offer_ids
+
+
+def test_brand_site(
+    main_runner: MainRunner,
+    accounts_toml: Path,
+    available_offers: OfferMap,
+    clips: ClipsTestConfig,
+    http_responses: responses.RequestsMock,
+) -> None:
+    accounts_toml.write_text(
+        accounts_toml.read_text().replace(
+            "[accounts.ness]", '[accounts.ness]\nbrand = "jewelosco"', 1
+        )
+    )
+    available_offers.offers |= {"1138": create_offer(offer_id="1138")}
+    main_runner("-a", "ness", "--no-notify", "--no-sleep", "--no-sleep")
+    assert set(clips.clipped_offer_ids) == {"1138"}
+    assert [
+        urllib.parse.urlsplit(c.request.url).netloc
+        for c in http_responses.calls
+    ] == ["www.jewelosco.com", "www.jewelosco.com"]
 
 
 @pytest.mark.usefixtures("accounts_toml", "http_responses")

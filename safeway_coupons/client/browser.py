@@ -33,9 +33,6 @@ if TYPE_CHECKING:
     from safeway_coupons.account import Account
 
 
-SITE_URL = "https://www.safeway.com/"
-
-
 @dataclass
 class SafewayBrowserSession(BrowserSession):
     account: Account
@@ -46,6 +43,10 @@ class SafewayBrowserSession(BrowserSession):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+
+    @property
+    def site_url(self) -> str:
+        return f"{self.account.brand.origin}/"
 
     def __enter__(self) -> Self:
         @contextmanager
@@ -62,10 +63,10 @@ class SafewayBrowserSession(BrowserSession):
 
     @property
     def cookies(self) -> Mapping[str, Cookie]:
-        return {c["name"]: c for c in self.page.context.cookies(SITE_URL)}
+        return {c["name"]: c for c in self.page.context.cookies(self.site_url)}
 
     def load_site_home(self) -> None:
-        self.page.goto(SITE_URL)
+        self.page.goto(self.site_url)
         # Wait out any initial reloads by waiting for the account button
         self._account_button.wait_for(state="attached")
         self.page.wait_for_load_state("load")
@@ -106,7 +107,10 @@ class SafewayBrowserSession(BrowserSession):
             if response.request.resource_type not in {"xhr", "fetch"}:
                 return
             url = urllib.parse.urlsplit(response.url)
-            if not re.search(r"safeway\.com|albertsons|okta|ciam", url.netloc):
+            if not (
+                url.netloc == self.account.brand.host
+                or re.search(r"albertsons|okta|ciam", url.netloc)
+            ):
                 return
             log.debug(
                 "Response: %d %s %s%s",

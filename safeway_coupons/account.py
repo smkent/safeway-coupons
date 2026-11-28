@@ -84,11 +84,13 @@ class Account(ConfigModel, DirsMixin):
             raise AccountLockedError(self) from e
 
     def _move_legacy_state_dir(self) -> None:
-        # State directories were previously keyed by lowercased username
+        # State directories were previously keyed by lowercased username,
+        # and only Safeway was supported
         legacy_dir = dirs.state_path("accounts", self.username.lower())
         state_dir = self.state_dir
         if (
-            legacy_dir == state_dir
+            self.brand != Brand.Safeway
+            or legacy_dir == state_dir
             or legacy_dir.parent != state_dir.parent
             or legacy_dir.name == ".."
             or state_dir.exists()
