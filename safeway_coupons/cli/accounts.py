@@ -120,25 +120,23 @@ def list_command(ctx: Context) -> None:
     grid.add_row()
     for account in config.accounts.values():
         email = account.notify_email
-        (
-            grid.add_row(
-                Text(account.name, style="bold"),
-                Text.assemble(
-                    account.username,
-                    ""
-                    if account.password
-                    else Text(" (no password)", style="yellow"),
-                ),
-                (
-                    email.to
-                    if (email and email.to)
-                    else Text("(username)", style=Style(dim=True))
-                ),
-                (
-                    email.mail_from
-                    if (email and email.mail_from)
-                    else Text("(username)", style=Style(dim=True))
-                ),
+        grid.add_row(
+            Text(account.name, style="bold"),
+            Text.assemble(
+                account.username,
+                ""
+                if account.password
+                else Text(" (no password)", style="yellow"),
+            ),
+            (
+                email.to
+                if (email and email.to)
+                else Text("(username)", style=Style(dim=True))
+            ),
+            (
+                email.mail_from
+                if (email and email.mail_from)
+                else Text("(username)", style=Style(dim=True))
             ),
         )
     print(
