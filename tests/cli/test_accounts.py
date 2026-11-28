@@ -50,9 +50,18 @@ def legacy_config(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def renamable_account(accounts_config: Path) -> Account:
+def accounts_toml_single_account(accounts_toml: Path) -> Path:
     """accounts.toml with ness, which has saved state, and paula."""
-    config = AccountsFile.load(accounts_config)
+    config = AccountsFile.load(accounts_toml)
+    del config.accounts["paula"]
+    config.save()
+    return accounts_toml
+
+
+@pytest.fixture
+def renamable_account(accounts_toml: Path) -> Account:
+    """accounts.toml with ness, which has saved state, and paula."""
+    config = AccountsFile.load(accounts_toml)
     config.accounts["paula"] = Account(
         name="paula", username="paula@twoson.example"
     )
@@ -210,10 +219,10 @@ def test_accounts_add_no_sign_in_email(
 def test_accounts_add_existing_file(
     output_test: OutputTest,
     mock_getpass: MagicMock,
-    accounts_config: Path,
+    accounts_toml_single_account: Path,
     accounts_command: str,
 ) -> None:
-    ness = AccountsFile.load(accounts_config).accounts["ness"]
+    ness = AccountsFile.load(accounts_toml_single_account).accounts["ness"]
     mock_getpass.side_effect = ["pk_freeze", "pk_freeze"]
     output_test.expected = ExpectedOutput(
         stdout="Sign in password: Confirm password: ",
@@ -247,18 +256,18 @@ def test_accounts_add_existing_file(
 @pytest.mark.parametrize("name", ["ness", "Ness"])
 def test_accounts_add_existing_name(
     output_test: OutputTest,
-    accounts_config: Path,
+    accounts_toml: Path,
     accounts_command: str,
     name: str,
 ) -> None:
-    original = accounts_config.read_text()
+    original = accounts_toml.read_text()
     output_test.expected = ExpectedOutput(
         logs=['An account named "ness" is already configured']
     )
     output_test(
         accounts_command, "add", name, "ninten@podunk.example", match=1
     )
-    assert accounts_config.read_text() == original
+    assert accounts_toml.read_text() == original
 
 
 def test_accounts_add_prompts(
@@ -290,7 +299,7 @@ def test_accounts_add_prompts(
     }
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml")
 @pytest.mark.parametrize("name", ["ness", "Ness"])
 def test_accounts_remove(
     output_test: OutputTest, accounts_command: str, name: str
@@ -305,7 +314,7 @@ def test_accounts_remove(
     assert list(AccountsFile.load().accounts) == ["paula"]
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml_single_account")
 def test_accounts_remove_last(
     output_test: OutputTest, accounts_command: str
 ) -> None:
@@ -314,7 +323,7 @@ def test_accounts_remove_last(
     assert not AccountsFile.default_path().exists()
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml")
 def test_accounts_remove_keeps_state(
     output_test: OutputTest, accounts_command: str
 ) -> None:
@@ -356,7 +365,7 @@ def test_accounts_help_with_env_account(
     main_runner(accounts_command, command, "--help")
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml")
 @pytest.mark.parametrize("command", ["set-password", "password"])
 def test_accounts_set_password(
     output_test: OutputTest,
@@ -378,7 +387,7 @@ def test_accounts_set_password(
     )
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml")
 def test_accounts_set_password_mismatch(
     output_test: OutputTest, mock_getpass: MagicMock, accounts_command: str
 ) -> None:
@@ -391,7 +400,7 @@ def test_accounts_set_password_mismatch(
     assert get_saved_password("ness") == "pk_fire"
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml")
 def test_accounts_set_password_empty(
     output_test: OutputTest, accounts_command: str
 ) -> None:
@@ -420,7 +429,7 @@ def test_accounts_password_no_account(
     assert not AccountsFile.default_path().exists()
 
 
-@pytest.mark.usefixtures("accounts_config")
+@pytest.mark.usefixtures("accounts_toml_single_account")
 def test_accounts_clear_password(
     output_test: OutputTest, accounts_command: str
 ) -> None:

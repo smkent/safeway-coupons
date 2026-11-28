@@ -14,7 +14,6 @@ from safeway_coupons.client.browser import SafewayBrowserSession
 from safeway_coupons.console import console
 from safeway_coupons.models.fields import Password
 
-from .accounts import ACCOUNTS_TOML
 from .utils import CapLogHelper, MainRunner, MockDirs, MockMail
 
 if TYPE_CHECKING:
@@ -108,23 +107,20 @@ def mock_browser_driver(mock_browser_driver_enter: MagicMock) -> MagicMock:
 def accounts_toml() -> Path:
     accounts_file = AccountsFile.default_path()
     accounts_file.parent.mkdir(parents=True, exist_ok=True)
-    accounts_file.write_text(ACCOUNTS_TOML)
-    accounts_file.chmod(0o600)
-    return accounts_file
-
-
-@pytest.fixture
-def accounts_config() -> Path:
-    accounts_file = AccountsFile.default_path()
-    accounts_file.parent.mkdir(parents=True, exist_ok=True)
     accounts_file.write_text(
         os.linesep.join(
-            (
+            [
                 "[accounts.ness]",
                 'username = "ness@onett.example"',
                 f'password = "{Password.encode("pk_fire")}"',
-            )
+                "",
+                "[accounts.paula]",
+                'username = "Paula@twoson.example"',
+                f'password = "{Password.encode("pk_freeze")}"',
+                'notify.email.to = "ness@onett.example"',
+            ]
         )
+        + os.linesep
     )
     accounts_file.chmod(0o600)
     return accounts_file

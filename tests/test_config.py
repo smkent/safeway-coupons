@@ -24,10 +24,10 @@ def paula() -> Account:
     return Account(name="paula", username="paula@twoson.example")
 
 
-def test_load_default_path(accounts_config: Path) -> None:
+def test_load_default_path(accounts_toml: Path) -> None:
     accounts_file = AccountsFile.load()
-    assert list(accounts_file.accounts) == ["ness"]
-    assert accounts_file.path == accounts_config
+    assert list(accounts_file.accounts) == ["ness", "paula"]
+    assert accounts_file.path == accounts_toml
 
 
 def test_load_missing() -> None:
@@ -56,21 +56,21 @@ def test_new_saves_to_default_path() -> None:
     assert list(AccountsFile.load().accounts) == ["paula"]
 
 
-def test_save_keeps_comments(accounts_config: Path) -> None:
-    accounts_config.write_text(
-        "# The year is 199X\n" + accounts_config.read_text()
+def test_save_keeps_comments(accounts_toml: Path) -> None:
+    accounts_toml.write_text(
+        "# The year is 199X\n" + accounts_toml.read_text()
     )
     accounts_file = AccountsFile.load()
     accounts_file.accounts["paula"] = paula()
     accounts_file.save()
-    assert accounts_config.read_text().startswith("# The year is 199X\n")
+    assert accounts_toml.read_text().startswith("# The year is 199X\n")
     assert list(AccountsFile.load().accounts) == ["ness", "paula"]
 
 
-def test_delete(accounts_config: Path) -> None:
+def test_delete(accounts_toml: Path) -> None:
     accounts_file = AccountsFile.load()
     accounts_file.delete()
-    assert not accounts_config.exists()
+    assert not accounts_toml.exists()
     with pytest.raises(FileNotFoundError):
         accounts_file.delete()
     accounts_file.delete(missing_ok=True)
@@ -86,18 +86,21 @@ def test_no_default_path() -> None:
         Town(name="Onett").save()
 
 
-def test_load_uppercase_name(accounts_config: Path) -> None:
-    accounts_config.write_text(
-        accounts_config.read_text().replace("accounts.ness", "accounts.Ness")
+def test_load_uppercase_name(accounts_toml: Path) -> None:
+    accounts_toml.write_text(
+        accounts_toml.read_text()
+        .replace("accounts.ness", "accounts.Ness")
+        .replace("accounts.paula", "accounts.PaUlA")
     )
     accounts = AccountsFile.load().accounts
-    assert list(accounts) == ["ness"]
+    assert list(accounts) == ["ness", "paula"]
     assert accounts["ness"].name == "ness"
+    assert accounts["paula"].name == "paula"
 
 
-def test_load_names_differing_in_case(accounts_config: Path) -> None:
-    accounts_config.write_text(
-        accounts_config.read_text()
+def test_load_names_differing_in_case(accounts_toml: Path) -> None:
+    accounts_toml.write_text(
+        accounts_toml.read_text()
         + '\n[accounts.NESS]\nusername = "ness@onett.example"\n'
     )
     with pytest.raises(
@@ -128,27 +131,27 @@ def test_load_minimal() -> None:
     [pytest.param(True, id="success"), pytest.param(False, id="failed")],
 )
 def test_load_corrects_permissions(
-    accounts_config: Path,
+    accounts_toml: Path,
     caplog_helper: CapLogHelper,
     mode: int,
     expected_mode: int,
     *,
     success: bool,
 ) -> None:
-    accounts_config.chmod(mode)
+    accounts_toml.chmod(mode)
     if success:
-        assert list(AccountsFile.load().accounts) == ["ness"]
-        assert stat.S_IMODE(accounts_config.stat().st_mode) == expected_mode
+        assert list(AccountsFile.load().accounts) == ["ness", "paula"]
+        assert stat.S_IMODE(accounts_toml.stat().st_mode) == expected_mode
         log_prefix, log_suffix = "Corrected", ""
     else:
         with patch.object(Path, "chmod", side_effect=OSError("BOING!")):
-            assert list(AccountsFile.load().accounts) == ["ness"]
-        assert stat.S_IMODE(accounts_config.stat().st_mode) == mode
+            assert list(AccountsFile.load().accounts) == ["ness", "paula"]
+        assert stat.S_IMODE(accounts_toml.stat().st_mode) == mode
         log_prefix, log_suffix = "Failed to correct", ": BOING!"
     assert caplog_helper.messages == (
         [
             (
-                f"{log_prefix} {accounts_config} permissions"
+                f"{log_prefix} {accounts_toml} permissions"
                 f" from {mode:04o} to {expected_mode:04o}" + log_suffix
             )
         ]

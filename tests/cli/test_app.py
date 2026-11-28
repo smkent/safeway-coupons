@@ -10,7 +10,7 @@ import pytest
 from safeway_coupons.app import SafewayCoupons
 from safeway_coupons.dirs import dirs
 from safeway_coupons.errors import Error
-from tests.accounts import ACCOUNTS_TOML, LEGACY_ACCOUNTS_INI
+from tests.accounts import LEGACY_ACCOUNTS_INI
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -29,11 +29,12 @@ def mock_clip() -> Iterator[MagicMock]:
     params=(pytest.param(True, id="present"), pytest.param(False, id="absent"))
 )
 def accounts_toml_setup(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    accounts_toml: Path,
 ) -> Path:
     for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
         monkeypatch.delenv(kk)
-    accounts_toml = dirs.config / "accounts.toml"
     if not request.param:
         accounts_toml.unlink(missing_ok=True)
     return accounts_toml
@@ -227,15 +228,17 @@ def test_accounts_toml(
     main_runner: MainRunner,
     monkeypatch: pytest.MonkeyPatch,
     mock_clip: MagicMock,
+    accounts_toml: Path,
     tmp_path: Path,
     custom_storage_dir: bool,  # noqa: FBT001
 ) -> None:
     for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
         monkeypatch.delenv(kk)
     storage_dir = tmp_path / "custom-storage"
-    config_dir = storage_dir / "config" if custom_storage_dir else dirs.config
-    config_dir.mkdir(parents=True)
-    (config_dir / "accounts.toml").write_text(ACCOUNTS_TOML)
+    if custom_storage_dir:
+        config_dir = storage_dir / "config"
+        config_dir.mkdir(parents=True)
+        accounts_toml.rename(config_dir / "accounts.toml")
     args = ["--storage-dir", str(storage_dir)] if custom_storage_dir else []
     main_runner(*args)
     assert mock_clip.call_count == 2
@@ -306,6 +309,7 @@ def test_legacy_username_with_plus(
     assert (legacy_dir / "lock").is_file()
 
 
+@pytest.mark.usefixtures("accounts_toml")
 @pytest.mark.parametrize(
     "new_state_exists",
     [pytest.param(True, id="exists"), pytest.param(False, id="absent")],
@@ -319,8 +323,6 @@ def test_legacy_state_dir_moved(
 ) -> None:
     for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
         monkeypatch.delenv(kk)
-    dirs.config.mkdir(parents=True)
-    (dirs.config / "accounts.toml").write_text(ACCOUNTS_TOML)
     legacy_dir = dirs.state / "accounts" / "paula@twoson.example"
     legacy_dir.mkdir(parents=True)
     (legacy_dir / "state.json").write_text("{}")
@@ -391,12 +393,10 @@ def test_accounts_source_logged_ini(
 def test_accounts_source_logged_toml(
     main_runner: MainRunner,
     caplog: pytest.LogCaptureFixture,
+    accounts_toml: Path,
     *,
     with_accounts_config_arg: bool,
 ) -> None:
-    accounts_toml = dirs.config / "accounts.toml"
-    accounts_toml.parent.mkdir(parents=True)
-    accounts_toml.write_text(ACCOUNTS_TOML)
     main_runner(
         "--verbose",
         *(["-c", str(accounts_toml)] if with_accounts_config_arg else []),

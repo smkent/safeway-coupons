@@ -3,15 +3,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+import pytest
 from patchright.sync_api import Error as PlaywrightError
 from patchright.sync_api import Page
 
 from safeway_coupons.client.browser import SITE_URL
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-    import pytest
     from patchright.sync_api import Response
 
     from tests.utils import CapLogHelper, MainRunner, MockMail
@@ -19,22 +17,21 @@ if TYPE_CHECKING:
     from .conftest import MockSite
 
 
+@pytest.mark.usefixtures("accounts_toml")
 def test_site_load_failure_emails_screenshot(
-    main_runner: MainRunner,
-    accounts_config: Path,
-    mail: MockMail,
-    mock_site: MockSite,
+    main_runner: MainRunner, mail: MockMail, mock_site: MockSite
 ) -> None:
-    main_runner("-c", str(accounts_config), match=1)
+    main_runner(match=1)
     assert mock_site.requests
     assert len(mail.messages) == 1
     assert mail.screenshot(mail.messages[0]).startswith(b"\x89PNG")
 
 
+@pytest.mark.usefixtures("accounts_toml")
 def test_site_load_failure_logs_failed_requests(
-    main_runner: MainRunner, accounts_config: Path, caplog_helper: CapLogHelper
+    main_runner: MainRunner, caplog_helper: CapLogHelper
 ) -> None:
-    main_runner("-c", str(accounts_config), "--verbose", match=1)
+    main_runner("--verbose", match=1)
     records = caplog_helper.match_records("Request failed")
     assert all(r.levelno == logging.DEBUG for r in records)
     assert caplog_helper.match_records(
@@ -42,9 +39,9 @@ def test_site_load_failure_logs_failed_requests(
     )
 
 
+@pytest.mark.usefixtures("accounts_toml")
 def test_site_load_failure_logs_pending_requests(
     main_runner: MainRunner,
-    accounts_config: Path,
     caplog_helper: CapLogHelper,
     mock_site: MockSite,
     monkeypatch: pytest.MonkeyPatch,
@@ -69,7 +66,7 @@ def test_site_load_failure_logs_pending_requests(
         raise PlaywrightError("Navigation failed")
 
     monkeypatch.setattr(Page, "goto", goto)
-    main_runner("-c", str(accounts_config), "--verbose", match=1)
+    main_runner("--verbose", match=1)
     [record] = caplog_helper.match_records("page requests were still pending")
     assert record.levelno == logging.DEBUG
     _, *pending = record.getMessage().splitlines()
