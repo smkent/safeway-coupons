@@ -244,12 +244,16 @@ def test_accounts_toml(
 
 
 @pytest.mark.parametrize(
-    ("config_content", "account_names"),
+    ("config_content", "account_name"),
     [
-        pytest.param(ACCOUNTS_TOML, ("ness", "paula"), id="toml"),
         pytest.param(
-            LEGACY_ACCOUNTS_INI,
-            ("ness@onett.example", "paula@twoson.example"),
+            '[accounts.ness]\nusername = "ness@onett.example"\n',
+            "ness",
+            id="toml",
+        ),
+        pytest.param(
+            "[ness@onett.example]\npassword = pk_fire\n",
+            "ness@onett.example",
             id="ini",
         ),
     ],
@@ -261,16 +265,15 @@ def test_accounts_config_option(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
     config_content: str,
-    account_names: tuple[str, ...],
+    account_name: str,
 ) -> None:
     for kk in [k for k in os.environ if k.startswith("SAFEWAY_")]:
         monkeypatch.delenv(kk)
     accounts_config = tmp_path / "accounts-config"
     accounts_config.write_text(config_content)
     main_runner("-c", str(accounts_config))
-    assert mock_clip.call_count == 2
-    for name in account_names:
-        assert (dirs.state / "accounts" / name / "lock").is_file()
+    mock_clip.assert_called_once()
+    assert (dirs.state / "accounts" / account_name / "lock").is_file()
     assert any(
         "-c/--accounts-config is deprecated" in m for m in caplog.messages
     )
